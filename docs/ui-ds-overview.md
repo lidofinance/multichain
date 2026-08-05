@@ -8,7 +8,7 @@ Last checked: 5 August 2026.
 | --- | --- | --- | --- | --- | --- |
 | Interport | Lido `CustomSender` | `fastStake` | `slowStake` | Verified in current frontend bundle | [Lido launch (2024)](https://blog.lido.fi/lido-staking-goes-cross-chain-via-chainlink-ccip/)<br>[Lido Linea launch (2025)](https://blog.lido.fi/direct-staking-on-linea-powered-by-chainlink/)<br>[Interport documentation](https://docs.interport.fi/products/bridge/direct-staking)<br>[Interport UI](https://app.interport.fi/direct-staking/lido/8453/ETH) |
 | XSwap | Lido `CustomSender` | `fastStakeReferral` | `slowStake` | Verified in current frontend bundle | [Lido launch (2024)](https://blog.lido.fi/lido-staking-goes-cross-chain-via-chainlink-ccip/)<br>[Lido Linea launch (2025)](https://blog.lido.fi/direct-staking-on-linea-powered-by-chainlink/)<br>[XSwap documentation](https://docs.xswap.link/xswap/introduction/direct-staking)<br>[XSwap UI](https://xswap.link/direct-staking) |
-| Jumper / LI.FI | LI.FI Diamond | LI.FI swap router; sampled routes used DEX liquidity | No direct slow-stake call observed | Route-dependent; current samples did not call `CustomSender` | [LI.FI announcement (2026)](https://li.fi/knowledge-hub/wsteth-is-now-one-click-away-heres-what-made-it-possible)<br>[Jumper UI](https://jumper.exchange/) |
+| Jumper / LI.FI | LI.FI Diamond | Route-dependent exchange calls; sampled Base, Optimism, Arbitrum, and Linea routes used DEX liquidity | No direct slow-stake call observed | Announcement confirms the integration architecture; sampled calldata did not call `CustomSender` | [LI.FI announcement (2026)](https://li.fi/knowledge-hub/wsteth-is-now-one-click-away-heres-what-made-it-possible)<br>[Jumper UI](https://jumper.exchange/) |
 | OpenOcean | Historically Lido `CustomSender` | Historically `fastStake` | Historically `slowStake` | Historical integration; absent from current frontend bundle | [Lido launch (2024)](https://blog.lido.fi/lido-staking-goes-cross-chain-via-chainlink-ccip/)<br>[Lido Linea launch (2025)](https://blog.lido.fi/direct-staking-on-linea-powered-by-chainlink/)<br>[OpenOcean staking documentation](https://docs.openocean.finance/products/ethereum-liquid-staking/get-started-with-eth-liquid-staking)<br>[OpenOcean UI](https://app.openocean.finance/staking) |
 
 No fifth publicly identifiable UI was found. This conclusion is based on official announcements, searches for the deployed addresses and method signatures, inspection of published frontend bundles, and an on-chain caller audit described below.
@@ -61,11 +61,14 @@ The UI transaction targets `CustomSender`; the proxy interacts with the oracle p
 
 ### Jumper / LI.FI
 
-The wallet calls the LI.FI Diamond at:
+The wallet sends the sampled routes to the LI.FI Diamond deployed on that chain:
 
-```text
-0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE
-```
+| Network | LI.FI Diamond |
+| --- | --- |
+| Base | `0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE` |
+| Optimism | `0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE` |
+| Arbitrum | `0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE` |
+| Linea | `0xde1e598b81620773454588b85d6b5d4eec32573e` |
 
 A sampled Arbitrum ETH-to-wstETH quote used:
 
@@ -82,13 +85,41 @@ swapTokensMultipleV3NativeToERC20(
 
 Selector: `0x736eac0b`.
 
-The traced call path was LI.FI Diamond -> 1inch `swap(...)` -> WETH `deposit()` -> Uniswap V3 pool `swap(...)`. Arbitrum samples at 0.01 ETH and 100 ETH did not call Lido `CustomSender`. A current 0.01 ETH Linea quote similarly targeted the Nordstern router `0xde1e598b81620773454588b85d6b5d4eec32573e`, not the Linea `CustomSender`. Jumper therefore supports wstETH acquisition through route selection, but a displayed route is not necessarily a CCIP Direct Staking transaction.
+The traced Arbitrum call path was LI.FI Diamond -> 1inch `swap(...)` -> WETH `deposit()` -> Uniswap V3 pool `swap(...)`. Samples at 0.01 ETH and 100 ETH did not call Lido `CustomSender`.
+
+Fresh Base and Optimism quotes were checked at the same two amounts. All four returned the same top-level selector and were decoded as two-step LI.FI swaps: integrator-fee collection followed by an exchange call.
+
+| Network | Amounts checked | Selected tool | Exchange `callTo` | Exchange `approveTo` | Direct Staking target present |
+| --- | --- | --- | --- | --- | --- |
+| Base | 0.01 ETH, 100 ETH | Fly | `0x20F6ee51340aDEed01A59B0e65cB3703f3dc860c` | Same as `callTo` | No |
+| Optimism | 0.01 ETH, 100 ETH | OKX | `0xDd5E9B947c99Aa60bab00ca4631Dce63b49983E7` | `0x68D6B739D2020067D1e2F713b999dA97E4d54812` | No |
+
+In each Base and Optimism sample, neither `CustomSender` `0x328de900860816d29D1367F6903a24D8ed40C997` nor oracle pool `0x6F357d53d6bE3238180316BA5F8f11467e164588` appeared in the returned calldata.
+
+A current 0.01 ETH Linea quote used the same top-level selector on the Linea LI.FI Diamond. Its selected route tool was `nordstern`, and the embedded downstream call/approval target was `0x2fF506ed9729580EF8Bf04429614beB1baE5F76D`. Neither the returned calldata nor its decoded targets contained the Linea `CustomSender`.
+
+The LI.FI announcement states that its Custom Quote API is built on the Chainlink Direct Staking suite and that Chainlink Automation rebalances Fast Staking pools. This is evidence of the published integration architecture, not evidence that every user route calls `CustomSender`. Pool rebalancing is separate infrastructure work and must not be inferred as an internal call of the sampled user transaction.
+
+Therefore, Jumper supports wstETH acquisition through route selection, but whether an individual route targets `CustomSender` can be established only from that quote's returned calldata or transaction trace. The sampled Base, Optimism, Arbitrum, and Linea routes did not ultimately target it; this does not prove that no future LI.FI route can do so.
 
 ### OpenOcean
 
 Lido's launch announcement named OpenOcean as a Direct Staking frontend. The historical integration was consistent with the then-available `fastStake(...)` and `slowStake(...)` entrypoints. The current OpenOcean application bundle contains neither these method names nor the `CustomSender` addresses, so this integration should be treated as historical unless reintroduced.
 
 ## Completeness audit
+
+### Evidence and claim boundaries
+
+The conclusions above use the following evidence boundaries:
+
+| Evidence | Supports | Does not by itself prove |
+| --- | --- | --- |
+| Official announcements and documentation | A publicly described integration, intended architecture, and named UI availability at publication time | The target and downstream calls of a particular current transaction |
+| Current frontend bundles | Configured chain addresses, ABIs, and execution branches present in that bundle | That every possible route executes that branch |
+| Returned quote calldata and decoded call traces | The target, selector, and downstream calls of the sampled route | Universal behavior across amounts, times, chains, or future routing state |
+| Indexed `CustomSender` calls | Calls observed by the named indexer within the audited networks and window | Complete attribution of every caller to a public UI |
+
+Accordingly, claims of UI support, configured capability, sampled execution, and infrastructure rebalancing remain separate. A public communication is retained as provenance for the integration claim; it is not promoted into runtime-call evidence.
 
 ### On-chain caller audit
 
@@ -117,6 +148,8 @@ One additional call used the zero address as its referral. The apparent contract
 - [Lido announcement (2024): Lido Staking Goes Cross-Chain via Chainlink CCIP](https://blog.lido.fi/lido-staking-goes-cross-chain-via-chainlink-ccip/)
 - [Lido announcement (2025): Direct Staking on Linea](https://blog.lido.fi/direct-staking-on-linea-powered-by-chainlink/)
 - [LI.FI announcement (2026): wstETH Is Now One Click Away](https://li.fi/knowledge-hub/wsteth-is-now-one-click-away-heres-what-made-it-possible)
+- [LI.FI quote API specification](https://docs.li.fi/agents/reference/endpoint-specs)
+- [LI.FI smart-contract addresses](https://docs.li.fi/introduction/lifi-architecture/smart-contract-addresses)
 - [Interport Direct Staking UI](https://app.interport.fi/direct-staking/lido/8453/ETH)
 - [Interport Direct Staking documentation](https://docs.interport.fi/products/bridge/direct-staking)
 - [XSwap Direct Staking documentation](https://docs.xswap.link/xswap/introduction/direct-staking)
