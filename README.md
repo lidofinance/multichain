@@ -9,10 +9,10 @@ The current ledger is [ledger.json](./ledger.json). Its data model is defined by
 The ledger is intended to support:
 
 - discovering the concrete addresses associated with a Lido multichain integration;
-- distinguishing proxies, implementations, proxy administrators, and standalone contracts;
+- distinguishing proxies, implementations, proxy administrators, libraries, and standalone contracts;
 - resolving relationships between separately listed proxy, implementation, and administration deployments;
 - recording source repositories, revisions, and paths when they can be established; and
-- validating the resulting data mechanically with JSON Schema.
+- validating the resulting data mechanically with JSON Schema and cross-entry integrity checks.
 
 It is a deployment catalogue with per-entry source pointers, not an on-chain registry or a truth-producing database. Consumers should follow the cited repository revision, artifact, or other primary evidence when a decision requires it.
 
@@ -26,7 +26,7 @@ one deployment entry = one network + one address
 
 This is why a proxy and its implementation are separate entries even when they jointly fulfil one protocol role. Likewise, the same hexadecimal address on two networks represents two deployments and receives two different `deploymentId` values.
 
-The ledger uses a flat deployment collection. Relationships are expressed through stable identifiers instead of nesting implementation or administrator records inside a proxy. This keeps every deployed address independently addressable and avoids duplicating shared records.
+`deployments` stays a flat array (not a map keyed by `deploymentId`) so each address remains independently ordered and addressable. Relationships use stable identifiers instead of nesting; uniqueness and reference integrity are enforced by validation tooling rather than object-key identity.
 
 ## Identity model
 
@@ -46,7 +46,7 @@ Example:
 eip155:42161:0x5979D7b546E38E414F7E9822514be443A4800529
 ```
 
-Use `deploymentId` for references to a particular address on a particular network. It names the address instance, not a bytecode hash: the bytecode at that address may change on upgrade.
+Use `deploymentId` for references to a particular address on a particular network. It names the address instance, not a bytecode hash: the bytecode at that address may change on upgrade. `deploymentId` values are unique within a ledger snapshot and must equal `networkId` + `:` + `address`.
 
 ### `contractId`
 
@@ -54,33 +54,26 @@ Use `deploymentId` for references to a particular address on a particular networ
 
 Use `contractId` to group deployed instances that jointly represent the same logical contract role. Do not use it as a substitute for an address-level identity, and do not encode repository commits or source hashes into it. Unique source identity belongs in `source`.
 
+When two deployments on the same network would otherwise share a role id because one is superseded or retained only for history, give the historical entry an `-archive` `contractId` suffix (for example `…-token-rate-notifier-archive`).
+
 ### Labels and architectural kinds
 
 `contractName` is the Solidity contract name of the bytecode at the deployed address (for example `OssifiableProxy` for a proxy address and `ERC20Bridged` for its implementation). It is not a documentation prose label.
 
-`deploymentKind` states the architectural kind of the deployed address:
+`deploymentKind` and `proxyKind` use the enums defined in [ledger.schema.json](./ledger.schema.json). `standalone` means a non-proxy, non-implementation, non-admin, non-beacon, non-library address. Linked Solidity libraries use `library`.
 
-- `standalone`
-- `proxy`
-- `implementation`
-- `proxy-admin`
-- `beacon`
-- `library`
-
-`standalone` means a non-proxy, non-implementation, non-admin, non-beacon, non-library address.
-
-For a proxy, the `proxy` object links to separately listed deployments through `implementationDeploymentId`, and optionally `adminDeploymentId` or `beaconDeploymentId`. `proxyKind` classifies the upgrade/admin architecture (`transparent`, `erc1967`, `ossifiable`, `uups`, `beacon`, `diamond`, `custom`, `unknown`). `proxyKind: "unknown"` means the selected evidence did not establish the proxy architecture; it does not mean that the deployed contract has no identifiable proxy type.
+For a proxy, the `proxy` object links to separately listed deployments through `implementationDeploymentId`, and optionally `adminDeploymentId` or `beaconDeploymentId`. `proxyKind: "unknown"` means the selected evidence did not establish the proxy architecture; it does not mean that the deployed contract has no identifiable proxy type.
 
 ## Network model
 
-Network identity and operational environment are separate fields:
+Network identity and operational metadata are separated:
 
-- `networkId` is the globally scoped network identifier, such as `eip155:1`;
-- `networkName` is its human-readable canonical name;
-- `chainFamily` groups related blockchain or rollup technology;
-- `environment` classifies the network as `mainnet`, `testnet`, `devnet`, or `local`.
+- `networkId` on each deployment is the globally scoped network identifier, such as `eip155:1`;
+- the document-level `networks` map, keyed by `networkId`, holds `networkName`, `chainFamily`, and `environment` once per network so metadata cannot diverge across entries.
 
-Absence of a network or environment from `deployments` is not proof that no deployment exists.
+`chainFamily` groups related blockchain or rollup technology (for example `op-stack` for Optimism, Base, Unichain, and other OP-Stack chains). It is not a 1:1 copy of `networkId`.
+
+Absence of a network or environment from `networks` / `deployments` is not proof that no deployment exists. Optional document-level `coverage` and `knownGaps` may record what was checked or what is known to be missing.
 
 ## Evidence and source
 
@@ -94,23 +87,21 @@ A URL is a pointer to evidence, not proof of every fact associated with the targ
 
 ## Snapshot metadata
 
-The top-level fields describe the ledger snapshot:
-
-- `schemaVersion` versions the ledger data model independently of the JSON Schema specification version; and
-- `updatedAt` records the calendar date on which the snapshot was last changed.
+The top-level fields describe the ledger snapshot: `schemaVersion` versions the data model independently of the JSON Schema specification version, and `updatedAt` records when the snapshot was last changed.
 
 ## Updating the ledger
 
 When adding or refreshing a deployment:
 
 1. Confirm that the entry represents one concrete network/address pair.
-2. Construct `deploymentId` from the concrete network and address.
-3. Reuse or introduce a `contractId` according to the logical protocol role, independently of the source repository, commit, or artifact name.
-4. Set `contractName` to the Solidity contract name of the bytecode at that address.
-5. Record the architectural `deploymentKind` and add identifier-based proxy relationships where applicable.
-6. Add the narrowest source provenance supported by the evidence (`source` may be `null` when none is established).
-7. Update `updatedAt` and validate the complete snapshot.
-8. Run `uv run python scripts/format_ledger.py format` so object keys follow schema `properties` order.
+2. Ensure the network exists under `networks` (or add it once with `networkName`, `chainFamily`, and `environment`).
+3. Construct `deploymentId` from the concrete network and address.
+4. Reuse or introduce a `contractId` according to the logical protocol role, independently of the source repository, commit, or artifact name. Use an `-archive` suffix for superseded role instances that remain listed.
+5. Set `contractName` to the Solidity contract name of the bytecode at that address.
+6. Record the architectural `deploymentKind` and add identifier-based proxy relationships where applicable.
+7. Add the narrowest source provenance supported by the evidence (`source` may be `null` when none is established).
+8. Update `updatedAt` and validate the complete snapshot.
+9. Run `uv run python scripts/format_ledger.py format` so object keys follow schema `properties` order.
 
 Prefer exact network-and-address matches in deployment artifacts or configuration files. A contract-name match can support partial source provenance, but should not be represented as deployment-verified source provenance without an address mapping, verified bytecode, or equivalent evidence.
 
@@ -125,49 +116,29 @@ git config core.hooksPath githooks
 
 ## Key order
 
-Object key order in `ledger.json` is strict and follows the order of keys under each `properties` object in `ledger.schema.json` (document root, `deploymentEntry`, `source`, `proxy`). Optional keys are omitted when absent; array element order is not rewritten.
-
-Rewrite or check:
+Object key order in `ledger.json` is derived from schema `properties` order (document root and `$defs` object schemas). Optional keys are omitted when absent; array element order is not rewritten. Keys under `networks` keep their existing order; nested network objects are reordered.
 
 ```sh
 uv run python scripts/format_ledger.py format
 uv run python scripts/format_ledger.py check
 ```
 
-The `githooks/pre-commit` hook runs key-order formatting and ledger validation (JSON Schema plus integrity checks) when `ledger.json` or `ledger.schema.json` is staged. If the hook reformats the ledger, stage the updated file and commit again.
+`githooks/pre-commit` always runs the key-order check (non-mutating) and ledger validation. Reformat locally with `format` before committing if key order drifted.
 
 ## Validation
-
-Basic JSON syntax checks:
-
-```sh
-uv run python -m json.tool ledger.json >/dev/null
-uv run python -m json.tool ledger.schema.json >/dev/null
-```
-
-JSON Schema validation (draft 2020-12, including `format` checks) plus cross-field integrity rules:
 
 ```sh
 uv run python scripts/validate_ledger.py
 ```
 
-Integrity checks currently enforce:
+Integrity checks (after schema validation succeeds) enforce:
 
-- `deploymentId` equals `networkId` + `:` + `address` (exact spelling, including address casing).
+- `deploymentId` equals `networkId` + `:` + `address` (exact spelling, including address casing);
+- `deploymentId` uniqueness within the snapshot;
+- each deployment `networkId` exists as a key in `networks`;
+- proxy relation fields declared with `x-refDeploymentKind` resolve to entries of that `deploymentKind`.
 
-Key-order check:
-
-```sh
-uv run python scripts/format_ledger.py check
-```
-
-Repository whitespace checks:
-
-```sh
-git diff --check
-```
-
-The schema validates record shape and selected conditional rules, such as requiring a `proxy` relation object for entries whose `deploymentKind` is `proxy`. Additional cross-entry integrity—uniqueness of `deploymentId` and resolution of referenced implementation/admin/beacon IDs—should also be checked by ledger maintenance tooling or review.
+CI (`.github/workflows/ledger.yml`) runs the same checks on pull requests and on pushes to `main`.
 
 ## Non-goals
 

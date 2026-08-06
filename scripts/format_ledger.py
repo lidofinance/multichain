@@ -2,22 +2,21 @@
 """Reorder ledger.json object keys to match ledger.schema.json ``properties`` order.
 
 Canonical key order is the order of keys under each schema ``properties`` object
-(top level, deploymentEntry, source, proxy, and any future nested objects).
-Optional keys are omitted when absent. Unknown keys are preserved after known
-ones in their existing relative order. Array element order is unchanged.
+(including keys collected through ``allOf`` / ``if``-``then`` / ``else``). Optional
+keys are omitted when absent. Unknown keys are preserved after known ones in their
+existing relative order. Array element order is unchanged. Map objects that use
+``additionalProperties`` as a schema (``networks``) keep instance key order and
+only reorder nested values.
 """
 
 from __future__ import annotations
 
-import argparse
 import json
 import sys
 from pathlib import Path
 from typing import Any
 
-ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_LEDGER = ROOT / "ledger.json"
-DEFAULT_SCHEMA = ROOT / "ledger.schema.json"
+from _ledger import build_parser, load_schema_and_instance, require_input_files
 
 
 def resolve_ref(root_schema: dict[str, Any], ref: str) -> dict[str, Any]:
@@ -50,27 +49,41 @@ def deref(root_schema: dict[str, Any], schema: dict[str, Any]) -> dict[str, Any]
     return current
 
 
-def object_schema_with_properties(
-    root_schema: dict[str, Any], schema: dict[str, Any]
-) -> dict[str, Any] | None:
-    """Return a schema that defines ``properties``, following $ref / oneOf / anyOf."""
+def _collect_properties(
+    root_schema: dict[str, Any], schema: dict[str, Any], ordered: dict[str, Any]
+) -> None:
+    """Append property schemas into ``ordered`` without replacing earlier keys."""
     current = deref(root_schema, schema)
-    if "properties" in current and isinstance(current["properties"], dict):
-        return current
+    props = current.get("properties")
+    if isinstance(props, dict):
+        for key, prop_schema in props.items():
+            if key not in ordered:
+                ordered[key] = prop_schema
 
-    for combiner in ("oneOf", "anyOf"):
+    for combiner in ("allOf", "anyOf", "oneOf"):
         options = current.get(combiner)
         if not isinstance(options, list):
             continue
         for option in options:
-            if not isinstance(option, dict):
-                continue
-            # Prefer object branches over null/scalar ones.
-            if option.get("type") == "null":
-                continue
-            found = object_schema_with_properties(root_schema, option)
-            if found is not None:
-                return found
+            if isinstance(option, dict):
+                _collect_properties(root_schema, option, ordered)
+
+    for branch in ("then", "else", "if"):
+        option = current.get(branch)
+        if isinstance(option, dict):
+            _collect_properties(root_schema, option, ordered)
+
+
+def object_schema_with_properties(
+    root_schema: dict[str, Any],
+    schema: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Return a schema that defines ``properties``, following combinators."""
+    current = deref(root_schema, schema)
+    ordered: dict[str, Any] = {}
+    _collect_properties(root_schema, current, ordered)
+    if ordered:
+        return {**current, "properties": ordered}
     return None
 
 
@@ -80,18 +93,26 @@ def reorder(
     schema: dict[str, Any] | None,
 ) -> Any:
     if schema is None:
-        if isinstance(value, dict):
-            return {k: reorder(v, root_schema, None) for k, v in value.items()}
-        if isinstance(value, list):
-            return [reorder(item, root_schema, None) for item in value]
         return value
 
     current = deref(root_schema, schema)
 
     if isinstance(value, dict):
+        # Map schemas (additionalProperties as schema, propertyNames) keep
+        # instance key order; only reorder nested values.
+        additional = current.get("additionalProperties")
+        if (
+            "properties" not in current
+            and isinstance(additional, dict)
+            and current.get("type") == "object"
+        ):
+            return {
+                k: reorder(v, root_schema, additional) for k, v in value.items()
+            }
+
         obj_schema = object_schema_with_properties(root_schema, current)
         if obj_schema is None:
-            return {k: reorder(v, root_schema, None) for k, v in value.items()}
+            return value
 
         properties = obj_schema["properties"]
         ordered: dict[str, Any] = {}
@@ -103,7 +124,7 @@ def reorder(
         for key, item in value.items():
             if key in ordered:
                 continue
-            ordered[key] = reorder(item, root_schema, None)
+            ordered[key] = item
         return ordered
 
     if isinstance(value, list):
@@ -119,30 +140,19 @@ def dumps(data: Any) -> str:
 
 
 def render(ledger_path: Path, schema_path: Path) -> str:
-    schema = json.loads(schema_path.read_text(encoding="utf-8"))
-    data = json.loads(ledger_path.read_text(encoding="utf-8"))
-    if not isinstance(schema, dict):
-        raise TypeError("Schema root must be a JSON object")
+    schema, data = load_schema_and_instance(schema_path, ledger_path)
     return dumps(reorder(data, schema, schema))
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = build_parser(__doc__)
     parser.add_argument(
         "command",
         choices=("format", "check"),
         help="format rewrites the ledger; check fails if key order differs",
     )
-    parser.add_argument("--ledger", type=Path, default=DEFAULT_LEDGER)
-    parser.add_argument("--schema", type=Path, default=DEFAULT_SCHEMA)
     args = parser.parse_args(argv)
-
-    if not args.schema.is_file():
-        print(f"Schema not found: {args.schema}", file=sys.stderr)
-        return 2
-    if not args.ledger.is_file():
-        print(f"Ledger not found: {args.ledger}", file=sys.stderr)
-        return 2
+    require_input_files(args)
 
     formatted = render(args.ledger, args.schema)
     current = args.ledger.read_text(encoding="utf-8")

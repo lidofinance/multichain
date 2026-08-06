@@ -1,20 +1,8 @@
 #!/usr/bin/env bash
-# Runs when ledger.json or ledger.schema.json is staged.
+# Always run ledger format check + schema/integrity validation before commit.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-if ! git diff --cached --name-only --diff-filter=ACMR |
-  grep -Eq '^(ledger\.json|ledger\.schema\.json)$'; then
-  exit 0
-fi
-
-uv run python scripts/format_ledger.py format
-
-if ! git diff --quiet -- ledger.json; then
-  echo "ledger.json was reformatted to match schema property order." >&2
-  echo "Stage the updated file and commit again." >&2
-  exit 1
-fi
-
+uv run python scripts/format_ledger.py check
 uv run python scripts/validate_ledger.py

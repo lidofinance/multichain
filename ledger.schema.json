@@ -8,6 +8,7 @@
     "$schema",
     "schemaVersion",
     "updatedAt",
+    "networks",
     "deployments"
   ],
   "properties": {
@@ -26,8 +27,43 @@
       "type": "string",
       "format": "date"
     },
+    "coverage": {
+      "description": "Optional notes describing what this snapshot intentionally covers. Absence does not prove completeness.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "notes"
+      ],
+      "properties": {
+        "notes": {
+          "description": "Human-readable coverage statement for this snapshot.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "knownGaps": {
+      "description": "Optional list of known absences or unverified areas. Entries here are acknowledgements, not exhaustive.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "networks": {
+      "description": "Concrete networks referenced by deployments, keyed by networkId. Network metadata lives here so it cannot diverge across entries.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/networkEntry"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/networkId"
+      }
+    },
     "deployments": {
-      "description": "Flat collection containing one entry for each deployed address.",
+      "description": "Flat array of deployment entries (not keyed by deploymentId). Identity uniqueness and cross-entry references are enforced by validate_ledger.py so each address stays independently ordered and addressable without nesting.",
       "type": "array",
       "items": {
         "$ref": "#/$defs/deploymentEntry"
@@ -48,6 +84,35 @@
       "description": "CAIP-10-shaped identifier combining a concrete network identifier and a network-native address.",
       "type": "string",
       "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}:.+$"
+    },
+    "networkEntry": {
+      "description": "Metadata for one concrete network identified by its map key (networkId).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "networkName",
+        "chainFamily",
+        "environment"
+      ],
+      "properties": {
+        "networkName": {
+          "description": "Human-readable canonical name for the concrete network.",
+          "$ref": "#/$defs/slug"
+        },
+        "chainFamily": {
+          "description": "Broader blockchain or rollup technology family that groups related networks (for example op-stack, not one value per chain).",
+          "$ref": "#/$defs/slug"
+        },
+        "environment": {
+          "description": "Operational classification of the concrete network, distinct from network identity.",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "devnet",
+            "local"
+          ]
+        }
+      }
     },
     "source": {
       "description": "Immutable or repository-relative provenance for the deployed contract's source code.",
@@ -98,15 +163,18 @@
         },
         "implementationDeploymentId": {
           "description": "deploymentId of the separately listed implementation address associated with this proxy.",
-          "$ref": "#/$defs/deploymentId"
+          "$ref": "#/$defs/deploymentId",
+          "x-refDeploymentKind": "implementation"
         },
         "adminDeploymentId": {
           "description": "deploymentId of the separately listed proxy-admin address when one is documented.",
-          "$ref": "#/$defs/deploymentId"
+          "$ref": "#/$defs/deploymentId",
+          "x-refDeploymentKind": "proxy-admin"
         },
         "beaconDeploymentId": {
           "description": "deploymentId of the separately listed beacon address for a beacon proxy.",
-          "$ref": "#/$defs/deploymentId"
+          "$ref": "#/$defs/deploymentId",
+          "x-refDeploymentKind": "beacon"
         }
       }
     },
@@ -119,10 +187,7 @@
         "contractId",
         "deploymentKind",
         "contractName",
-        "networkName",
         "address",
-        "environment",
-        "chainFamily",
         "networkId",
         "source",
         "auditReportRefs"
@@ -133,7 +198,7 @@
           "$ref": "#/$defs/deploymentId"
         },
         "contractId": {
-          "description": "Source-independent identifier for the protocol role fulfilled by the deployment. A proxy and its implementation share the same contractId when they jointly fulfill the same role. Unique source identity is expressed by source, not by this field.",
+          "description": "Source-independent identifier for the protocol role fulfilled by the deployment. A proxy and its implementation share the same contractId when they jointly fulfill the same role. Unique source identity is expressed by source, not by this field. Historical or superseded role instances use an -archive suffix.",
           "$ref": "#/$defs/slug"
         },
         "deploymentKind": {
@@ -150,12 +215,7 @@
         "contractName": {
           "description": "Solidity contract name of the bytecode deployed at this address (the compiler artifact / verified Contract Name), not a documentation prose label.",
           "type": "string",
-          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
-          "minLength": 1
-        },
-        "networkName": {
-          "description": "Human-readable canonical name for the concrete network on which the address is deployed.",
-          "$ref": "#/$defs/slug"
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
         },
         "address": {
           "description": "Network-native address of the deployed contract instance. EVM addresses preserve the spelling and checksum casing published by the source.",
@@ -165,21 +225,8 @@
         "proxy": {
           "$ref": "#/$defs/proxy"
         },
-        "environment": {
-          "description": "Operational classification of the concrete network, distinct from network identity.",
-          "enum": [
-            "mainnet",
-            "testnet",
-            "devnet",
-            "local"
-          ]
-        },
-        "chainFamily": {
-          "description": "Broader blockchain or rollup family to which the concrete network belongs.",
-          "$ref": "#/$defs/slug"
-        },
         "networkId": {
-          "description": "Globally scoped identity of the concrete network. EVM networks use the CAIP-2 eip155 namespace.",
+          "description": "Globally scoped identity of the concrete network. Must be a key in the document-level networks map. EVM networks use the CAIP-2 eip155 namespace.",
           "$ref": "#/$defs/networkId"
         },
         "source": {
@@ -221,10 +268,8 @@
             ]
           },
           "else": {
-            "not": {
-              "required": [
-                "proxy"
-              ]
+            "properties": {
+              "proxy": false
             }
           }
         },
@@ -243,7 +288,6 @@
           "then": {
             "properties": {
               "address": {
-                "type": "string",
                 "pattern": "^0x[0-9a-fA-F]{40}$"
               }
             }
