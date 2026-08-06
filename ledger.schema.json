@@ -1,0 +1,255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Lido Multichain Deployment Ledger",
+  "description": "Schema for a ledger whose record unit is one deployed contract address on one concrete blockchain network.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "updatedAt",
+    "deployments"
+  ],
+  "properties": {
+    "$schema": {
+      "description": "Relative or absolute reference to the JSON Schema governing this ledger document.",
+      "type": "string",
+      "const": "./ledger.schema.json"
+    },
+    "schemaVersion": {
+      "description": "Version of the ledger data model, independent of the JSON Schema specification version.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "updatedAt": {
+      "description": "Calendar date on which this ledger snapshot was last updated.",
+      "type": "string",
+      "format": "date"
+    },
+    "deployments": {
+      "description": "Flat collection containing one entry for each deployed address.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/deploymentEntry"
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "networkId": {
+      "description": "CAIP-2-shaped network identifier consisting of a namespace and a namespace-specific reference.",
+      "type": "string",
+      "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}$"
+    },
+    "deploymentId": {
+      "description": "CAIP-10-shaped identifier combining a concrete network identifier and a network-native address.",
+      "type": "string",
+      "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}:.+$"
+    },
+    "source": {
+      "description": "Immutable or repository-relative provenance for the deployed contract's source code.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repositoryUrl"
+      ],
+      "properties": {
+        "repositoryUrl": {
+          "description": "Repository containing the contract source code.",
+          "type": "string",
+          "format": "uri"
+        },
+        "commit": {
+          "description": "Optional Git commit identifying the source revision.",
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{7,64}$"
+        },
+        "path": {
+          "description": "Optional repository-relative path to the source file or source directory.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "proxy": {
+      "description": "Relationships from a proxy deployment to separately listed implementation and administration deployments.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proxyKind",
+        "implementationDeploymentId"
+      ],
+      "properties": {
+        "proxyKind": {
+          "description": "Proxy upgrade/admin architecture. unknown means it was not established from the selected evidence.",
+          "enum": [
+            "transparent",
+            "erc1967",
+            "ossifiable",
+            "uups",
+            "beacon",
+            "diamond",
+            "custom",
+            "unknown"
+          ]
+        },
+        "implementationDeploymentId": {
+          "description": "deploymentId of the separately listed implementation address associated with this proxy.",
+          "$ref": "#/$defs/deploymentId"
+        },
+        "adminDeploymentId": {
+          "description": "deploymentId of the separately listed proxy-admin address when one is documented.",
+          "$ref": "#/$defs/deploymentId"
+        },
+        "beaconDeploymentId": {
+          "description": "deploymentId of the separately listed beacon address for a beacon proxy.",
+          "$ref": "#/$defs/deploymentId"
+        }
+      }
+    },
+    "deploymentEntry": {
+      "description": "One current deployed contract address on one concrete network.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deploymentId",
+        "contractId",
+        "deploymentKind",
+        "contractName",
+        "networkName",
+        "address",
+        "environment",
+        "chainFamily",
+        "networkId",
+        "source",
+        "auditReportRefs"
+      ],
+      "properties": {
+        "deploymentId": {
+          "description": "Stable identifier for one deployed address on one concrete network. For EVM deployments it is the CAIP-10-shaped combination of networkId and address.",
+          "$ref": "#/$defs/deploymentId"
+        },
+        "contractId": {
+          "description": "Source-independent identifier for the protocol role fulfilled by the deployment. A proxy and its implementation share the same contractId when they jointly fulfill the same role. Unique source identity is expressed by source, not by this field.",
+          "$ref": "#/$defs/slug"
+        },
+        "deploymentKind": {
+          "description": "Architectural kind of the deployed address (standalone means a non-proxy, non-implementation, non-admin, non-beacon, non-library address).",
+          "enum": [
+            "standalone",
+            "proxy",
+            "implementation",
+            "proxy-admin",
+            "beacon",
+            "library"
+          ]
+        },
+        "contractName": {
+          "description": "Solidity contract name of the bytecode deployed at this address (the compiler artifact / verified Contract Name), not a documentation prose label.",
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "minLength": 1
+        },
+        "networkName": {
+          "description": "Human-readable canonical name for the concrete network on which the address is deployed.",
+          "$ref": "#/$defs/slug"
+        },
+        "address": {
+          "description": "Network-native address of the deployed contract instance. EVM addresses preserve the spelling and checksum casing published by the source.",
+          "type": "string",
+          "minLength": 1
+        },
+        "proxy": {
+          "$ref": "#/$defs/proxy"
+        },
+        "environment": {
+          "description": "Operational classification of the concrete network, distinct from network identity.",
+          "enum": [
+            "mainnet",
+            "testnet",
+            "devnet",
+            "local"
+          ]
+        },
+        "chainFamily": {
+          "description": "Broader blockchain or rollup family to which the concrete network belongs.",
+          "$ref": "#/$defs/slug"
+        },
+        "networkId": {
+          "description": "Globally scoped identity of the concrete network. EVM networks use the CAIP-2 eip155 namespace.",
+          "$ref": "#/$defs/networkId"
+        },
+        "source": {
+          "description": "Contract source-code provenance when collected; null means no source repository has yet been established for this entry.",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/source"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "auditReportRefs": {
+          "description": "Pointers to audit-report carriers associated with the deployment or its code scope. Presence of a pointer does not establish bytecode equivalence or assurance.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "deploymentKind": {
+                "const": "proxy"
+              }
+            },
+            "required": [
+              "deploymentKind"
+            ]
+          },
+          "then": {
+            "required": [
+              "proxy"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "proxy"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "networkId": {
+                "type": "string",
+                "pattern": "^eip155:"
+              }
+            },
+            "required": [
+              "networkId"
+            ]
+          },
+          "then": {
+            "properties": {
+              "address": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{40}$"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
