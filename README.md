@@ -85,6 +85,10 @@ A URL is a pointer to evidence, not proof of every fact associated with the targ
 
 `auditReportRefs` is an array of pointers to audit-report carriers (free-form strings, typically URLs). An empty array means no reports are recorded for the entry; it does not prove that no audit exists. Presence of a pointer does not establish deployment-current bytecode equivalence or release assurance.
 
+### Public refs
+
+`publicRefs` is an optional array of pointers to public official or near-official publication carriers (for example research.lido.fi forum posts, Snapshot or Aragon votes, or docs.lido.fi pages) that an external reader can use to cross-check the entry's address. Omit the field or use an empty array when none are recorded. Presence of a pointer does not establish address correctness, completeness, DAO approval force, or assurance. `publicRefs` does not replace `source`.
+
 ## Snapshot metadata
 
 The top-level fields describe the ledger snapshot: `schemaVersion` versions the data model independently of the JSON Schema specification version, and `updatedAt` records when the snapshot was last changed.

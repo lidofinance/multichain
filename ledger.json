@@ -1,10 +1,14 @@
 {
   "$schema": "./ledger.schema.json",
-  "schemaVersion": "0.1.0",
-  "updatedAt": "2026-08-06",
+  "schemaVersion": "0.2.0",
+  "updatedAt": "2026-08-07",
   "knownGaps": [
     "Linea L1/L2 token-bridge proxy links were refreshed on 2026-08-06.",
-    "Source revision for current Linea TokenBridge implementations is not yet established (source is null)."
+    "Source revision for current Linea TokenBridge implementations is not yet established (source is null).",
+    "Emergency Brakes Safe addresses were added from docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs on 2026-08-07; cross-checked against docs.lido.fi/multisigs/emergency-brakes subsections where present.",
+    "No research.lido.fi post naming the Soneium or Unichain Emergency Brakes Safe address was found; those entries cite docs only.",
+    "BSC Emergency Brakes Safe address is listed in docs; no research.lido.fi post naming 0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f on BSC was found.",
+    "Soneium, Unichain, Lisk, and Swellchain Emergency Brakes Safes appear on docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs but have no dedicated subsection on docs.lido.fi/multisigs/emergency-brakes (Swellchain shares address 0xC2b778… with BSC; the BSC subsection is not used as a Swellchain publicRef)."
   ],
   "networks": {
     "eip155:1": {
@@ -2169,6 +2173,229 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
+      "contractId": "circuit-breaker-committee",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
+      "networkId": "eip155:1",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#11-circuitbreaker-committee",
+        "https://research.lido.fi/t/lido-v2-gateseal-committee/4561",
+        "https://research.lido.fi/t/renew-gateseal-for-the-withdrawal-queue-and-validator-exit-bus-oracle/7081"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x73b047fe6337183A454c5217241D780a932777bD",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x73b047fe6337183A454c5217241D780a932777bD",
+      "networkId": "eip155:1",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#12-emergency-brakes-ethereum",
+        "https://research.lido.fi/t/lido-on-l2-first-launches/2786",
+        "https://research.lido.fi/t/emergency-brakes-multi-sig-upgrade/2608",
+        "https://research.lido.fi/t/wsteth-deployment-on-zksync/5701/4"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x4Cf8fE0A4c2539F7EFDD2047d8A5D46F14613088",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x4Cf8fE0A4c2539F7EFDD2047d8A5D46F14613088",
+      "networkId": "eip155:10",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#13-emergency-brakes-optimism",
+        "https://research.lido.fi/t/lido-on-l2-first-launches/2786",
+        "https://research.lido.fi/t/emergency-brakes-multi-sig-upgrade/2608"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0xfDCf209A213a0b3C403d543F87E74FCbcA11de34",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0xfDCf209A213a0b3C403d543F87E74FCbcA11de34",
+      "networkId": "eip155:42161",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#14-emergency-brakes-arbitrum",
+        "https://research.lido.fi/t/lido-on-l2-first-launches/2786",
+        "https://research.lido.fi/t/emergency-brakes-multi-sig-upgrade/2608"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0x0F9A0e7071B7B21bc7a8514DA2cd251bc1FF0725",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x0F9A0e7071B7B21bc7a8514DA2cd251bc1FF0725",
+      "networkId": "eip155:8453",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#15-emergency-brakes-base",
+        "https://research.lido.fi/t/wsteth-deployment-to-base-and-ownership-acceptance-by-lido-dao/5668"
+      ]
+    },
+    {
+      "deploymentId": "eip155:324:0x0D7F0A811978B3B62CbfF4EF6149B5909EAcfE94",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x0D7F0A811978B3B62CbfF4EF6149B5909EAcfE94",
+      "networkId": "eip155:324",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#emergency-brakes-zksync",
+        "https://research.lido.fi/t/wsteth-deployment-on-zksync/5701/4"
+      ]
+    },
+    {
+      "deploymentId": "eip155:5000:0xa8579D42E34398267dE16e6eeeCdb7ED0EFF953C",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0xa8579D42E34398267dE16e6eeeCdb7ED0EFF953C",
+      "networkId": "eip155:5000",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#emergency-brakes-mantle",
+        "https://research.lido.fi/t/wsteth-deployment-on-mantle/5991"
+      ]
+    },
+    {
+      "deploymentId": "eip155:534352:0xF580753E334687C0d6b88EF563a258f048384Ee6",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0xF580753E334687C0d6b88EF563a258f048384Ee6",
+      "networkId": "eip155:534352",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#emergency-brakes-scroll",
+        "https://research.lido.fi/t/wsteth-deployment-on-scroll/6603"
+      ]
+    },
+    {
+      "deploymentId": "eip155:34443:0x244912352A639001ceCFa208cDaa7CB474c9eadE",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x244912352A639001ceCFa208cDaa7CB474c9eadE",
+      "networkId": "eip155:34443",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#emergency-brakes-mode",
+        "https://research.lido.fi/t/wsteth-deployment-on-mode/7365"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
+      "networkId": "eip155:56",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#16-emergency-brakes-binance-smart-chain-bsc"
+      ]
+    },
+    {
+      "deploymentId": "eip155:48900:0x9Bff79BF7226cB5C16d0Cca9c1dc60450feE560d",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x9Bff79BF7226cB5C16d0Cca9c1dc60450feE560d",
+      "networkId": "eip155:48900",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#emergency-brakes-zircuit",
+        "https://research.lido.fi/t/wsteth-deployment-to-zircuit-and-ownership-acceptance-by-lido-dao/8602"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1868:0x993F92e031B86b229D639463325f9d6a51609b43",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x993F92e031B86b229D639463325f9d6a51609b43",
+      "networkId": "eip155:1868",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs"
+      ]
+    },
+    {
+      "deploymentId": "eip155:130:0xac8bc65814Dd0501674f6940aff1a4Ea78Fc20eF",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0xac8bc65814Dd0501674f6940aff1a4Ea78Fc20eF",
+      "networkId": "eip155:130",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1135:0x1356C0b19c2531bBf0Dd23E585b7C7f7096EeC39",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x1356C0b19c2531bBf0Dd23E585b7C7f7096EeC39",
+      "networkId": "eip155:1135",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://research.lido.fi/t/temperature-check-wsteth-deployment-to-lisk-and-ownership-acceptance-by-lido-nec/6669"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1923:0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
+      "contractId": "emergency-brakes",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
+      "networkId": "eip155:1923",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://research.lido.fi/t/wsteth-deployment-on-swellchain/9524"
       ]
     }
   ]

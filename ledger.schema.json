@@ -248,6 +248,15 @@
             "minLength": 1
           },
           "uniqueItems": true
+        },
+        "publicRefs": {
+          "description": "Pointers to public official or near-official publication carriers (for example research.lido.fi forum posts, Snapshot/Aragon votes, or docs.lido.fi pages) that a reader can use to cross-check this deployment's address. Absence means none are recorded; presence does not establish correctness, completeness, DAO approval force, or assurance.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
         }
       },
       "allOf": [
