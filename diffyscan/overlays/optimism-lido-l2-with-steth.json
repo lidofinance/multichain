@@ -1,0 +1,27 @@
+{
+  "$schema": "./overlay.schema.json",
+  "overlayId": "optimism-lido-l2-with-steth",
+  "description": "Optimism mainnet L2 token, oracle, and bridge deployments sourced from lidofinance/lido-l2-with-steth. Cohort membership mirrors temp/diffyscan/config_samples/optimism/mainnet/optimism_mainnet_config_L2.json; explorer uses unified api.etherscan.io + chain id 10.",
+  "deploymentIds": [
+    "eip155:10:0x294ED1f214F4e0ecAE31C3Eae4F04EBB3b36C9d0",
+    "eip155:10:0x4bF0d419793d8722b8391efaD4c9cE78F460CEd3",
+    "eip155:10:0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb",
+    "eip155:10:0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334",
+    "eip155:10:0x76A50b8c7349cCDDb7578c6627e79b5d99D24138",
+    "eip155:10:0xe9b65dA5DcBe92f1b397991C464FF568Dc98D761",
+    "eip155:10:0x8E01013243a96601a86eb3153F0d9Fa4fbFb6957",
+    "eip155:10:0x2734602C0CEbbA68662552CacD5553370B283E2E"
+  ],
+  "explorer_hostname": "api.etherscan.io",
+  "explorer_token_env_var": "ETHERSCAN_EXPLORER_TOKEN",
+  "github_repo": {
+    "relative_root": ""
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": {
+      "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+      "commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+      "relative_root": "contracts"
+    }
+  }
+}
