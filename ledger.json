@@ -1,0 +1,2404 @@
+{
+  "$schema": "./ledger.schema.json",
+  "schemaVersion": "0.2.0",
+  "updatedAt": "2026-08-07",
+  "knownGaps": [
+    "Linea L1/L2 token-bridge proxy links were refreshed on 2026-08-06.",
+    "Source revision for current Linea TokenBridge implementations is not yet established (source is null).",
+    "Emergency Brakes Safe addresses were added from docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs on 2026-08-07; cross-checked against docs.lido.fi/multisigs/emergency-brakes subsections where present.",
+    "No research.lido.fi post naming the Soneium or Unichain Emergency Brakes Safe address was found; those entries cite docs only.",
+    "BSC Emergency Brakes Safe address is listed in docs; no research.lido.fi post naming 0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f on BSC was found.",
+    "Soneium, Unichain, Lisk, and Swellchain Emergency Brakes Safes appear on docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs but have no dedicated subsection on docs.lido.fi/multisigs/emergency-brakes (Swellchain shares address 0xC2b778… with BSC; the BSC subsection is not used as a Swellchain publicRef).",
+    "The 15 Safe multisig entries record contractName 'Safe' and deploymentKind 'standalone'; neither has been established from the bytecode at those addresses. A Safe deployed through SafeProxyFactory holds GnosisSafeProxy (v1.3.0) or SafeProxy (v1.4.x) bytecode and delegates to the Safe singleton at a different address, which would make these entries proxies. Correcting them requires reading the deployed bytecode and the singleton address per network.",
+    "Chainlink CCIP Direct Staking contracts described in docs/ui-ds-overview.md are absent from this ledger even though their networks are already in the networks map: CustomSender proxies 0x328de900860816d29D1367F6903a24D8ed40C997 (Base, Optimism, Linea) and 0x72229141D4B016682d3618ECe47c046f30Da4AD1 (Arbitrum), fast-staking oracle pools 0x6F357d53d6bE3238180316BA5F8f11467e164588 and 0x9c27c304cFdf0D9177002ff186A4aE0A5489Aace, and price oracle 0x301cBCDA894c932E9EDa3Cf8878f78304e69E367. Their deploymentKind, proxy links, and source provenance are not yet established."
+  ],
+  "networks": {
+    "eip155:1": {
+      "networkName": "ethereum-mainnet",
+      "chainFamily": "ethereum",
+      "environment": "mainnet"
+    },
+    "eip155:10": {
+      "networkName": "optimism-mainnet",
+      "chainFamily": "op-stack",
+      "environment": "mainnet"
+    },
+    "eip155:56": {
+      "networkName": "bnb-smart-chain-mainnet",
+      "chainFamily": "bnb-smart-chain",
+      "environment": "mainnet"
+    },
+    "eip155:130": {
+      "networkName": "unichain-mainnet",
+      "chainFamily": "op-stack",
+      "environment": "mainnet"
+    },
+    "eip155:137": {
+      "networkName": "polygon-pos",
+      "chainFamily": "polygon",
+      "environment": "mainnet"
+    },
+    "eip155:324": {
+      "networkName": "zksync-era",
+      "chainFamily": "zksync",
+      "environment": "mainnet"
+    },
+    "eip155:1135": {
+      "networkName": "lisk-mainnet",
+      "chainFamily": "op-stack",
+      "environment": "mainnet"
+    },
+    "eip155:1868": {
+      "networkName": "soneium-mainnet",
+      "chainFamily": "op-stack",
+      "environment": "mainnet"
+    },
+    "eip155:1923": {
+      "networkName": "swellchain-mainnet",
+      "chainFamily": "op-stack",
+      "environment": "mainnet"
+    },
+    "eip155:5000": {
+      "networkName": "mantle-mainnet",
+      "chainFamily": "mantle",
+      "environment": "mainnet"
+    },
+    "eip155:8453": {
+      "networkName": "base-mainnet",
+      "chainFamily": "op-stack",
+      "environment": "mainnet"
+    },
+    "eip155:34443": {
+      "networkName": "mode-mainnet",
+      "chainFamily": "op-stack",
+      "environment": "mainnet"
+    },
+    "eip155:42161": {
+      "networkName": "arbitrum-one",
+      "chainFamily": "arbitrum",
+      "environment": "mainnet"
+    },
+    "eip155:48900": {
+      "networkName": "zircuit-mainnet",
+      "chainFamily": "op-stack",
+      "environment": "mainnet"
+    },
+    "eip155:59144": {
+      "networkName": "linea-mainnet",
+      "chainFamily": "linea",
+      "environment": "mainnet"
+    },
+    "eip155:534352": {
+      "networkName": "scroll-mainnet",
+      "chainFamily": "scroll",
+      "environment": "mainnet"
+    },
+    "eip155:560048": {
+      "networkName": "ethereum-hoodi",
+      "chainFamily": "ethereum",
+      "environment": "testnet"
+    }
+  },
+  "deployments": [
+    {
+      "deploymentId": "eip155:1:0x0F25c1DC2a9922304f2eac71DCa9B07E310e8E5a",
+      "contractId": "arbitrum-ethereum-l1-token-gateway",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x0F25c1DC2a9922304f2eac71DCa9B07E310e8E5a",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:1:0xc4E3ff0b5B106f88Fc64c43031BE8b076ee9F21C"
+      },
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "c6ffd32fe2cbc3e0b5248f48804291c913275e2e",
+        "path": "contracts/proxy/OssifiableProxy.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xc4E3ff0b5B106f88Fc64c43031BE8b076ee9F21C",
+      "contractId": "arbitrum-ethereum-l1-token-gateway",
+      "deploymentKind": "implementation",
+      "contractName": "L1ERC20TokenGateway",
+      "address": "0xc4E3ff0b5B106f88Fc64c43031BE8b076ee9F21C",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "c6ffd32fe2cbc3e0b5248f48804291c913275e2e",
+        "path": "contracts/arbitrum/L1ERC20TokenGateway.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0x5979D7b546E38E414F7E9822514be443A4800529",
+      "contractId": "arbitrum-arbitrum-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x5979D7b546E38E414F7E9822514be443A4800529",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:42161:0x0fBcbaEA96Ce0cF7Ee00A8c19c3ab6f5Dc8E1921"
+      },
+      "networkId": "eip155:42161",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "c6ffd32fe2cbc3e0b5248f48804291c913275e2e",
+        "path": "contracts/proxy/OssifiableProxy.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0x0fBcbaEA96Ce0cF7Ee00A8c19c3ab6f5Dc8E1921",
+      "contractId": "arbitrum-arbitrum-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20Bridged",
+      "address": "0x0fBcbaEA96Ce0cF7Ee00A8c19c3ab6f5Dc8E1921",
+      "networkId": "eip155:42161",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "c6ffd32fe2cbc3e0b5248f48804291c913275e2e",
+        "path": "contracts/token/ERC20Bridged.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0x07D4692291B9E30E326fd31706f686f83f331B82",
+      "contractId": "arbitrum-arbitrum-l2-token-gateway",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x07D4692291B9E30E326fd31706f686f83f331B82",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:42161:0xe75886DE20dF66827e321EfdB88726e6Baa4b0A7"
+      },
+      "networkId": "eip155:42161",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "c6ffd32fe2cbc3e0b5248f48804291c913275e2e",
+        "path": "contracts/proxy/OssifiableProxy.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0xe75886DE20dF66827e321EfdB88726e6Baa4b0A7",
+      "contractId": "arbitrum-arbitrum-l2-token-gateway",
+      "deploymentKind": "implementation",
+      "contractName": "L2ERC20TokenGateway",
+      "address": "0xe75886DE20dF66827e321EfdB88726e6Baa4b0A7",
+      "networkId": "eip155:42161",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "c6ffd32fe2cbc3e0b5248f48804291c913275e2e",
+        "path": "contracts/arbitrum/L2ERC20TokenGateway.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0x1dcA41859Cd23b526CBe74dA8F48aC96e14B1A29",
+      "contractId": "arbitrum-arbitrum-governance-bridge-executor",
+      "deploymentKind": "standalone",
+      "contractName": "ArbitrumBridgeExecutor",
+      "address": "0x1dcA41859Cd23b526CBe74dA8F48aC96e14B1A29",
+      "networkId": "eip155:42161",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "commit": "659e236b6592da11943c531fe6947f4858803f96",
+        "path": "contracts/bridges/ArbitrumBridgeExecutor.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x25e35855783bec3E49355a29e110f02Ed8b05ba9",
+      "contractId": "optimism-ethereum-token-rate-notifier-archive",
+      "deploymentKind": "standalone",
+      "contractName": "TokenRateNotifier",
+      "address": "0x25e35855783bec3E49355a29e110f02Ed8b05ba9",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/core",
+        "commit": "33f2f59156697aae93cdea2d0984de7be347e3af"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20TokenRateNotifier%20Security%20Audit%20Report%2008-2026.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xbe05d12Fd10919F1881125006523452F6aFF791b",
+      "contractId": "optimism-ethereum-token-rate-notifier",
+      "deploymentKind": "standalone",
+      "contractName": "TokenRateNotifier",
+      "address": "0xbe05d12Fd10919F1881125006523452F6aFF791b",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/core",
+        "commit": "dc9066b6f9b5c6c3b65f4a4aac338427198f0e98"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20TokenRateNotifier%20Security%20Audit%20Report%2008-2026.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xd54c1c6413caac3477AC14b2a80D5398E3c32FfE",
+      "contractId": "optimism-ethereum-token-rate-pusher",
+      "deploymentKind": "standalone",
+      "contractName": "OpStackTokenRatePusher",
+      "address": "0xd54c1c6413caac3477AC14b2a80D5398E3c32FfE",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x76943C0D61395d8F2edF9060e1533529cAe05dE6",
+      "contractId": "optimism-ethereum-l1-token-bridge",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x76943C0D61395d8F2edF9060e1533529cAe05dE6",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:1:0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4"
+      },
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4",
+      "contractId": "optimism-ethereum-l1-token-bridge",
+      "deploymentKind": "implementation",
+      "contractName": "L1LidoTokensBridge",
+      "address": "0x168Cfea1Ad879d7032B3936eF3b0E90790b6B6D4",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb",
+      "contractId": "optimism-optimism-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:10:0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334"
+      },
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334",
+      "contractId": "optimism-optimism-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20BridgedPermit",
+      "address": "0xFe57042De76c8D6B1DF0E9E2047329fd3e2B7334",
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x76A50b8c7349cCDDb7578c6627e79b5d99D24138",
+      "contractId": "optimism-optimism-steth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x76A50b8c7349cCDDb7578c6627e79b5d99D24138",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:10:0xe9b65dA5DcBe92f1b397991C464FF568Dc98D761"
+      },
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0xe9b65dA5DcBe92f1b397991C464FF568Dc98D761",
+      "contractId": "optimism-optimism-steth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20RebasableBridgedPermit",
+      "address": "0xe9b65dA5DcBe92f1b397991C464FF568Dc98D761",
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x294ED1f214F4e0ecAE31C3Eae4F04EBB3b36C9d0",
+      "contractId": "optimism-optimism-token-rate-oracle",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x294ED1f214F4e0ecAE31C3Eae4F04EBB3b36C9d0",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:10:0x4bF0d419793d8722b8391efaD4c9cE78F460CEd3"
+      },
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x4bF0d419793d8722b8391efaD4c9cE78F460CEd3",
+      "contractId": "optimism-optimism-token-rate-oracle",
+      "deploymentKind": "implementation",
+      "contractName": "TokenRateOracle",
+      "address": "0x4bF0d419793d8722b8391efaD4c9cE78F460CEd3",
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x8E01013243a96601a86eb3153F0d9Fa4fbFb6957",
+      "contractId": "optimism-optimism-l2-token-bridge",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x8E01013243a96601a86eb3153F0d9Fa4fbFb6957",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:10:0x2734602C0CEbbA68662552CacD5553370B283E2E"
+      },
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x2734602C0CEbbA68662552CacD5553370B283E2E",
+      "contractId": "optimism-optimism-l2-token-bridge",
+      "deploymentKind": "implementation",
+      "contractName": "L2ERC20ExtendedTokensBridge",
+      "address": "0x2734602C0CEbbA68662552CacD5553370B283E2E",
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0xefa0db536d2c8089685630fafe88cf7805966fc3",
+      "contractId": "optimism-optimism-governance-bridge-executor",
+      "deploymentKind": "standalone",
+      "contractName": "OptimismBridgeExecutor",
+      "address": "0xefa0db536d2c8089685630fafe88cf7805966fc3",
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "commit": "8fa25b0080dd3dcc2390313631aea6796a12c9d8"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x9de443AdC5A411E83F1878Ef24C3F52C61571e72",
+      "contractId": "base-ethereum-l1-token-bridge",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x9de443AdC5A411E83F1878Ef24C3F52C61571e72",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:1:0x313819736457910ac1dd21a712a37f3d7595645a"
+      },
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+        "commit": "082e7eb59de63bd376b30886568813408d04f00b"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x313819736457910ac1dd21a712a37f3d7595645a",
+      "contractId": "base-ethereum-l1-token-bridge",
+      "deploymentKind": "implementation",
+      "contractName": "L1ERC20TokenBridge",
+      "address": "0x313819736457910ac1dd21a712a37f3d7595645a",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+        "commit": "082e7eb59de63bd376b30886568813408d04f00b"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
+      "contractId": "base-base-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:8453:0x69ce2505ce515c0203160450157366f927243309"
+      },
+      "networkId": "eip155:8453",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+        "commit": "082e7eb59de63bd376b30886568813408d04f00b"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0x69ce2505ce515c0203160450157366f927243309",
+      "contractId": "base-base-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20Bridged",
+      "address": "0x69ce2505ce515c0203160450157366f927243309",
+      "networkId": "eip155:8453",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+        "commit": "082e7eb59de63bd376b30886568813408d04f00b"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0xac9D11cD4D7eF6e54F14643a393F68Ca014287AB",
+      "contractId": "base-base-l2-token-bridge",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0xac9D11cD4D7eF6e54F14643a393F68Ca014287AB",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:8453:0x7063ef4f2887586e96096d3e94c9b6961c50a9a2"
+      },
+      "networkId": "eip155:8453",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+        "commit": "082e7eb59de63bd376b30886568813408d04f00b"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0x7063ef4f2887586e96096d3e94c9b6961c50a9a2",
+      "contractId": "base-base-l2-token-bridge",
+      "deploymentKind": "implementation",
+      "contractName": "L2ERC20TokenBridge",
+      "address": "0x7063ef4f2887586e96096d3e94c9b6961c50a9a2",
+      "networkId": "eip155:8453",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+        "commit": "082e7eb59de63bd376b30886568813408d04f00b"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0x0E37599436974a25dDeEdF795C848d30Af46eaCF",
+      "contractId": "base-base-governance-bridge-executor",
+      "deploymentKind": "standalone",
+      "contractName": "OptimismBridgeExecutor",
+      "address": "0x0E37599436974a25dDeEdF795C848d30Af46eaCF",
+      "networkId": "eip155:8453",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "commit": "659e236b6592da11943c531fe6947f4858803f96",
+        "path": "contracts/bridges/OptimismBridgeExecutor.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x051f1d88f0af5763fb888ec4378b4d8b29ea3319",
+      "contractId": "linea-ethereum-l1-token-bridge",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0x051f1d88f0af5763fb888ec4378b4d8b29ea3319",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:1:0xF0e003F0dE2d583Ae28FA8cBF66aa096CdAce3ff",
+        "adminDeploymentId": "eip155:1:0xF5058616517C068C7b8c7EbC69FF636Ade9066d6"
+      },
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/linea-contracts-fix",
+        "commit": "0949c4096664e613f73ed3ce51c32f97fc56cdef"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x2B6A2F8880220a66DfB9059FCB76F7dB54104a34",
+      "contractId": "linea-ethereum-l1-token-bridge-archive",
+      "deploymentKind": "implementation",
+      "contractName": "TokenBridge",
+      "address": "0x2B6A2F8880220a66DfB9059FCB76F7dB54104a34",
+      "networkId": "eip155:1",
+      "source": null,
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xF0e003F0dE2d583Ae28FA8cBF66aa096CdAce3ff",
+      "contractId": "linea-ethereum-l1-token-bridge",
+      "deploymentKind": "implementation",
+      "contractName": "TokenBridge",
+      "address": "0xF0e003F0dE2d583Ae28FA8cBF66aa096CdAce3ff",
+      "networkId": "eip155:1",
+      "source": null,
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xF5058616517C068C7b8c7EbC69FF636Ade9066d6",
+      "contractId": "linea-ethereum-l1-token-bridge-admin",
+      "deploymentKind": "proxy-admin",
+      "contractName": "ProxyAdmin",
+      "address": "0xF5058616517C068C7b8c7EbC69FF636Ade9066d6",
+      "networkId": "eip155:1",
+      "source": null,
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F",
+      "contractId": "linea-linea-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:59144:0xc0583e2F5930EDE5Fab9D57bAC4169878730B010",
+        "adminDeploymentId": "eip155:59144:0xF951d7592e03eDB0Bab3D533935e678Ce64Eb927"
+      },
+      "networkId": "eip155:59144",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/linea-contracts-fix",
+        "commit": "0949c4096664e613f73ed3ce51c32f97fc56cdef"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lidea-2023-12-Diligence-Custom-Bridged-Token-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0xc0583e2F5930EDE5Fab9D57bAC4169878730B010",
+      "contractId": "linea-linea-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "CustomBridgedToken",
+      "address": "0xc0583e2F5930EDE5Fab9D57bAC4169878730B010",
+      "networkId": "eip155:59144",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/linea-contracts",
+        "commit": "3cf85529fd4539eb06ba998030c37e47f98c528a"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lidea-2023-12-Diligence-Custom-Bridged-Token-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0xF951d7592e03eDB0Bab3D533935e678Ce64Eb927",
+      "contractId": "linea-linea-wsteth-token-admin",
+      "deploymentKind": "proxy-admin",
+      "contractName": "ProxyAdmin",
+      "address": "0xF951d7592e03eDB0Bab3D533935e678Ce64Eb927",
+      "networkId": "eip155:59144",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/linea-contracts-fix",
+        "commit": "0949c4096664e613f73ed3ce51c32f97fc56cdef"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lidea-2023-12-Diligence-Custom-Bridged-Token-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0x353012dc4a9a6cf55c941badc267f82004a8ceb9",
+      "contractId": "linea-linea-l2-token-bridge",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0x353012dc4a9a6cf55c941badc267f82004a8ceb9",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:59144:0x4a496167F187A97379e763f693A499cE1182848b",
+        "adminDeploymentId": "eip155:59144:0x1e1f6f22f97b4a7522d8b62e983953639239774e"
+      },
+      "networkId": "eip155:59144",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/linea-contracts-fix",
+        "commit": "0949c4096664e613f73ed3ce51c32f97fc56cdef"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0xd90ed3d4f9d11262d3d346a4369058d5b3777137",
+      "contractId": "linea-linea-l2-token-bridge-archive",
+      "deploymentKind": "implementation",
+      "contractName": "TokenBridge",
+      "address": "0xd90ed3d4f9d11262d3d346a4369058d5b3777137",
+      "networkId": "eip155:59144",
+      "source": null,
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0x4a496167F187A97379e763f693A499cE1182848b",
+      "contractId": "linea-linea-l2-token-bridge",
+      "deploymentKind": "implementation",
+      "contractName": "TokenBridge",
+      "address": "0x4a496167F187A97379e763f693A499cE1182848b",
+      "networkId": "eip155:59144",
+      "source": null,
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0x1e1f6f22f97b4a7522d8b62e983953639239774e",
+      "contractId": "linea-linea-l2-token-bridge-admin",
+      "deploymentKind": "proxy-admin",
+      "contractName": "ProxyAdmin",
+      "address": "0x1e1f6f22f97b4a7522d8b62e983953639239774e",
+      "networkId": "eip155:59144",
+      "source": null,
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0x74Be82F00CC867614803ffd7f36A2a4aF0405670",
+      "contractId": "linea-linea-governance-bridge-executor",
+      "deploymentKind": "standalone",
+      "contractName": "LineaBridgeExecutor",
+      "address": "0x74Be82F00CC867614803ffd7f36A2a4aF0405670",
+      "networkId": "eip155:59144",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "commit": "7d4fd35e92688d7aa56ae2f94872f851bacae50c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-10-Diligence-Cross-Chain-Governance-Executor-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x93559892D3C7F66DE4570132d68b69BD3c369A7C",
+      "contractId": "bsc-ethereum-governance-cross-chain-controller",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0x93559892D3C7F66DE4570132d68b69BD3c369A7C",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:1:0x5f456f29238F8d63b3ae69bCEF9e9d4E953f2c63",
+        "adminDeploymentId": "eip155:1:0xADD673dC6A655AFD6f38fB88301028fA31A6fDeE"
+      },
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x5f456f29238F8d63b3ae69bCEF9e9d4E953f2c63",
+      "contractId": "bsc-ethereum-governance-cross-chain-controller",
+      "deploymentKind": "implementation",
+      "contractName": "CrossChainController",
+      "address": "0x5f456f29238F8d63b3ae69bCEF9e9d4E953f2c63",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xADD673dC6A655AFD6f38fB88301028fA31A6fDeE",
+      "contractId": "bsc-ethereum-governance-cross-chain-controller-admin",
+      "deploymentKind": "proxy-admin",
+      "contractName": "ProxyAdmin",
+      "address": "0xADD673dC6A655AFD6f38fB88301028fA31A6fDeE",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x29D4fA5FCC282ba2788A281860770c166F597d5d",
+      "contractId": "bsc-ethereum-governance-ccip-adapter",
+      "deploymentKind": "standalone",
+      "contractName": "CCIPAdapter",
+      "address": "0x29D4fA5FCC282ba2788A281860770c166F597d5d",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x8d374DF3de08b971777Aa091fA68BCE109b3a7F3",
+      "contractId": "bsc-ethereum-governance-hyperlane-adapter",
+      "deploymentKind": "standalone",
+      "contractName": "HyperLaneAdapter",
+      "address": "0x8d374DF3de08b971777Aa091fA68BCE109b3a7F3",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x742650E0441Be8503682965d601AD0Ba1fB54411",
+      "contractId": "bsc-ethereum-governance-layerzero-adapter",
+      "deploymentKind": "standalone",
+      "contractName": "LayerZeroAdapter",
+      "address": "0x742650E0441Be8503682965d601AD0Ba1fB54411",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xEDc0D2cb2289BBa1587424dd42bDD1ca7eAbDF17",
+      "contractId": "bsc-ethereum-governance-wormhole-adapter",
+      "deploymentKind": "standalone",
+      "contractName": "WormholeAdapter",
+      "address": "0xEDc0D2cb2289BBa1587424dd42bDD1ca7eAbDF17",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xb948a93827d68a82F6513Ad178964Da487fe2BD9",
+      "contractId": "bsc-ethereum-wsteth-ntt-manager",
+      "deploymentKind": "proxy",
+      "contractName": "ERC1967Proxy",
+      "address": "0xb948a93827d68a82F6513Ad178964Da487fe2BD9",
+      "proxy": {
+        "proxyKind": "erc1967",
+        "implementationDeploymentId": "eip155:1:0xc6c1f091450b54af3280cfed790047431bc99bb1"
+      },
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-native-token-transfers",
+        "commit": "0d37b0f4975084492c72ca881c1218d6e1aae9e3",
+        "path": "evm"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xc6c1f091450b54af3280cfed790047431bc99bb1",
+      "contractId": "bsc-ethereum-wsteth-ntt-manager",
+      "deploymentKind": "implementation",
+      "contractName": "NttManager",
+      "address": "0xc6c1f091450b54af3280cfed790047431bc99bb1",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-native-token-transfers",
+        "commit": "0d37b0f4975084492c72ca881c1218d6e1aae9e3",
+        "path": "evm"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xA1ACC1e6edaB281Febd91E3515093F1DE81F25c0",
+      "contractId": "bsc-ethereum-wsteth-wormhole-transceiver",
+      "deploymentKind": "proxy",
+      "contractName": "ERC1967Proxy",
+      "address": "0xA1ACC1e6edaB281Febd91E3515093F1DE81F25c0",
+      "proxy": {
+        "proxyKind": "erc1967",
+        "implementationDeploymentId": "eip155:1:0x3CE1230F39302e62b67Bbf2316558F79C25424A2"
+      },
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-native-token-transfers",
+        "commit": "0d37b0f4975084492c72ca881c1218d6e1aae9e3",
+        "path": "evm"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x3CE1230F39302e62b67Bbf2316558F79C25424A2",
+      "contractId": "bsc-ethereum-wsteth-wormhole-transceiver",
+      "deploymentKind": "implementation",
+      "contractName": "WormholeTransceiver",
+      "address": "0x3CE1230F39302e62b67Bbf2316558F79C25424A2",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-native-token-transfers",
+        "commit": "0d37b0f4975084492c72ca881c1218d6e1aae9e3",
+        "path": "evm"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x723AEAD29acee7E9281C32D11eA4ed0070c41B13",
+      "contractId": "bsc-ethereum-wsteth-axelar-transceiver",
+      "deploymentKind": "proxy",
+      "contractName": "ERC1967Proxy",
+      "address": "0x723AEAD29acee7E9281C32D11eA4ed0070c41B13",
+      "proxy": {
+        "proxyKind": "erc1967",
+        "implementationDeploymentId": "eip155:1:0x87fc4B27385Bb4E69A40027931229d74EF4d1943"
+      },
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-wormhole-axelar-wsteth",
+        "commit": "eae15a0dd4a55481c8bf776c250d86bf0529a061"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x87fc4B27385Bb4E69A40027931229d74EF4d1943",
+      "contractId": "bsc-ethereum-wsteth-axelar-transceiver",
+      "deploymentKind": "implementation",
+      "contractName": "AxelarTransceiver",
+      "address": "0x87fc4B27385Bb4E69A40027931229d74EF4d1943",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-wormhole-axelar-wsteth",
+        "commit": "eae15a0dd4a55481c8bf776c250d86bf0529a061",
+        "path": "src/axelar/AxelarTransceiver.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xf0396a8077eda579f657B5E6F3c3F5e8EE81972b",
+      "contractId": "bsc-ethereum-wsteth-ntt-wormhole-transceiver-structs",
+      "deploymentKind": "library",
+      "contractName": "TransceiverStructs",
+      "address": "0xf0396a8077eda579f657B5E6F3c3F5e8EE81972b",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-native-token-transfers",
+        "commit": "0d37b0f4975084492c72ca881c1218d6e1aae9e3",
+        "path": "evm"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xa12bc993d8144404a8c8c812816048275a066ced",
+      "contractId": "bsc-ethereum-wsteth-axelar-transceiver-structs",
+      "deploymentKind": "library",
+      "contractName": "TransceiverStructs",
+      "address": "0xa12bc993d8144404a8c8c812816048275a066ced",
+      "networkId": "eip155:1",
+      "source": null,
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0x40C4464fCa8caCd550C33B39d674fC257966022F",
+      "contractId": "bsc-bsc-governance-cross-chain-controller",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0x40C4464fCa8caCd550C33B39d674fC257966022F",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:56:0xB7Ba81dd07885ae7BFD18452B36D3404d7EDD8Ee",
+        "adminDeploymentId": "eip155:56:0x29E6817db339795766244B96aEf5Dc534a98518d"
+      },
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0xB7Ba81dd07885ae7BFD18452B36D3404d7EDD8Ee",
+      "contractId": "bsc-bsc-governance-cross-chain-controller",
+      "deploymentKind": "implementation",
+      "contractName": "CrossChainController",
+      "address": "0xB7Ba81dd07885ae7BFD18452B36D3404d7EDD8Ee",
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0x29E6817db339795766244B96aEf5Dc534a98518d",
+      "contractId": "bsc-bsc-governance-cross-chain-controller-admin",
+      "deploymentKind": "proxy-admin",
+      "contractName": "ProxyAdmin",
+      "address": "0x29E6817db339795766244B96aEf5Dc534a98518d",
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0x8E5175D17f74d1D512de59b2f5d5A5d8177A123d",
+      "contractId": "bsc-bsc-governance-cross-chain-executor",
+      "deploymentKind": "standalone",
+      "contractName": "CrossChainExecutor",
+      "address": "0x8E5175D17f74d1D512de59b2f5d5A5d8177A123d",
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0x15AD245133568c2498c7dA0cf2204A03b0e9b98A",
+      "contractId": "bsc-bsc-governance-ccip-adapter",
+      "deploymentKind": "standalone",
+      "contractName": "CCIPAdapter",
+      "address": "0x15AD245133568c2498c7dA0cf2204A03b0e9b98A",
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0xCd867B440c726461e5fAbe8d3a050b2f8701C230",
+      "contractId": "bsc-bsc-governance-hyperlane-adapter",
+      "deploymentKind": "standalone",
+      "contractName": "HyperLaneAdapter",
+      "address": "0xCd867B440c726461e5fAbe8d3a050b2f8701C230",
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0xc934433f4c433Cf80DE6fB65fd70C7a650D8a408",
+      "contractId": "bsc-bsc-governance-layerzero-adapter",
+      "deploymentKind": "standalone",
+      "contractName": "LayerZeroAdapter",
+      "address": "0xc934433f4c433Cf80DE6fB65fd70C7a650D8a408",
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0xBb1E43408BbF2C767Ff3Bd5bBC34E183CC1Ef119",
+      "contractId": "bsc-bsc-governance-wormhole-adapter",
+      "deploymentKind": "standalone",
+      "contractName": "WormholeAdapter",
+      "address": "0xBb1E43408BbF2C767Ff3Bd5bBC34E183CC1Ef119",
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/aave-delivery-infrastructure",
+        "commit": "41c81975c2ce5b430b283e6f4aab922c3bde1555"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0x26c5e01524d2E6280A48F2c50fF6De7e52E9611C",
+      "contractId": "bsc-bsc-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "ERC1967Proxy",
+      "address": "0x26c5e01524d2E6280A48F2c50fF6De7e52E9611C",
+      "proxy": {
+        "proxyKind": "erc1967",
+        "implementationDeploymentId": "eip155:56:0x451d447776778870bdfe76d031689703aba73ee5"
+      },
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-wormhole-axelar-wsteth",
+        "commit": "eae15a0dd4a55481c8bf776c250d86bf0529a061"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0x451d447776778870bdfe76d031689703aba73ee5",
+      "contractId": "bsc-bsc-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "WstEthL2Token",
+      "address": "0x451d447776778870bdfe76d031689703aba73ee5",
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-wormhole-axelar-wsteth",
+        "commit": "eae15a0dd4a55481c8bf776c250d86bf0529a061"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0x6981F5621691CBfE3DdD524dE71076b79F0A0278",
+      "contractId": "bsc-bsc-wsteth-ntt-manager",
+      "deploymentKind": "proxy",
+      "contractName": "ERC1967Proxy",
+      "address": "0x6981F5621691CBfE3DdD524dE71076b79F0A0278",
+      "proxy": {
+        "proxyKind": "erc1967",
+        "implementationDeploymentId": "eip155:56:0xe82c2a5846cfb6d8683d6b636719e7aa61486838"
+      },
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-native-token-transfers",
+        "commit": "0d37b0f4975084492c72ca881c1218d6e1aae9e3",
+        "path": "evm"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0xe82c2a5846cfb6d8683d6b636719e7aa61486838",
+      "contractId": "bsc-bsc-wsteth-ntt-manager",
+      "deploymentKind": "implementation",
+      "contractName": "NttManager",
+      "address": "0xe82c2a5846cfb6d8683d6b636719e7aa61486838",
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-native-token-transfers",
+        "commit": "0d37b0f4975084492c72ca881c1218d6e1aae9e3",
+        "path": "evm"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0xbe3F7e06872E0dF6CD7FF35B7aa4Bb1446DC9986",
+      "contractId": "bsc-bsc-wsteth-wormhole-transceiver",
+      "deploymentKind": "proxy",
+      "contractName": "ERC1967Proxy",
+      "address": "0xbe3F7e06872E0dF6CD7FF35B7aa4Bb1446DC9986",
+      "proxy": {
+        "proxyKind": "erc1967",
+        "implementationDeploymentId": "eip155:56:0xb948a93827d68a82F6513Ad178964Da487fe2BD9"
+      },
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-native-token-transfers",
+        "commit": "0d37b0f4975084492c72ca881c1218d6e1aae9e3",
+        "path": "evm"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0xb948a93827d68a82F6513Ad178964Da487fe2BD9",
+      "contractId": "bsc-bsc-wsteth-wormhole-transceiver",
+      "deploymentKind": "implementation",
+      "contractName": "WormholeTransceiver",
+      "address": "0xb948a93827d68a82F6513Ad178964Da487fe2BD9",
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-native-token-transfers",
+        "commit": "0d37b0f4975084492c72ca881c1218d6e1aae9e3",
+        "path": "evm"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0x723AEAD29acee7E9281C32D11eA4ed0070c41B13",
+      "contractId": "bsc-bsc-wsteth-axelar-transceiver",
+      "deploymentKind": "proxy",
+      "contractName": "ERC1967Proxy",
+      "address": "0x723AEAD29acee7E9281C32D11eA4ed0070c41B13",
+      "proxy": {
+        "proxyKind": "erc1967",
+        "implementationDeploymentId": "eip155:56:0xA1eBb6A4b856dF8bf6c3aCa88a9115a9ab3b2E02"
+      },
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-wormhole-axelar-wsteth",
+        "commit": "eae15a0dd4a55481c8bf776c250d86bf0529a061"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0xA1eBb6A4b856dF8bf6c3aCa88a9115a9ab3b2E02",
+      "contractId": "bsc-bsc-wsteth-axelar-transceiver",
+      "deploymentKind": "implementation",
+      "contractName": "AxelarTransceiver",
+      "address": "0xA1eBb6A4b856dF8bf6c3aCa88a9115a9ab3b2E02",
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-wormhole-axelar-wsteth",
+        "commit": "eae15a0dd4a55481c8bf776c250d86bf0529a061",
+        "path": "src/axelar/AxelarTransceiver.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0xf0396a8077eda579f657B5E6F3c3F5e8EE81972b",
+      "contractId": "bsc-bsc-wsteth-ntt-wormhole-transceiver-structs",
+      "deploymentKind": "library",
+      "contractName": "TransceiverStructs",
+      "address": "0xf0396a8077eda579f657B5E6F3c3F5e8EE81972b",
+      "networkId": "eip155:56",
+      "source": {
+        "repositoryUrl": "https://github.com/wormhole-foundation/example-native-token-transfers",
+        "commit": "0d37b0f4975084492c72ca881c1218d6e1aae9e3",
+        "path": "evm"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0x27a3daf3b243104e9b0afae6b56026a416b852c9",
+      "contractId": "bsc-bsc-wsteth-axelar-transceiver-structs",
+      "deploymentKind": "library",
+      "contractName": "TransceiverStructs",
+      "address": "0x27a3daf3b243104e9b0afae6b56026a416b852c9",
+      "networkId": "eip155:56",
+      "source": null,
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/bsc/Lido-wstETH-on-BNB-Deployment-Verification-Report-remediated.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x3F9600439Ad97fC6f55C2AC7C118f8Fd0595eB74",
+      "contractId": "unichain-ethereum-token-rate-pusher",
+      "deploymentKind": "standalone",
+      "contractName": "OpStackTokenRatePusher",
+      "address": "0x3F9600439Ad97fC6f55C2AC7C118f8Fd0595eB74",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x755610f5Be536Ad7afBAa7c10F3E938Ea3aa1877",
+      "contractId": "unichain-ethereum-l1-token-bridge",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x755610f5Be536Ad7afBAa7c10F3E938Ea3aa1877",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:1:0x6078232C54d956c901620fa4590e0F7E37c2B82f"
+      },
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x6078232C54d956c901620fa4590e0F7E37c2B82f",
+      "contractId": "unichain-ethereum-l1-token-bridge",
+      "deploymentKind": "implementation",
+      "contractName": "L1LidoTokensBridge",
+      "address": "0x6078232C54d956c901620fa4590e0F7E37c2B82f",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:130:0xc02fE7317D4eb8753a02c35fe019786854A92001",
+      "contractId": "unichain-unichain-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0xc02fE7317D4eb8753a02c35fe019786854A92001",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:130:0xB5CF096A406C1D5297D2493073168F44EB4a1A1d"
+      },
+      "networkId": "eip155:130",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:130:0xB5CF096A406C1D5297D2493073168F44EB4a1A1d",
+      "contractId": "unichain-unichain-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20BridgedPermit",
+      "address": "0xB5CF096A406C1D5297D2493073168F44EB4a1A1d",
+      "networkId": "eip155:130",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:130:0x81f2508AAC59757EF7425DDc9717AB5c2AA0A84F",
+      "contractId": "unichain-unichain-steth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x81f2508AAC59757EF7425DDc9717AB5c2AA0A84F",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:130:0x5A007D6E37633FB297b82c074b94Bb29546BEbc3"
+      },
+      "networkId": "eip155:130",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:130:0x5A007D6E37633FB297b82c074b94Bb29546BEbc3",
+      "contractId": "unichain-unichain-steth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20RebasableBridgedPermit",
+      "address": "0x5A007D6E37633FB297b82c074b94Bb29546BEbc3",
+      "networkId": "eip155:130",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:130:0xD835fAC9080396CCE95bDf9EcC7cc27Bab12c9f8",
+      "contractId": "unichain-unichain-token-rate-oracle",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0xD835fAC9080396CCE95bDf9EcC7cc27Bab12c9f8",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:130:0x537A7F9D551da3C2800cB11ca17f2946D21029AF"
+      },
+      "networkId": "eip155:130",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:130:0x537A7F9D551da3C2800cB11ca17f2946D21029AF",
+      "contractId": "unichain-unichain-token-rate-oracle",
+      "deploymentKind": "implementation",
+      "contractName": "TokenRateOracle",
+      "address": "0x537A7F9D551da3C2800cB11ca17f2946D21029AF",
+      "networkId": "eip155:130",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:130:0x1A513e9B6434a12C7bB5B9AF3B21963308DEE372",
+      "contractId": "unichain-unichain-l2-token-bridge",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x1A513e9B6434a12C7bB5B9AF3B21963308DEE372",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:130:0x332CA368dd09AD309c51dC6350730e0Bca85CffE"
+      },
+      "networkId": "eip155:130",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:130:0x332CA368dd09AD309c51dC6350730e0Bca85CffE",
+      "contractId": "unichain-unichain-l2-token-bridge",
+      "deploymentKind": "implementation",
+      "contractName": "L2ERC20ExtendedTokensBridge",
+      "address": "0x332CA368dd09AD309c51dC6350730e0Bca85CffE",
+      "networkId": "eip155:130",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:130:0x3b00f262e39372DF2756f809DD5DC36aeEdFC4A0",
+      "contractId": "unichain-unichain-governance-bridge-executor",
+      "deploymentKind": "standalone",
+      "contractName": "OptimismBridgeExecutor",
+      "address": "0x3b00f262e39372DF2756f809DD5DC36aeEdFC4A0",
+      "networkId": "eip155:130",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "commit": "8fa25b0080dd3dcc2390313631aea6796a12c9d8"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+      "contractId": "ethereum-ethereum-steth-token",
+      "deploymentKind": "proxy",
+      "contractName": "AppProxyUpgradeable",
+      "address": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+      "proxy": {
+        "proxyKind": "custom",
+        "implementationDeploymentId": "eip155:1:0x028271E30a695c0527A0C50cA30603feD004cDb0"
+      },
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/core"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/Hexens%20Lido%20V2%20Smart%20Contract%20Audit%20Report%2004-23.pdf",
+        "https://github.com/lidofinance/audits/blob/main/Statemind%20Lido%20V2%20Audit%20Report%2004-23.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x028271E30a695c0527A0C50cA30603feD004cDb0",
+      "contractId": "ethereum-ethereum-steth-token",
+      "deploymentKind": "implementation",
+      "contractName": "Lido",
+      "address": "0x028271E30a695c0527A0C50cA30603feD004cDb0",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/core"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/Hexens%20Lido%20V2%20Smart%20Contract%20Audit%20Report%2004-23.pdf",
+        "https://github.com/lidofinance/audits/blob/main/Statemind%20Lido%20V2%20Audit%20Report%2004-23.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+      "contractId": "ethereum-ethereum-wsteth-token",
+      "deploymentKind": "standalone",
+      "contractName": "WstETH",
+      "address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/core"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/MixBytes%20wstETH%20Security%20Audit%20Report%2009-2021.pdf",
+        "https://github.com/lidofinance/audits/blob/main/Hexens%20Lido%20V2%20Smart%20Contract%20Audit%20Report%2004-23.pdf",
+        "https://github.com/lidofinance/audits/blob/main/Statemind%20Lido%20V2%20Audit%20Report%2004-23.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:560048:0x3508A952176b3c15387C97BE809eaffB1982176a",
+      "contractId": "hoodi-hoodi-steth-token",
+      "deploymentKind": "proxy",
+      "contractName": "AppProxyUpgradeable",
+      "address": "0x3508A952176b3c15387C97BE809eaffB1982176a",
+      "proxy": {
+        "proxyKind": "custom",
+        "implementationDeploymentId": "eip155:560048:0xB9A2Fb8336f3775d790b3FdD6151e3F193AA7352"
+      },
+      "networkId": "eip155:560048",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/core"
+      },
+      "auditReportRefs": []
+    },
+    {
+      "deploymentId": "eip155:560048:0xB9A2Fb8336f3775d790b3FdD6151e3F193AA7352",
+      "contractId": "hoodi-hoodi-steth-token",
+      "deploymentKind": "implementation",
+      "contractName": "Lido",
+      "address": "0xB9A2Fb8336f3775d790b3FdD6151e3F193AA7352",
+      "networkId": "eip155:560048",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/core"
+      },
+      "auditReportRefs": []
+    },
+    {
+      "deploymentId": "eip155:560048:0x7E99eE3C66636DE415D2d7C880938F2f40f94De4",
+      "contractId": "hoodi-hoodi-wsteth-token",
+      "deploymentKind": "standalone",
+      "contractName": "WstETH",
+      "address": "0x7E99eE3C66636DE415D2d7C880938F2f40f94De4",
+      "networkId": "eip155:560048",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/core"
+      },
+      "auditReportRefs": []
+    },
+    {
+      "deploymentId": "eip155:560048:0x2C220A2a91602dd93bEAC7b3A1773cdADE369ba1",
+      "contractId": "hoodi-hoodi-steth-token-archive",
+      "deploymentKind": "proxy",
+      "contractName": "AppProxyUpgradeable",
+      "address": "0x2C220A2a91602dd93bEAC7b3A1773cdADE369ba1",
+      "proxy": {
+        "proxyKind": "custom",
+        "implementationDeploymentId": "eip155:560048:0x87836090727C9484489429609A730Ef3a23968e6"
+      },
+      "networkId": "eip155:560048",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/core"
+      },
+      "auditReportRefs": []
+    },
+    {
+      "deploymentId": "eip155:560048:0x87836090727C9484489429609A730Ef3a23968e6",
+      "contractId": "hoodi-hoodi-steth-token-archive",
+      "deploymentKind": "implementation",
+      "contractName": "Lido",
+      "address": "0x87836090727C9484489429609A730Ef3a23968e6",
+      "networkId": "eip155:560048",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/core"
+      },
+      "auditReportRefs": []
+    },
+    {
+      "deploymentId": "eip155:560048:0x05F2927c5c2825BC0dCDc14d258a99A36116bE8B",
+      "contractId": "hoodi-hoodi-wsteth-token-archive",
+      "deploymentKind": "standalone",
+      "contractName": "WstETH",
+      "address": "0x05F2927c5c2825BC0dCDc14d258a99A36116bE8B",
+      "networkId": "eip155:560048",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/core"
+      },
+      "auditReportRefs": []
+    },
+    {
+      "deploymentId": "eip155:324:0x703b52F2b28fEbcB60E1372858AF5b18849FE867",
+      "contractId": "zksync-zksync-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0x703b52F2b28fEbcB60E1372858AF5b18849FE867",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:324:0xc7a0daa1b8fea68532b6425d0e156088b0d2ab2c",
+        "adminDeploymentId": "eip155:324:0xbd80e505ecc49bae2cc86094a78fa0e2db28b52a"
+      },
+      "networkId": "eip155:324",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/zkSync-2023-10-Cantina-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:324:0xc7a0daa1b8fea68532b6425d0e156088b0d2ab2c",
+      "contractId": "zksync-zksync-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20BridgedUpgradeable",
+      "address": "0xc7a0daa1b8fea68532b6425d0e156088b0d2ab2c",
+      "networkId": "eip155:324",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/zkSync-2023-10-Cantina-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:324:0xbd80e505ecc49bae2cc86094a78fa0e2db28b52a",
+      "contractId": "zksync-zksync-wsteth-token-admin",
+      "deploymentKind": "proxy-admin",
+      "contractName": "ProxyAdmin",
+      "address": "0xbd80e505ecc49bae2cc86094a78fa0e2db28b52a",
+      "networkId": "eip155:324",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/zkSync-2023-10-Cantina-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:324:0x139EE25DCad405d2a038E7A67f9ffdbf0f573f3c",
+      "contractId": "zksync-zksync-governance-bridge-executor",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0x139EE25DCad405d2a038E7A67f9ffdbf0f573f3c",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:324:0x13f46b59067f064c634fb17e207ed203916dccc8",
+        "adminDeploymentId": "eip155:324:0xbd80e505ecc49bae2cc86094a78fa0e2db28b52a"
+      },
+      "networkId": "eip155:324",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/zkSync-2023-10-Cantina-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:324:0x13f46b59067f064c634fb17e207ed203916dccc8",
+      "contractId": "zksync-zksync-governance-bridge-executor",
+      "deploymentKind": "implementation",
+      "contractName": "ZkSyncBridgeExecutor",
+      "address": "0x13f46b59067f064c634fb17e207ed203916dccc8",
+      "networkId": "eip155:324",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/zkSync-2023-10-Cantina-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:34443:0x98f96A4B34D03a2E6f225B28b8f8Cb1279562d81",
+      "contractId": "mode-mode-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x98f96A4B34D03a2E6f225B28b8f8Cb1279562d81",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:34443:0xF27b1B121e55A13047d66dC4AAA8c17BA72c762A"
+      },
+      "networkId": "eip155:34443",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Mode-2024-07-18-Cantina-wstETH-deployment-verification.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:34443:0xF27b1B121e55A13047d66dC4AAA8c17BA72c762A",
+      "contractId": "mode-mode-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20Bridged",
+      "address": "0xF27b1B121e55A13047d66dC4AAA8c17BA72c762A",
+      "networkId": "eip155:34443",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Mode-2024-07-18-Cantina-wstETH-deployment-verification.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:34443:0x2aCeC6D8ABA90685927b61968D84CfFf6192B32C",
+      "contractId": "mode-mode-governance-bridge-executor",
+      "deploymentKind": "standalone",
+      "contractName": "OptimismBridgeExecutor",
+      "address": "0x2aCeC6D8ABA90685927b61968D84CfFf6192B32C",
+      "networkId": "eip155:34443",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "path": "contracts/bridges/OptimismBridgeExecutor.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:534352:0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32",
+      "contractId": "scroll-scroll-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:534352:0x38224D52ecC979aEdfEb31b1EEa0cfCEbd55247e",
+        "adminDeploymentId": "eip155:534352:0x8e34D07Eb348716a1f0a48A507A9de8a3A6DcE45"
+      },
+      "networkId": "eip155:534352",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Scroll-2024-01-Lido-Gateway-Zellic-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:534352:0x38224D52ecC979aEdfEb31b1EEa0cfCEbd55247e",
+      "contractId": "scroll-scroll-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "L2WstETHToken",
+      "address": "0x38224D52ecC979aEdfEb31b1EEa0cfCEbd55247e",
+      "networkId": "eip155:534352",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Scroll-2024-01-Lido-Gateway-Zellic-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:534352:0x8e34D07Eb348716a1f0a48A507A9de8a3A6DcE45",
+      "contractId": "scroll-scroll-wsteth-token-admin",
+      "deploymentKind": "proxy-admin",
+      "contractName": "ProxyAdmin",
+      "address": "0x8e34D07Eb348716a1f0a48A507A9de8a3A6DcE45",
+      "networkId": "eip155:534352",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Scroll-2024-01-Lido-Gateway-Zellic-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:534352:0x0c67D8D067E349669dfEAB132A7c03A90594eE09",
+      "contractId": "scroll-scroll-governance-bridge-executor",
+      "deploymentKind": "standalone",
+      "contractName": "ScrollBridgeExecutor",
+      "address": "0x0c67D8D067E349669dfEAB132A7c03A90594eE09",
+      "networkId": "eip155:534352",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:5000:0x458ed78EB972a369799fb278c0243b25e5242A83",
+      "contractId": "mantle-mantle-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x458ed78EB972a369799fb278c0243b25e5242A83",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:5000:0x1FaBaAec88198291A4efCc85Cabb33a3785165ba"
+      },
+      "networkId": "eip155:5000",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Mantle-2023-09-Verilog-L2-ERC20-Token-Bridge-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:5000:0x1FaBaAec88198291A4efCc85Cabb33a3785165ba",
+      "contractId": "mantle-mantle-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20BridgedPermit",
+      "address": "0x1FaBaAec88198291A4efCc85Cabb33a3785165ba",
+      "networkId": "eip155:5000",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Mantle-2023-09-Verilog-L2-ERC20-Token-Bridge-Audit-Report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:5000:0x3a7b055bf88cdc59d20d0245809c6e6b3c5819dd",
+      "contractId": "mantle-mantle-governance-bridge-executor",
+      "deploymentKind": "standalone",
+      "contractName": "OptimismBridgeExecutor",
+      "address": "0x3a7b055bf88cdc59d20d0245809c6e6b3c5819dd",
+      "networkId": "eip155:5000",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "path": "contracts/bridges/OptimismBridgeExecutor.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1923:0x7c98E0779EB5924b3ba8cE3B17648539ed5b0Ecc",
+      "contractId": "swellchain-swellchain-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x7c98E0779EB5924b3ba8cE3B17648539ed5b0Ecc",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:1923:0xa1A3257813eD45d91e9c45E03C66FcDD54B4e7c1"
+      },
+      "networkId": "eip155:1923",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1923:0xa1A3257813eD45d91e9c45E03C66FcDD54B4e7c1",
+      "contractId": "swellchain-swellchain-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20Bridged",
+      "address": "0xa1A3257813eD45d91e9c45E03C66FcDD54B4e7c1",
+      "networkId": "eip155:1923",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1923:0xFF22ea467301010F1364fc154c13e0c86Fcfb077",
+      "contractId": "swellchain-swellchain-governance-bridge-executor",
+      "deploymentKind": "standalone",
+      "contractName": "OptimismBridgeExecutor",
+      "address": "0xFF22ea467301010F1364fc154c13e0c86Fcfb077",
+      "networkId": "eip155:1923",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "path": "contracts/bridges/OptimismBridgeExecutor.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:48900:0xf0e673Bc224A8Ca3ff67a61605814666b1234833",
+      "contractId": "zircuit-zircuit-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0xf0e673Bc224A8Ca3ff67a61605814666b1234833",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:48900:0x929569e10d9166f31c8284fE3FE5db1C1E56D6b4"
+      },
+      "networkId": "eip155:48900",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Zircuit_2024-10-02-Quantstamp-wstETH-deployment-verification.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:48900:0x929569e10d9166f31c8284fE3FE5db1C1E56D6b4",
+      "contractId": "zircuit-zircuit-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20Bridged",
+      "address": "0x929569e10d9166f31c8284fE3FE5db1C1E56D6b4",
+      "networkId": "eip155:48900",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Zircuit_2024-10-02-Quantstamp-wstETH-deployment-verification.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:48900:0x6Bf2cac3ed2481da30aD36Cd3D64325c31065Cc5",
+      "contractId": "zircuit-zircuit-governance-bridge-executor",
+      "deploymentKind": "standalone",
+      "contractName": "OptimismBridgeExecutor",
+      "address": "0x6Bf2cac3ed2481da30aD36Cd3D64325c31065Cc5",
+      "networkId": "eip155:48900",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "path": "contracts/bridges/OptimismBridgeExecutor.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1868:0xaA9BD8c957D803466FA92504BDd728cC140f8941",
+      "contractId": "soneium-soneium-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0xaA9BD8c957D803466FA92504BDd728cC140f8941",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:1868:0x7591f6BD2301f7EE9267738039054047b5B395B0"
+      },
+      "networkId": "eip155:1868",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Soneium-2025-01-MixBytes-deployment-verification.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1868:0x7591f6BD2301f7EE9267738039054047b5B395B0",
+      "contractId": "soneium-soneium-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20BridgedPermit",
+      "address": "0x7591f6BD2301f7EE9267738039054047b5B395B0",
+      "networkId": "eip155:1868",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Soneium-2025-01-MixBytes-deployment-verification.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1868:0x0Ce031AEd457C870D74914eCAA7971dd3176cDAF",
+      "contractId": "soneium-soneium-steth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x0Ce031AEd457C870D74914eCAA7971dd3176cDAF",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:1868:0x3BC5d0551F48902bDcC036d59F5D23987F581c28"
+      },
+      "networkId": "eip155:1868",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Soneium-2025-01-MixBytes-deployment-verification.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1868:0x3BC5d0551F48902bDcC036d59F5D23987F581c28",
+      "contractId": "soneium-soneium-steth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20RebasableBridgedPermit",
+      "address": "0x3BC5d0551F48902bDcC036d59F5D23987F581c28",
+      "networkId": "eip155:1868",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Soneium-2025-01-MixBytes-deployment-verification.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1868:0xB0F7894b3740F68eAca6e3792B14d2C2c25eF5D4",
+      "contractId": "soneium-soneium-governance-bridge-executor",
+      "deploymentKind": "standalone",
+      "contractName": "OptimismBridgeExecutor",
+      "address": "0xB0F7894b3740F68eAca6e3792B14d2C2c25eF5D4",
+      "networkId": "eip155:1868",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "path": "contracts/bridges/OptimismBridgeExecutor.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:137:0x03b54A6e9a984069379fae1a4fC4dBAE93B3bCCD",
+      "contractId": "polygon-polygon-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "UChildERC20Proxy",
+      "address": "0x03b54A6e9a984069379fae1a4fC4dBAE93B3bCCD",
+      "proxy": {
+        "proxyKind": "custom",
+        "implementationDeploymentId": "eip155:137:0x60991ccaE8f1420B43bf14937a2c9F69162BE21A"
+      },
+      "networkId": "eip155:137",
+      "source": {
+        "repositoryUrl": "https://github.com/maticnetwork/pos-portal"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/polygon/Oxorio%20Lido%20on%20Polygon%20V2%2008-2022.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:137:0x60991ccaE8f1420B43bf14937a2c9F69162BE21A",
+      "contractId": "polygon-polygon-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "UChildERC20",
+      "address": "0x60991ccaE8f1420B43bf14937a2c9F69162BE21A",
+      "networkId": "eip155:137",
+      "source": {
+        "repositoryUrl": "https://github.com/maticnetwork/pos-portal"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/polygon/Oxorio%20Lido%20on%20Polygon%20V2%2008-2022.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1135:0x76D8de471F54aAA87784119c60Df1bbFc852C415",
+      "contractId": "lisk-lisk-wsteth-token",
+      "deploymentKind": "proxy",
+      "contractName": "OssifiableProxy",
+      "address": "0x76D8de471F54aAA87784119c60Df1bbFc852C415",
+      "proxy": {
+        "proxyKind": "ossifiable",
+        "implementationDeploymentId": "eip155:1135:0x16B8006b49db9022BF5457BD2de0144a7d0F970b"
+      },
+      "networkId": "eip155:1135",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/wstETH-on-Lisk-2025-04-MixBytes-deployment-verification.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1135:0x16B8006b49db9022BF5457BD2de0144a7d0F970b",
+      "contractId": "lisk-lisk-wsteth-token",
+      "deploymentKind": "implementation",
+      "contractName": "ERC20Bridged",
+      "address": "0x16B8006b49db9022BF5457BD2de0144a7d0F970b",
+      "networkId": "eip155:1135",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/wstETH-on-Lisk-2025-04-MixBytes-deployment-verification.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1135:0xfD050cDa025f6378e54ab5fd5Da377D242Ed74d3",
+      "contractId": "lisk-lisk-governance-bridge-executor",
+      "deploymentKind": "standalone",
+      "contractName": "OptimismBridgeExecutor",
+      "address": "0xfD050cDa025f6378e54ab5fd5Da377D242Ed74d3",
+      "networkId": "eip155:1135",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "path": "contracts/bridges/OptimismBridgeExecutor.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
+      "contractId": "circuit-breaker-committee-ethereum",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
+      "networkId": "eip155:1",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#11-circuitbreaker-committee",
+        "https://research.lido.fi/t/lido-v2-gateseal-committee/4561",
+        "https://research.lido.fi/t/renew-gateseal-for-the-withdrawal-queue-and-validator-exit-bus-oracle/7081"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x73b047fe6337183A454c5217241D780a932777bD",
+      "contractId": "emergency-brakes-ethereum",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x73b047fe6337183A454c5217241D780a932777bD",
+      "networkId": "eip155:1",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#12-emergency-brakes-ethereum",
+        "https://research.lido.fi/t/lido-on-l2-first-launches/2786",
+        "https://research.lido.fi/t/emergency-brakes-multi-sig-upgrade/2608",
+        "https://research.lido.fi/t/wsteth-deployment-on-zksync/5701/4"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x4Cf8fE0A4c2539F7EFDD2047d8A5D46F14613088",
+      "contractId": "emergency-brakes-optimism",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x4Cf8fE0A4c2539F7EFDD2047d8A5D46F14613088",
+      "networkId": "eip155:10",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#13-emergency-brakes-optimism",
+        "https://research.lido.fi/t/lido-on-l2-first-launches/2786",
+        "https://research.lido.fi/t/emergency-brakes-multi-sig-upgrade/2608"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0xfDCf209A213a0b3C403d543F87E74FCbcA11de34",
+      "contractId": "emergency-brakes-arbitrum",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0xfDCf209A213a0b3C403d543F87E74FCbcA11de34",
+      "networkId": "eip155:42161",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#14-emergency-brakes-arbitrum",
+        "https://research.lido.fi/t/lido-on-l2-first-launches/2786",
+        "https://research.lido.fi/t/emergency-brakes-multi-sig-upgrade/2608"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0x0F9A0e7071B7B21bc7a8514DA2cd251bc1FF0725",
+      "contractId": "emergency-brakes-base",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x0F9A0e7071B7B21bc7a8514DA2cd251bc1FF0725",
+      "networkId": "eip155:8453",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#15-emergency-brakes-base",
+        "https://research.lido.fi/t/wsteth-deployment-to-base-and-ownership-acceptance-by-lido-dao/5668"
+      ]
+    },
+    {
+      "deploymentId": "eip155:324:0x0D7F0A811978B3B62CbfF4EF6149B5909EAcfE94",
+      "contractId": "emergency-brakes-zksync",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x0D7F0A811978B3B62CbfF4EF6149B5909EAcfE94",
+      "networkId": "eip155:324",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#emergency-brakes-zksync",
+        "https://research.lido.fi/t/wsteth-deployment-on-zksync/5701/4"
+      ]
+    },
+    {
+      "deploymentId": "eip155:5000:0xa8579D42E34398267dE16e6eeeCdb7ED0EFF953C",
+      "contractId": "emergency-brakes-mantle",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0xa8579D42E34398267dE16e6eeeCdb7ED0EFF953C",
+      "networkId": "eip155:5000",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#emergency-brakes-mantle",
+        "https://research.lido.fi/t/wsteth-deployment-on-mantle/5991"
+      ]
+    },
+    {
+      "deploymentId": "eip155:534352:0xF580753E334687C0d6b88EF563a258f048384Ee6",
+      "contractId": "emergency-brakes-scroll",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0xF580753E334687C0d6b88EF563a258f048384Ee6",
+      "networkId": "eip155:534352",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#emergency-brakes-scroll",
+        "https://research.lido.fi/t/wsteth-deployment-on-scroll/6603"
+      ]
+    },
+    {
+      "deploymentId": "eip155:34443:0x244912352A639001ceCFa208cDaa7CB474c9eadE",
+      "contractId": "emergency-brakes-mode",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x244912352A639001ceCFa208cDaa7CB474c9eadE",
+      "networkId": "eip155:34443",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#emergency-brakes-mode",
+        "https://research.lido.fi/t/wsteth-deployment-on-mode/7365"
+      ]
+    },
+    {
+      "deploymentId": "eip155:56:0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
+      "contractId": "emergency-brakes-bsc",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
+      "networkId": "eip155:56",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#16-emergency-brakes-binance-smart-chain-bsc"
+      ]
+    },
+    {
+      "deploymentId": "eip155:48900:0x9Bff79BF7226cB5C16d0Cca9c1dc60450feE560d",
+      "contractId": "emergency-brakes-zircuit",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x9Bff79BF7226cB5C16d0Cca9c1dc60450feE560d",
+      "networkId": "eip155:48900",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://docs.lido.fi/multisigs/emergency-brakes/#emergency-brakes-zircuit",
+        "https://research.lido.fi/t/wsteth-deployment-to-zircuit-and-ownership-acceptance-by-lido-dao/8602"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1868:0x993F92e031B86b229D639463325f9d6a51609b43",
+      "contractId": "emergency-brakes-soneium",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x993F92e031B86b229D639463325f9d6a51609b43",
+      "networkId": "eip155:1868",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs"
+      ]
+    },
+    {
+      "deploymentId": "eip155:130:0xac8bc65814Dd0501674f6940aff1a4Ea78Fc20eF",
+      "contractId": "emergency-brakes-unichain",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0xac8bc65814Dd0501674f6940aff1a4Ea78Fc20eF",
+      "networkId": "eip155:130",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1135:0x1356C0b19c2531bBf0Dd23E585b7C7f7096EeC39",
+      "contractId": "emergency-brakes-lisk",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0x1356C0b19c2531bBf0Dd23E585b7C7f7096EeC39",
+      "networkId": "eip155:1135",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://research.lido.fi/t/temperature-check-wsteth-deployment-to-lisk-and-ownership-acceptance-by-lido-nec/6669"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1923:0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
+      "contractId": "emergency-brakes-swellchain",
+      "deploymentKind": "standalone",
+      "contractName": "Safe",
+      "address": "0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
+      "networkId": "eip155:1923",
+      "source": null,
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
+        "https://research.lido.fi/t/wsteth-deployment-on-swellchain/9524"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+name: Ledger
+
+# No paths filter: the validators are two short Python runs, and filtering has
+# two costs that outweigh the saving. A PR touching only README.md would never
+# produce this check, so a required status check would block on a run that
+# never arrives; and githooks/** would never be exercised by CI at all.
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# The job only reads the checkout. Without this block the job inherits the
+# repository default, which on unchanged settings is read/write.
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to commit SHAs, not mutable tags: this job is the only automated
+      # gate on published contract addresses, so an action tag repointed at
+      # attacker-controlled code could tamper with the validators mid-run.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+        with:
+          enable-cache: true
+      - name: Check ledger formatting
+        run: uv run --locked python scripts/format_ledger.py check
+      - name: Validate ledger
+        run: uv run --locked python scripts/validate_ledger.py
+      # Without this step CI only ever runs the validators against a known-good
+      # ledger, so a validator that has silently stopped validating still passes.
+      - name: Test the validators
+        run: uv run --locked pytest -q

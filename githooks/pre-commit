@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Validate the STAGED ledger content before every commit.
+#
+# The working tree is deliberately not used: `git add -p` can stage a subset of
+# hunks, so a working-tree check can pass on a commit whose recorded content is
+# invalid, and fail on a commit that is fine.
+set -euo pipefail
+
+if ! command -v uv >/dev/null 2>&1; then
+  echo "pre-commit: 'uv' was not found on PATH." >&2
+  echo "  Install uv (https://docs.astral.sh/uv/), then make sure the hook's" >&2
+  echo "  PATH can see it. GUI git clients often do not read a login profile." >&2
+  exit 1
+fi
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+# Skip when the ledger is not in the index at all (initial commit, or the
+# ledger staged for deletion): there is nothing to validate.
+for tracked in ledger.json ledger.schema.json; do
+  if ! git ls-files --error-unmatch "$tracked" >/dev/null 2>&1; then
+    exit 0
+  fi
+done
+
+staged="$(mktemp -d)"
+trap 'rm -rf "$staged"' EXIT
+
+# ':path' reads the index, so this is exactly what the commit will record.
+git show :ledger.json >"$staged/ledger.json"
+git show :ledger.schema.json >"$staged/ledger.schema.json"
+
+# --locked matches CI, so the hook cannot pass by silently re-resolving and
+# rewriting uv.lock on a commit that CI will then reject.
+if ! uv run --locked python scripts/format_ledger.py check \
+  --ledger "$staged/ledger.json" --schema "$staged/ledger.schema.json"; then
+  echo "pre-commit: the STAGED ledger.json is not canonically formatted." >&2
+  echo "  Run: uv run --locked python scripts/format_ledger.py format && git add ledger.json" >&2
+  exit 1
+fi
+
+if ! uv run --locked python scripts/validate_ledger.py \
+  --ledger "$staged/ledger.json" --schema "$staged/ledger.schema.json"; then
+  echo "pre-commit: the STAGED ledger.json failed validation." >&2
+  echo "  Paths above refer to a temporary copy of the staged content." >&2
+  exit 1
+fi

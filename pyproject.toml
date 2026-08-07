@@ -1,0 +1,22 @@
+[project]
+name = "multichain-ledger"
+version = "0.1.0"
+description = "Lido multichain deployment ledger tooling"
+requires-python = ">=3.12"
+dependencies = [
+    "jsonschema[format-nongpl]>=4.26.0",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The project is not installed (package = false), so the tooling modules under
+# scripts/ are imported from there directly.
+pythonpath = ["scripts"]
