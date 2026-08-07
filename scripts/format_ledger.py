@@ -167,7 +167,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if current != formatted:
         print(
-            f"{args.ledger} key order does not match {args.schema} properties order.",
+            f"{args.ledger} does not match its canonical rendering "
+            f"(schema {args.schema} property order, 2-space indent, "
+            "trailing newline).",
             file=sys.stderr,
         )
         print(
@@ -176,7 +178,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    print(f"{args.ledger} key order OK.")
+    print(f"{args.ledger} formatting OK.")
     return 0
 
 

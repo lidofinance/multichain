@@ -13,10 +13,33 @@ DEFAULT_LEDGER = ROOT / "ledger.json"
 DEFAULT_SCHEMA = ROOT / "ledger.schema.json"
 
 
+def reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    """Build an object, refusing repeated keys instead of keeping the last one.
+
+    ``json.loads`` silently discards all but the final value for a repeated key.
+    A hand-edited ledger that accidentally repeats ``address`` or ``contractId``
+    would then validate, and ``format_ledger.py format`` would rewrite the file
+    with the discarded value gone.
+    """
+    obj: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in obj:
+            raise ValueError(f"duplicate object key {key!r}")
+        obj[key] = value
+    return obj
+
+
 def load_json(path: Path) -> Any:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise SystemExit(f"{path} is not valid UTF-8: {exc}") from exc
+    except OSError as exc:
+        raise SystemExit(f"Cannot read {path}: {exc}") from exc
+    try:
+        # JSONDecodeError and the duplicate-key ValueError are both ValueError.
+        return json.loads(text, object_pairs_hook=reject_duplicate_keys)
+    except ValueError as exc:
         raise SystemExit(f"Invalid JSON in {path}: {exc}") from exc
 
 

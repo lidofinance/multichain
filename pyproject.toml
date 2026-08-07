@@ -9,3 +9,14 @@ dependencies = [
 
 [tool.uv]
 package = false
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The project is not installed (package = false), so the tooling modules under
+# scripts/ are imported from there directly.
+pythonpath = ["scripts"]

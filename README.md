@@ -62,7 +62,15 @@ When two deployments on the same network would otherwise share a role id because
 
 `deploymentKind` and `proxyKind` use the enums defined in [ledger.schema.json](./ledger.schema.json). `standalone` means a non-proxy, non-implementation, non-admin, non-beacon, non-library address. Linked Solidity libraries use `library`.
 
-For a proxy, the `proxy` object links to separately listed deployments through `implementationDeploymentId`, and optionally `adminDeploymentId` or `beaconDeploymentId`. `proxyKind: "unknown"` means the selected evidence did not establish the proxy architecture; it does not mean that the deployed contract has no identifiable proxy type.
+For a proxy, the `proxy` object links to separately listed deployments on the **same network**. Which link is required depends on `proxyKind`:
+
+- `beacon` requires `beaconDeploymentId`, and does not require `implementationDeploymentId` — a beacon proxy resolves through the beacon, so an inlined implementation address would go stale on the next beacon upgrade;
+- `diamond` requires neither, because a diamond's facet set is not representable in this model;
+- every other `proxyKind` requires `implementationDeploymentId`.
+
+`adminDeploymentId` is always optional. A `deploymentKind: "beacon"` entry (an `UpgradeableBeacon`) may itself carry a `proxy` object to record the implementation it points at; every other non-proxy kind may not.
+
+`proxyKind: "unknown"` means the selected evidence did not establish the proxy architecture; it does not mean that the deployed contract has no identifiable proxy type.
 
 ## Network model
 
@@ -83,15 +91,17 @@ A URL is a pointer to evidence, not proof of every fact associated with the targ
 
 ### Audit report refs
 
-`auditReportRefs` is an array of pointers to audit-report carriers (free-form strings, typically URLs). An empty array means no reports are recorded for the entry; it does not prove that no audit exists. Presence of a pointer does not establish deployment-current bytecode equivalence or release assurance.
+`auditReportRefs` is an array of pointers to audit-report carriers. Each pointer must be a URI, so a truncated paste or a broken percent-encoding fails validation rather than degrading the evidence link silently. An empty array means no reports are recorded for the entry; it does not prove that no audit exists. Presence of a pointer does not establish deployment-current bytecode equivalence or release assurance.
 
 ### Public refs
 
-`publicRefs` is an optional array of pointers to public official or near-official publication carriers (for example research.lido.fi forum posts, Snapshot or Aragon votes, or docs.lido.fi pages) that an external reader can use to cross-check the entry's address. Omit the field or use an empty array when none are recorded. Presence of a pointer does not establish address correctness, completeness, DAO approval force, or assurance. `publicRefs` does not replace `source`.
+`publicRefs` is an optional array of pointers to public official or near-official publication carriers (for example research.lido.fi forum posts, Snapshot or Aragon votes, or docs.lido.fi pages) that an external reader can use to cross-check the entry's address. Each pointer must be a URI. Omit the field or use an empty array when none are recorded. Presence of a pointer does not establish address correctness, completeness, DAO approval force, or assurance. `publicRefs` does not replace `source`.
 
 ## Snapshot metadata
 
 The top-level fields describe the ledger snapshot: `schemaVersion` versions the data model independently of the JSON Schema specification version, and `updatedAt` records when the snapshot was last changed.
+
+`schemaVersion` is pinned by `const` in the schema, so a document written for an older data model cannot validate silently against a newer schema. Changing the data model means bumping both the `const` and the ledger in the same change.
 
 ## Updating the ledger
 
@@ -127,7 +137,7 @@ uv run python scripts/format_ledger.py format
 uv run python scripts/format_ledger.py check
 ```
 
-`githooks/pre-commit` always runs the key-order check (non-mutating) and ledger validation. Reformat locally with `format` before committing if key order drifted.
+`githooks/pre-commit` runs the formatting check (non-mutating) and ledger validation against the **staged** content, not the working tree — `git add -p` can stage a subset of hunks, so a working-tree check can pass on a commit whose recorded content is invalid. Reformat locally with `format` and re-stage if formatting drifted.
 
 ## Validation
 
@@ -139,10 +149,20 @@ Integrity checks (after schema validation succeeds) enforce:
 
 - `deploymentId` equals `networkId` + `:` + `address` (exact spelling, including address casing);
 - `deploymentId` uniqueness within the snapshot;
+- address uniqueness within a network, comparing EVM addresses case-insensitively, so one address cannot be listed twice as a checksummed and an all-lowercase entry;
+- one live entry per `(contractId, networkId, deploymentKind)`, which is what makes the `-archive` suffix rule enforceable;
 - each deployment `networkId` exists as a key in `networks`;
-- proxy relation fields declared with `x-refDeploymentKind` resolve to entries of that `deploymentKind`.
+- proxy relation fields declared with `x-refDeploymentKind` resolve to entries of that `deploymentKind`, **on the same network** as the referring deployment.
 
-CI (`.github/workflows/ledger.yml`) runs the same checks on pull requests and on pushes to `main`.
+## Tests
+
+```sh
+uv run pytest
+```
+
+`tests/` mutates a well-formed ledger one way at a time and asserts the matching rule fires. Without it, CI would only ever run the validators against a known-good `ledger.json`, so a validator that had silently stopped validating would still pass.
+
+CI (`.github/workflows/ledger.yml`) runs the formatting check, the validators, and the tests on pull requests and on pushes to `main` and `develop`. It carries no paths filter: a filtered workflow never produces a status for PRs that touch other files, and would never exercise `githooks/**`.
 
 ## Non-goals
 

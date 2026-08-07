@@ -3,7 +3,8 @@
 
 JSON Schema covers per-field shape. Integrity checks run only on schema-valid
 input and cover relations the schema cannot express cleanly (deploymentId
-composition, uniqueness, proxy refs, network membership).
+composition, deploymentId and case-folded address uniqueness, one role instance
+per network, same-network proxy refs, network membership).
 """
 
 from __future__ import annotations
@@ -97,6 +98,20 @@ def schema_errors(instance: Any, schema: dict[str, Any]) -> list[str]:
     return errors
 
 
+def identity_key(network_id: str, address: str) -> str:
+    """Case-normalised address identity.
+
+    ``deploymentId`` preserves the casing published by the source, but an EVM
+    address denotes the same deployment whether it is written all-lowercase or
+    EIP-55 checksummed. Identity therefore folds case on eip155 networks so the
+    same address cannot be recorded twice under two spellings. Other CAIP-2
+    namespaces (base58, bech32) are case-sensitive and are left alone.
+    """
+    if network_id.startswith("eip155:"):
+        return f"{network_id}:{address.lower()}"
+    return f"{network_id}:{address}"
+
+
 def integrity_errors(instance: dict[str, Any], schema: dict[str, Any]) -> list[str]:
     """Cross-field checks beyond JSON Schema.
 
@@ -109,6 +124,8 @@ def integrity_errors(instance: dict[str, Any], schema: dict[str, Any]) -> list[s
     deployments: list[dict[str, Any]] = instance["deployments"]
 
     by_id: dict[str, tuple[int, dict[str, Any]]] = {}
+    by_identity: dict[str, tuple[int, str]] = {}
+    by_role: dict[tuple[str, str, str], int] = {}
 
     for index, entry in enumerate(deployments):
         path = f"$.deployments[{index}]"
@@ -130,6 +147,28 @@ def integrity_errors(instance: dict[str, Any], schema: dict[str, Any]) -> list[s
                 f"{path}.deploymentId: expected {expected!r} "
                 f"(networkId + ':' + address), got {deployment_id!r}"
             )
+
+        identity = identity_key(network_id, address)
+        previous = by_identity.get(identity)
+        if previous is None:
+            by_identity[identity] = (index, deployment_id)
+        elif previous[1] != deployment_id:
+            errors.append(
+                f"{path}.address: {address!r} is the same address on "
+                f"{network_id} as $.deployments[{previous[0]}] "
+                f"({previous[1]!r}), differing only in casing"
+            )
+
+        role = (entry["contractId"], network_id, entry["deploymentKind"])
+        if role in by_role:
+            errors.append(
+                f"{path}.contractId: {entry['contractId']!r} already names a "
+                f"{entry['deploymentKind']!r} deployment on {network_id} at "
+                f"$.deployments[{by_role[role]}]; give the superseded entry an "
+                "-archive contractId suffix"
+            )
+        else:
+            by_role[role] = index
 
         if network_id not in network_ids:
             errors.append(
@@ -158,6 +197,12 @@ def integrity_errors(instance: dict[str, Any], schema: dict[str, Any]) -> list[s
                 errors.append(
                     f"{path}.proxy.{field}: target {ref!r} has deploymentKind "
                     f"{kind!r}, expected {expected_kind!r}"
+                )
+            if target["networkId"] != entry["networkId"]:
+                errors.append(
+                    f"{path}.proxy.{field}: target {ref!r} is on network "
+                    f"{target['networkId']!r}, but a proxy relation must stay "
+                    f"within one network ({entry['networkId']!r})"
                 )
 
     return errors
