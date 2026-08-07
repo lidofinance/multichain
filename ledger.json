@@ -2177,7 +2177,7 @@
     },
     {
       "deploymentId": "eip155:1:0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
-      "contractId": "circuit-breaker-committee",
+      "contractId": "circuit-breaker-committee-ethereum",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0x8772E3a2D86B9347A2688f9bc1808A6d8917760C",
@@ -2193,7 +2193,7 @@
     },
     {
       "deploymentId": "eip155:1:0x73b047fe6337183A454c5217241D780a932777bD",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-ethereum",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0x73b047fe6337183A454c5217241D780a932777bD",
@@ -2210,7 +2210,7 @@
     },
     {
       "deploymentId": "eip155:10:0x4Cf8fE0A4c2539F7EFDD2047d8A5D46F14613088",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-optimism",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0x4Cf8fE0A4c2539F7EFDD2047d8A5D46F14613088",
@@ -2226,7 +2226,7 @@
     },
     {
       "deploymentId": "eip155:42161:0xfDCf209A213a0b3C403d543F87E74FCbcA11de34",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-arbitrum",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0xfDCf209A213a0b3C403d543F87E74FCbcA11de34",
@@ -2242,7 +2242,7 @@
     },
     {
       "deploymentId": "eip155:8453:0x0F9A0e7071B7B21bc7a8514DA2cd251bc1FF0725",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-base",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0x0F9A0e7071B7B21bc7a8514DA2cd251bc1FF0725",
@@ -2257,7 +2257,7 @@
     },
     {
       "deploymentId": "eip155:324:0x0D7F0A811978B3B62CbfF4EF6149B5909EAcfE94",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-zksync",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0x0D7F0A811978B3B62CbfF4EF6149B5909EAcfE94",
@@ -2272,7 +2272,7 @@
     },
     {
       "deploymentId": "eip155:5000:0xa8579D42E34398267dE16e6eeeCdb7ED0EFF953C",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-mantle",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0xa8579D42E34398267dE16e6eeeCdb7ED0EFF953C",
@@ -2287,7 +2287,7 @@
     },
     {
       "deploymentId": "eip155:534352:0xF580753E334687C0d6b88EF563a258f048384Ee6",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-scroll",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0xF580753E334687C0d6b88EF563a258f048384Ee6",
@@ -2302,7 +2302,7 @@
     },
     {
       "deploymentId": "eip155:34443:0x244912352A639001ceCFa208cDaa7CB474c9eadE",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-mode",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0x244912352A639001ceCFa208cDaa7CB474c9eadE",
@@ -2317,7 +2317,7 @@
     },
     {
       "deploymentId": "eip155:56:0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-bsc",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
@@ -2331,7 +2331,7 @@
     },
     {
       "deploymentId": "eip155:48900:0x9Bff79BF7226cB5C16d0Cca9c1dc60450feE560d",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-zircuit",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0x9Bff79BF7226cB5C16d0Cca9c1dc60450feE560d",
@@ -2346,7 +2346,7 @@
     },
     {
       "deploymentId": "eip155:1868:0x993F92e031B86b229D639463325f9d6a51609b43",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-soneium",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0x993F92e031B86b229D639463325f9d6a51609b43",
@@ -2359,7 +2359,7 @@
     },
     {
       "deploymentId": "eip155:130:0xac8bc65814Dd0501674f6940aff1a4Ea78Fc20eF",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-unichain",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0xac8bc65814Dd0501674f6940aff1a4Ea78Fc20eF",
@@ -2372,7 +2372,7 @@
     },
     {
       "deploymentId": "eip155:1135:0x1356C0b19c2531bBf0Dd23E585b7C7f7096EeC39",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-lisk",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0x1356C0b19c2531bBf0Dd23E585b7C7f7096EeC39",
@@ -2386,7 +2386,7 @@
     },
     {
       "deploymentId": "eip155:1923:0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
-      "contractId": "emergency-brakes",
+      "contractId": "emergency-brakes-swellchain",
       "deploymentKind": "standalone",
       "contractName": "Safe",
       "address": "0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
