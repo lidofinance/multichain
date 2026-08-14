@@ -1,7 +1,7 @@
 {
   "$schema": "./ledger.schema.json",
   "schemaVersion": "0.2.0",
-  "updatedAt": "2026-08-07",
+  "updatedAt": "2026-08-14",
   "knownGaps": [
     "Linea L1/L2 token-bridge proxy links were refreshed on 2026-08-06.",
     "Source revision for current Linea TokenBridge implementations is not yet established (source is null).",
@@ -10,7 +10,9 @@
     "BSC Emergency Brakes Safe address is listed in docs; no research.lido.fi post naming 0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f on BSC was found.",
     "Soneium, Unichain, Lisk, and Swellchain Emergency Brakes Safes appear on docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs but have no dedicated subsection on docs.lido.fi/multisigs/emergency-brakes (Swellchain shares address 0xC2b778… with BSC; the BSC subsection is not used as a Swellchain publicRef).",
     "The 15 Safe multisig entries record contractName 'Safe' and deploymentKind 'standalone'; neither has been established from the bytecode at those addresses. A Safe deployed through SafeProxyFactory holds GnosisSafeProxy (v1.3.0) or SafeProxy (v1.4.x) bytecode and delegates to the Safe singleton at a different address, which would make these entries proxies. Correcting them requires reading the deployed bytecode and the singleton address per network.",
-    "Chainlink CCIP Direct Staking contracts described in docs/ui-ds-overview.md are absent from this ledger even though their networks are already in the networks map: CustomSender proxies 0x328de900860816d29D1367F6903a24D8ed40C997 (Base, Optimism, Linea) and 0x72229141D4B016682d3618ECe47c046f30Da4AD1 (Arbitrum), fast-staking oracle pools 0x6F357d53d6bE3238180316BA5F8f11467e164588 and 0x9c27c304cFdf0D9177002ff186A4aE0A5489Aace, and price oracle 0x301cBCDA894c932E9EDa3Cf8878f78304e69E367. Their deploymentKind, proxy links, and source provenance are not yet established."
+    "Chainlink CCIP Direct Staking deployments were added on 2026-08-14 from docs.lido.fi/deployed-contracts/ anchors #ethereum-common-ccip-ds, #ethereum-part-{arbitrum,optimism,base,linea}, #{arbitrum,optimism,base,linea}-part and #price-feeds: 35 addresses across eip155:1, 10, 8453, 42161 and 59144. Contract names come from each chain's verified artifact and proxy links from EIP-1967 slot reads, not from the documentation's grouping. Several of these addresses are reused across networks for different contracts, so they are only identifiable as (networkId, address) pairs; an address-only comparison against this ledger will produce false matches.",
+    "No CCIP Direct Staking deployment records a source.commit. Aphyla/chainlink-csr is a third-party fork that lidofinance/l2-direct-staking pins by branch (main), not by revision, so resolving repositoryUrl + path returns whatever main holds rather than the deployed revision. Audit reports name candidate revisions (chainlink-csr 8e08c07ec55bbe32f447b450d915f6813eac6cc7 for the Trail of Bits scope, 62108f7b6cc664e36dbc8100c4b48974d59f572e for LineaAdapterL1toL2, and l2-direct-staking 3d1d484c31d39881cdbe8423614e3043e89e027f for SyncTrigger and CREReceiver); none has been confirmed by a Diffyscan source match, which is this ledger's condition for writing a commit.",
+    "source.repositoryUrl is not written under one rule across the ledger. Entries added on 2026-08-14 name the repository whose git tree contains the compiled file, so OpenZeppelin artifacts cite OpenZeppelin/openzeppelin-contracts. Most earlier entries name the deployment project instead; for example eip155:59144:0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F and eip155:59144:0xF951d7592e03eDB0Bab3D533935e678Ce64Eb927 cite lidofinance/linea-contracts-fix at 0949c4096664e613f73ed3ce51c32f97fc56cdef, whose tree contains neither TransparentUpgradeableProxy.sol nor ProxyAdmin.sol (they are build-time node_modules paths). Which rule an entry follows is not marked."
   ],
   "networks": {
     "eip155:1": {
@@ -143,6 +145,24 @@
       ]
     },
     {
+      "deploymentId": "eip155:1:0xBf96561e4519182CFA4cebBf95494D9CA5a316f9",
+      "contractId": "arbitrum-ethereum-direct-staking-l1-adapter",
+      "deploymentKind": "standalone",
+      "contractName": "ArbitrumLegacyAdapterL1toL2",
+      "address": "0xBf96561e4519182CFA4cebBf95494D9CA5a316f9",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/adapters/ArbitrumLegacyAdapterL1toL2.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-arbitrum"
+      ]
+    },
+    {
       "deploymentId": "eip155:42161:0x5979D7b546E38E414F7E9822514be443A4800529",
       "contractId": "arbitrum-arbitrum-wsteth-token",
       "deploymentKind": "proxy",
@@ -246,6 +266,130 @@
       ]
     },
     {
+      "deploymentId": "eip155:42161:0x72229141D4B016682d3618ECe47c046f30Da4AD1",
+      "contractId": "arbitrum-arbitrum-direct-staking-custom-sender",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0x72229141D4B016682d3618ECe47c046f30Da4AD1",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:42161:0x220F64A4793Bc8aca7330ceCc4ae4e2F3B5Bc664",
+        "adminDeploymentId": "eip155:42161:0x5B42aEbFe95247f1d22e282831e2A513bF050217"
+      },
+      "networkId": "eip155:42161",
+      "source": {
+        "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "path": "contracts/proxy/transparent/TransparentUpgradeableProxy.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0x220F64A4793Bc8aca7330ceCc4ae4e2F3B5Bc664",
+      "contractId": "arbitrum-arbitrum-direct-staking-custom-sender",
+      "deploymentKind": "implementation",
+      "contractName": "CustomSenderReferral",
+      "address": "0x220F64A4793Bc8aca7330ceCc4ae4e2F3B5Bc664",
+      "networkId": "eip155:42161",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/senders/CustomSenderReferral.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0x5B42aEbFe95247f1d22e282831e2A513bF050217",
+      "contractId": "arbitrum-arbitrum-direct-staking-custom-sender-admin",
+      "deploymentKind": "proxy-admin",
+      "contractName": "ProxyAdmin",
+      "address": "0x5B42aEbFe95247f1d22e282831e2A513bF050217",
+      "networkId": "eip155:42161",
+      "source": {
+        "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "path": "contracts/proxy/transparent/ProxyAdmin.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0xac143bF41BBA4a8014b4Ef5a5F46b39a36AE40A8",
+      "contractId": "arbitrum-arbitrum-direct-staking-oracle-pool",
+      "deploymentKind": "standalone",
+      "contractName": "PausableImmutableOraclePool",
+      "address": "0xac143bF41BBA4a8014b4Ef5a5F46b39a36AE40A8",
+      "networkId": "eip155:42161",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/utils/PausableImmutableOraclePool.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0x871a5cddE9813627Ff37A2895A0c9B117A664622",
+      "contractId": "arbitrum-arbitrum-direct-staking-sync-trigger",
+      "deploymentKind": "standalone",
+      "contractName": "SyncTrigger",
+      "address": "0x871a5cddE9813627Ff37A2895A0c9B117A664622",
+      "networkId": "eip155:42161",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "path": "src/SyncTrigger.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0x09BdB4E8BA68d245DCb1c6fbEb1e4f13b57cc69A",
+      "contractId": "arbitrum-arbitrum-direct-staking-cre-receiver",
+      "deploymentKind": "standalone",
+      "contractName": "CREReceiver",
+      "address": "0x09BdB4E8BA68d245DCb1c6fbEb1e4f13b57cc69A",
+      "networkId": "eip155:42161",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "path": "src/cre/CREReceiver.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:42161:0x328de900860816d29D1367F6903a24D8ed40C997",
+      "contractId": "arbitrum-arbitrum-direct-staking-price-oracle",
+      "deploymentKind": "standalone",
+      "contractName": "PriceOracle",
+      "address": "0x328de900860816d29D1367F6903a24D8ed40C997",
+      "networkId": "eip155:42161",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/utils/PriceOracle.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-Linea-Adapter-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#price-feeds"
+      ]
+    },
+    {
       "deploymentId": "eip155:1:0x25e35855783bec3E49355a29e110f02Ed8b05ba9",
       "contractId": "optimism-ethereum-token-rate-notifier-archive",
       "deploymentKind": "standalone",
@@ -338,6 +482,24 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-optimism"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x328de900860816d29D1367F6903a24D8ed40C997",
+      "contractId": "optimism-ethereum-direct-staking-l1-adapter",
+      "deploymentKind": "standalone",
+      "contractName": "OptimismLegacyAdapterL1toL2",
+      "address": "0x328de900860816d29D1367F6903a24D8ed40C997",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/adapters/OptimismLegacyAdapterL1toL2.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf"
       ],
       "publicRefs": [
         "https://docs.lido.fi/deployed-contracts/#ethereum-part-optimism"
@@ -530,6 +692,130 @@
       ]
     },
     {
+      "deploymentId": "eip155:10:0x328de900860816d29D1367F6903a24D8ed40C997",
+      "contractId": "optimism-optimism-direct-staking-custom-sender",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0x328de900860816d29D1367F6903a24D8ed40C997",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:10:0x65498495DdC07c52E12EEe3c44D3a1166eed8703",
+        "adminDeploymentId": "eip155:10:0x4c8c4A15c1e810e481c412A9B06Be5f79dC02192"
+      },
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "path": "contracts/proxy/transparent/TransparentUpgradeableProxy.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x65498495DdC07c52E12EEe3c44D3a1166eed8703",
+      "contractId": "optimism-optimism-direct-staking-custom-sender",
+      "deploymentKind": "implementation",
+      "contractName": "CustomSenderReferral",
+      "address": "0x65498495DdC07c52E12EEe3c44D3a1166eed8703",
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/senders/CustomSenderReferral.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x4c8c4A15c1e810e481c412A9B06Be5f79dC02192",
+      "contractId": "optimism-optimism-direct-staking-custom-sender-admin",
+      "deploymentKind": "proxy-admin",
+      "contractName": "ProxyAdmin",
+      "address": "0x4c8c4A15c1e810e481c412A9B06Be5f79dC02192",
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "path": "contracts/proxy/transparent/ProxyAdmin.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0xac143bF41BBA4a8014b4Ef5a5F46b39a36AE40A8",
+      "contractId": "optimism-optimism-direct-staking-oracle-pool",
+      "deploymentKind": "standalone",
+      "contractName": "PausableImmutableOraclePool",
+      "address": "0xac143bF41BBA4a8014b4Ef5a5F46b39a36AE40A8",
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/utils/PausableImmutableOraclePool.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x871a5cddE9813627Ff37A2895A0c9B117A664622",
+      "contractId": "optimism-optimism-direct-staking-sync-trigger",
+      "deploymentKind": "standalone",
+      "contractName": "SyncTrigger",
+      "address": "0x871a5cddE9813627Ff37A2895A0c9B117A664622",
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "path": "src/SyncTrigger.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x09BdB4E8BA68d245DCb1c6fbEb1e4f13b57cc69A",
+      "contractId": "optimism-optimism-direct-staking-cre-receiver",
+      "deploymentKind": "standalone",
+      "contractName": "CREReceiver",
+      "address": "0x09BdB4E8BA68d245DCb1c6fbEb1e4f13b57cc69A",
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "path": "src/cre/CREReceiver.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:10:0x301cBCDA894c932E9EDa3Cf8878f78304e69E367",
+      "contractId": "optimism-optimism-direct-staking-price-oracle",
+      "deploymentKind": "standalone",
+      "contractName": "PriceOracle",
+      "address": "0x301cBCDA894c932E9EDa3Cf8878f78304e69E367",
+      "networkId": "eip155:10",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/utils/PriceOracle.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-Linea-Adapter-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#price-feeds"
+      ]
+    },
+    {
       "deploymentId": "eip155:1:0x9de443AdC5A411E83F1878Ef24C3F52C61571e72",
       "contractId": "base-ethereum-l1-token-bridge",
       "deploymentKind": "proxy",
@@ -565,6 +851,22 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
       ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-base"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x9c27c304cFdf0D9177002ff186A4aE0A5489Aace",
+      "contractId": "base-ethereum-direct-staking-l1-adapter",
+      "deploymentKind": "standalone",
+      "contractName": "BaseLegacyAdapterL1toL2",
+      "address": "0x9c27c304cFdf0D9177002ff186A4aE0A5489Aace",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/adapters/BaseLegacyAdapterL1toL2.sol"
+      },
+      "auditReportRefs": [],
       "publicRefs": [
         "https://docs.lido.fi/deployed-contracts/#ethereum-part-base"
       ]
@@ -669,6 +971,130 @@
       ]
     },
     {
+      "deploymentId": "eip155:8453:0x328de900860816d29D1367F6903a24D8ed40C997",
+      "contractId": "base-base-direct-staking-custom-sender",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0x328de900860816d29D1367F6903a24D8ed40C997",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:8453:0x65498495DdC07c52E12EEe3c44D3a1166eed8703",
+        "adminDeploymentId": "eip155:8453:0x4c8c4A15c1e810e481c412A9B06Be5f79dC02192"
+      },
+      "networkId": "eip155:8453",
+      "source": {
+        "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "path": "contracts/proxy/transparent/TransparentUpgradeableProxy.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#base-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0x65498495DdC07c52E12EEe3c44D3a1166eed8703",
+      "contractId": "base-base-direct-staking-custom-sender",
+      "deploymentKind": "implementation",
+      "contractName": "CustomSenderReferral",
+      "address": "0x65498495DdC07c52E12EEe3c44D3a1166eed8703",
+      "networkId": "eip155:8453",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/senders/CustomSenderReferral.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#base-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0x4c8c4A15c1e810e481c412A9B06Be5f79dC02192",
+      "contractId": "base-base-direct-staking-custom-sender-admin",
+      "deploymentKind": "proxy-admin",
+      "contractName": "ProxyAdmin",
+      "address": "0x4c8c4A15c1e810e481c412A9B06Be5f79dC02192",
+      "networkId": "eip155:8453",
+      "source": {
+        "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "path": "contracts/proxy/transparent/ProxyAdmin.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#base-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0xac143bF41BBA4a8014b4Ef5a5F46b39a36AE40A8",
+      "contractId": "base-base-direct-staking-oracle-pool",
+      "deploymentKind": "standalone",
+      "contractName": "PausableImmutableOraclePool",
+      "address": "0xac143bF41BBA4a8014b4Ef5a5F46b39a36AE40A8",
+      "networkId": "eip155:8453",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/utils/PausableImmutableOraclePool.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#base-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0x871a5cddE9813627Ff37A2895A0c9B117A664622",
+      "contractId": "base-base-direct-staking-sync-trigger",
+      "deploymentKind": "standalone",
+      "contractName": "SyncTrigger",
+      "address": "0x871a5cddE9813627Ff37A2895A0c9B117A664622",
+      "networkId": "eip155:8453",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "path": "src/SyncTrigger.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#base-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0x09BdB4E8BA68d245DCb1c6fbEb1e4f13b57cc69A",
+      "contractId": "base-base-direct-staking-cre-receiver",
+      "deploymentKind": "standalone",
+      "contractName": "CREReceiver",
+      "address": "0x09BdB4E8BA68d245DCb1c6fbEb1e4f13b57cc69A",
+      "networkId": "eip155:8453",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "path": "src/cre/CREReceiver.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#base-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:8453:0x301cBCDA894c932E9EDa3Cf8878f78304e69E367",
+      "contractId": "base-base-direct-staking-price-oracle",
+      "deploymentKind": "standalone",
+      "contractName": "PriceOracle",
+      "address": "0x301cBCDA894c932E9EDa3Cf8878f78304e69E367",
+      "networkId": "eip155:8453",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/utils/PriceOracle.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-Linea-Adapter-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#price-feeds"
+      ]
+    },
+    {
       "deploymentId": "eip155:1:0x051f1d88f0af5763fb888ec4378b4d8b29ea3319",
       "contractId": "linea-ethereum-l1-token-bridge",
       "deploymentKind": "proxy",
@@ -731,6 +1157,24 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x122beD1eB48DC4679DDF2C8fc159e9c498344397",
+      "contractId": "linea-ethereum-direct-staking-l1-adapter",
+      "deploymentKind": "standalone",
+      "contractName": "LineaAdapterL1toL2",
+      "address": "0x122beD1eB48DC4679DDF2C8fc159e9c498344397",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/adapters/LineaAdapterL1toL2.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-Linea-Adapter-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-linea"
       ]
     },
     {
@@ -873,6 +1317,130 @@
       ],
       "publicRefs": [
         "https://docs.lido.fi/deployed-contracts/#linea-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0x328de900860816d29D1367F6903a24D8ed40C997",
+      "contractId": "linea-linea-direct-staking-custom-sender",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0x328de900860816d29D1367F6903a24D8ed40C997",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:59144:0xBf96561e4519182CFA4cebBf95494D9CA5a316f9",
+        "adminDeploymentId": "eip155:59144:0x4c8c4A15c1e810e481c412A9B06Be5f79dC02192"
+      },
+      "networkId": "eip155:59144",
+      "source": {
+        "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "path": "contracts/proxy/transparent/TransparentUpgradeableProxy.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#linea-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0xBf96561e4519182CFA4cebBf95494D9CA5a316f9",
+      "contractId": "linea-linea-direct-staking-custom-sender",
+      "deploymentKind": "implementation",
+      "contractName": "CustomSenderReferral",
+      "address": "0xBf96561e4519182CFA4cebBf95494D9CA5a316f9",
+      "networkId": "eip155:59144",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/senders/CustomSenderReferral.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#linea-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0x4c8c4A15c1e810e481c412A9B06Be5f79dC02192",
+      "contractId": "linea-linea-direct-staking-custom-sender-admin",
+      "deploymentKind": "proxy-admin",
+      "contractName": "ProxyAdmin",
+      "address": "0x4c8c4A15c1e810e481c412A9B06Be5f79dC02192",
+      "networkId": "eip155:59144",
+      "source": {
+        "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "path": "contracts/proxy/transparent/ProxyAdmin.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#linea-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0xac143bF41BBA4a8014b4Ef5a5F46b39a36AE40A8",
+      "contractId": "linea-linea-direct-staking-oracle-pool",
+      "deploymentKind": "standalone",
+      "contractName": "PausableImmutableOraclePool",
+      "address": "0xac143bF41BBA4a8014b4Ef5a5F46b39a36AE40A8",
+      "networkId": "eip155:59144",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/utils/PausableImmutableOraclePool.sol"
+      },
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#linea-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0x871a5cddE9813627Ff37A2895A0c9B117A664622",
+      "contractId": "linea-linea-direct-staking-sync-trigger",
+      "deploymentKind": "standalone",
+      "contractName": "SyncTrigger",
+      "address": "0x871a5cddE9813627Ff37A2895A0c9B117A664622",
+      "networkId": "eip155:59144",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "path": "src/SyncTrigger.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#linea-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0x09BdB4E8BA68d245DCb1c6fbEb1e4f13b57cc69A",
+      "contractId": "linea-linea-direct-staking-cre-receiver",
+      "deploymentKind": "standalone",
+      "contractName": "CREReceiver",
+      "address": "0x09BdB4E8BA68d245DCb1c6fbEb1e4f13b57cc69A",
+      "networkId": "eip155:59144",
+      "source": {
+        "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "path": "src/cre/CREReceiver.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#linea-part"
+      ]
+    },
+    {
+      "deploymentId": "eip155:59144:0x301cBCDA894c932E9EDa3Cf8878f78304e69E367",
+      "contractId": "linea-linea-direct-staking-price-oracle",
+      "deploymentKind": "standalone",
+      "contractName": "PriceOracle",
+      "address": "0x301cBCDA894c932E9EDa3Cf8878f78304e69E367",
+      "networkId": "eip155:59144",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/utils/PriceOracle.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf",
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-Linea-Adapter-2026-08-MixBytes-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#price-feeds"
       ]
     },
     {
@@ -1792,6 +2360,65 @@
       ],
       "publicRefs": [
         "https://docs.lido.fi/deployed-contracts/#core-protocol"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x6F357d53d6bE3238180316BA5F8f11467e164588",
+      "contractId": "ethereum-ethereum-direct-staking-custom-receiver",
+      "deploymentKind": "proxy",
+      "contractName": "TransparentUpgradeableProxy",
+      "address": "0x6F357d53d6bE3238180316BA5F8f11467e164588",
+      "proxy": {
+        "proxyKind": "transparent",
+        "implementationDeploymentId": "eip155:1:0x301cBCDA894c932E9EDa3Cf8878f78304e69E367",
+        "adminDeploymentId": "eip155:1:0x88a45d2760b63c1500E3D2E3552b28e5Cdaa37BD"
+      },
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "path": "contracts/proxy/transparent/TransparentUpgradeableProxy.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-common-ccip-ds"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x301cBCDA894c932E9EDa3Cf8878f78304e69E367",
+      "contractId": "ethereum-ethereum-direct-staking-custom-receiver",
+      "deploymentKind": "implementation",
+      "contractName": "LidoCustomReceiver",
+      "address": "0x301cBCDA894c932E9EDa3Cf8878f78304e69E367",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "path": "contracts/receivers/LidoCustomReceiver.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-common-ccip-ds"
+      ]
+    },
+    {
+      "deploymentId": "eip155:1:0x88a45d2760b63c1500E3D2E3552b28e5Cdaa37BD",
+      "contractId": "ethereum-ethereum-direct-staking-custom-receiver-admin",
+      "deploymentKind": "proxy-admin",
+      "contractName": "ProxyAdmin",
+      "address": "0x88a45d2760b63c1500E3D2E3552b28e5Cdaa37BD",
+      "networkId": "eip155:1",
+      "source": {
+        "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "path": "contracts/proxy/transparent/ProxyAdmin.sol"
+      },
+      "auditReportRefs": [
+        "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-common-ccip-ds"
       ]
     },
     {
