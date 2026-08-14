@@ -1,0 +1,25 @@
+{
+  "$schema": "./profile.schema.json",
+  "profileId": "linea-contracts-fix",
+  "repositoryUrl": "https://github.com/lidofinance/linea-contracts-fix",
+  "default": {
+    "github_repo": {
+      "relative_root": ""
+    },
+    "dependencies": {
+      "@openzeppelin/contracts": {
+        "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "0a25c1940ca220686588c4af3ec526f725fe2582",
+        "relative_root": "contracts"
+      },
+      "@openzeppelin/contracts-upgradeable": {
+        "url": "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable",
+        "commit": "bc95521e34dcd49792065e264a7ad2b5a86f0091",
+        "relative_root": "contracts"
+      }
+    }
+  },
+  "commits": {
+    "0949c4096664e613f73ed3ce51c32f97fc56cdef": {}
+  }
+}

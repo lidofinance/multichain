@@ -1,0 +1,27 @@
+{
+  "$schema": "./networks.schema.json",
+  "default": {
+    "explorer_hostname": "api.etherscan.io",
+    "explorer_token_env_var": "ETHERSCAN_EXPLORER_TOKEN"
+  },
+  "networks": {
+    "eip155:324": {
+      "explorer_hostname": "zksync2-mainnet-explorer.zksync.io"
+    },
+    "eip155:1135": {
+      "explorer_hostname": "blockscout.lisk.com"
+    },
+    "eip155:1868": {
+      "explorer_hostname": "soneium.blockscout.com"
+    },
+    "eip155:1923": {
+      "explorer_hostname": "explorer.swellnetwork.io"
+    },
+    "eip155:34443": {
+      "explorer_hostname": "explorer.mode.network"
+    },
+    "eip155:534352": {
+      "explorer_hostname": "scroll.blockscout.com"
+    }
+  }
+}

@@ -89,10 +89,9 @@
       }
     },
     "fail_on_bytecode_comparison_error": {
-      "type": "boolean"
-    },
-    "fail_on_comparison_error": {
-      "type": "boolean"
+      "description": "Only meaningful when false (Diffyscan already defaults to true).",
+      "type": "boolean",
+      "const": false
     },
     "bytecode_comparison": {
       "description": "Optional Diffyscan bytecode_comparison section. Address-keyed maps use deploymentId keys and are rewritten to addresses at render time.",

@@ -1,0 +1,27 @@
+{
+  "$schema": "./profile.schema.json",
+  "profileId": "governance-crosschain-bridges",
+  "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+  "default": {
+    "github_repo": {
+      "relative_root": ""
+    },
+    "dependencies": {
+      "@openzeppelin/contracts": {
+        "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+        "relative_root": "contracts"
+      }
+    }
+  },
+  "commits": {
+    "7d4fd35e92688d7aa56ae2f94872f851bacae50c": {
+      "github_repo": {
+        "relative_root": ""
+      },
+      "dependencies": {}
+    },
+    "8fa25b0080dd3dcc2390313631aea6796a12c9d8": {},
+    "659e236b6592da11943c531fe6947f4858803f96": {}
+  }
+}

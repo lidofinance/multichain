@@ -1,0 +1,36 @@
+{
+  "$schema": "./profile.schema.json",
+  "profileId": "openzeppelin-contracts",
+  "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+  "description": "For deployments whose verified sources are pure OpenZeppelin (standalone ProxyAdmins). The self-referential '@openzeppelin/contracts' dependency maps the bundle's import-style paths back onto this repo; commits are pinned per OZ release because each deployment carries its own.",
+  "default": {
+    "github_repo": {
+      "relative_root": ""
+    }
+  },
+  "commits": {
+    "0a25c1940ca220686588c4af3ec526f725fe2582": {
+      "dependencies": {
+        "@openzeppelin/contracts": {
+          "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+          "commit": "0a25c1940ca220686588c4af3ec526f725fe2582",
+          "relative_root": "contracts"
+        }
+      }
+    },
+    "e50c24f5839db17f46991478384bfda14acfb830": {
+      "dependencies": {
+        "@openzeppelin/contracts": {
+          "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+          "commit": "e50c24f5839db17f46991478384bfda14acfb830",
+          "relative_root": "contracts"
+        },
+        "@openzeppelin/contracts-upgradeable": {
+          "url": "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable",
+          "commit": "bc95521e34dcd49792065e264a7ad2b5a86f0091",
+          "relative_root": "contracts"
+        }
+      }
+    }
+  }
+}

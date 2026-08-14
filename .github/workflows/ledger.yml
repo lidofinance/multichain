@@ -33,6 +33,13 @@ jobs:
         run: uv run --locked python scripts/format_ledger.py check
       - name: Validate ledger
         run: uv run --locked python scripts/validate_ledger.py
+      # Exits 3 when a deployment that has both repositoryUrl and commit still
+      # fails to project (no profile, unpinned commit, missing network
+      # metadata, unusable URL) — i.e. the ledger claims a revision the config
+      # set silently would not check. Deployments with no source recorded at
+      # all are a reported gap, not a failure, and do not trip this.
+      - name: Check Diffyscan projection coverage
+        run: uv run --locked python scripts/render_diffyscan_config.py --coverage
       # Without this step CI only ever runs the validators against a known-good
       # ledger, so a validator that has silently stopped validating still passes.
       - name: Test the validators

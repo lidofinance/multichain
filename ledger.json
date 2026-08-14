@@ -118,6 +118,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum"
       ]
     },
     {
@@ -134,6 +137,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum"
       ]
     },
     {
@@ -154,6 +160,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum"
       ]
     },
     {
@@ -170,6 +179,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum"
       ]
     },
     {
@@ -190,6 +202,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum"
       ]
     },
     {
@@ -206,6 +221,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum"
       ]
     },
     {
@@ -222,6 +240,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#arbitrum"
       ]
     },
     {
@@ -237,6 +258,10 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20TokenRateNotifier%20Security%20Audit%20Report%2008-2026.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-optimism",
+        "https://docs.lido.fi/deployed-contracts/#post-token-rebase-receiver"
       ]
     },
     {
@@ -252,6 +277,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/MixBytes%20Lido%20TokenRateNotifier%20Security%20Audit%20Report%2008-2026.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-optimism"
       ]
     },
     {
@@ -268,6 +296,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-optimism"
       ]
     },
     {
@@ -288,6 +319,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-optimism"
       ]
     },
     {
@@ -304,6 +338,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-optimism"
       ]
     },
     {
@@ -324,6 +361,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
       ]
     },
     {
@@ -340,6 +380,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
       ]
     },
     {
@@ -360,6 +403,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
       ]
     },
     {
@@ -376,6 +422,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
       ]
     },
     {
@@ -396,6 +445,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
       ]
     },
     {
@@ -412,6 +464,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
       ]
     },
     {
@@ -432,6 +487,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
       ]
     },
     {
@@ -448,6 +506,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
       ]
     },
     {
@@ -463,6 +524,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#optimism-part"
       ]
     },
     {
@@ -482,6 +546,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-base"
       ]
     },
     {
@@ -497,6 +564,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-base"
       ]
     },
     {
@@ -516,6 +586,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#base-part"
       ]
     },
     {
@@ -531,6 +604,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#base-part"
       ]
     },
     {
@@ -550,6 +626,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#base-part"
       ]
     },
     {
@@ -565,6 +644,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#base-part"
       ]
     },
     {
@@ -581,6 +663,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#base-part"
       ]
     },
     {
@@ -601,6 +686,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-linea"
       ]
     },
     {
@@ -622,7 +710,10 @@
       "contractName": "TokenBridge",
       "address": "0xF0e003F0dE2d583Ae28FA8cBF66aa096CdAce3ff",
       "networkId": "eip155:1",
-      "source": null,
+      "source": {
+        "repositoryUrl": "https://github.com/Consensys/linea-monorepo",
+        "commit": "e32aa290cfb7e1df7abebc456bc4b3a8abbfda3f"
+      },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
       ]
@@ -634,7 +725,10 @@
       "contractName": "ProxyAdmin",
       "address": "0xF5058616517C068C7b8c7EbC69FF636Ade9066d6",
       "networkId": "eip155:1",
-      "source": null,
+      "source": {
+        "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "0a25c1940ca220686588c4af3ec526f725fe2582"
+      },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
       ]
@@ -657,6 +751,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lidea-2023-12-Diligence-Custom-Bridged-Token-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#linea-part"
       ]
     },
     {
@@ -672,6 +769,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lidea-2023-12-Diligence-Custom-Bridged-Token-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#linea-part"
       ]
     },
     {
@@ -687,6 +787,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lidea-2023-12-Diligence-Custom-Bridged-Token-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#linea-part"
       ]
     },
     {
@@ -707,6 +810,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#linea-part"
       ]
     },
     {
@@ -728,7 +834,10 @@
       "contractName": "TokenBridge",
       "address": "0x4a496167F187A97379e763f693A499cE1182848b",
       "networkId": "eip155:59144",
-      "source": null,
+      "source": {
+        "repositoryUrl": "https://github.com/Consensys/linea-monorepo",
+        "commit": "e32aa290cfb7e1df7abebc456bc4b3a8abbfda3f"
+      },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
       ]
@@ -740,7 +849,10 @@
       "contractName": "ProxyAdmin",
       "address": "0x1e1f6f22f97b4a7522d8b62e983953639239774e",
       "networkId": "eip155:59144",
-      "source": null,
+      "source": {
+        "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "e50c24f5839db17f46991478384bfda14acfb830"
+      },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-12-OpenZeppelin-Bridge-Audit-Report.pdf"
       ]
@@ -758,6 +870,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Linea-2023-10-Diligence-Cross-Chain-Governance-Executor-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#linea-part"
       ]
     },
     {
@@ -778,6 +893,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -793,6 +911,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -808,6 +929,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -823,6 +947,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -838,6 +965,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -853,6 +983,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -868,6 +1001,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -1031,6 +1167,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -1046,6 +1185,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -1061,6 +1203,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -1076,6 +1221,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -1091,6 +1239,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -1106,6 +1257,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -1121,6 +1275,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -1136,6 +1293,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/bsc/MixBytes%20Lido%20a.DI%20Security%20Audit%20Report%2007-2024.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#binance-smart-chain-bsc"
       ]
     },
     {
@@ -1332,6 +1492,9 @@
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#unichain"
       ]
     },
     {
@@ -1353,6 +1516,9 @@
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#unichain"
       ]
     },
     {
@@ -1370,6 +1536,9 @@
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#unichain"
       ]
     },
     {
@@ -1391,6 +1560,9 @@
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#unichain"
       ]
     },
     {
@@ -1408,6 +1580,9 @@
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#unichain"
       ]
     },
     {
@@ -1429,6 +1604,9 @@
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#unichain"
       ]
     },
     {
@@ -1446,6 +1624,9 @@
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#unichain"
       ]
     },
     {
@@ -1467,6 +1648,9 @@
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#unichain"
       ]
     },
     {
@@ -1484,6 +1668,9 @@
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#unichain"
       ]
     },
     {
@@ -1505,6 +1692,9 @@
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#unichain"
       ]
     },
     {
@@ -1522,6 +1712,9 @@
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Unichain-2025-02-MixBytes-deployment-verification.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#unichain"
       ]
     },
     {
@@ -1537,6 +1730,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#unichain"
       ]
     },
     {
@@ -1556,6 +1752,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/Hexens%20Lido%20V2%20Smart%20Contract%20Audit%20Report%2004-23.pdf",
         "https://github.com/lidofinance/audits/blob/main/Statemind%20Lido%20V2%20Audit%20Report%2004-23.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#core-protocol"
       ]
     },
     {
@@ -1571,6 +1770,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/Hexens%20Lido%20V2%20Smart%20Contract%20Audit%20Report%2004-23.pdf",
         "https://github.com/lidofinance/audits/blob/main/Statemind%20Lido%20V2%20Audit%20Report%2004-23.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#core-protocol"
       ]
     },
     {
@@ -1587,6 +1789,9 @@
         "https://github.com/lidofinance/audits/blob/main/MixBytes%20wstETH%20Security%20Audit%20Report%2009-2021.pdf",
         "https://github.com/lidofinance/audits/blob/main/Hexens%20Lido%20V2%20Smart%20Contract%20Audit%20Report%2004-23.pdf",
         "https://github.com/lidofinance/audits/blob/main/Statemind%20Lido%20V2%20Audit%20Report%2004-23.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#core-protocol"
       ]
     },
     {
@@ -1601,9 +1806,13 @@
       },
       "networkId": "eip155:560048",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/core"
+        "repositoryUrl": "https://github.com/lidofinance/core",
+        "commit": "e54d545e0bfb9fb447e6aaddd649bd7832299198"
       },
-      "auditReportRefs": []
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/hoodi#core-protocol"
+      ]
     },
     {
       "deploymentId": "eip155:560048:0xB9A2Fb8336f3775d790b3FdD6151e3F193AA7352",
@@ -1615,7 +1824,10 @@
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/core"
       },
-      "auditReportRefs": []
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/hoodi#core-protocol"
+      ]
     },
     {
       "deploymentId": "eip155:560048:0x7E99eE3C66636DE415D2d7C880938F2f40f94De4",
@@ -1625,9 +1837,13 @@
       "address": "0x7E99eE3C66636DE415D2d7C880938F2f40f94De4",
       "networkId": "eip155:560048",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/core"
+        "repositoryUrl": "https://github.com/lidofinance/core",
+        "commit": "e54d545e0bfb9fb447e6aaddd649bd7832299198"
       },
-      "auditReportRefs": []
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/hoodi#core-protocol"
+      ]
     },
     {
       "deploymentId": "eip155:560048:0x2C220A2a91602dd93bEAC7b3A1773cdADE369ba1",
@@ -1643,7 +1859,10 @@
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/core"
       },
-      "auditReportRefs": []
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/hoodi#archived-deployments"
+      ]
     },
     {
       "deploymentId": "eip155:560048:0x87836090727C9484489429609A730Ef3a23968e6",
@@ -1667,7 +1886,10 @@
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/core"
       },
-      "auditReportRefs": []
+      "auditReportRefs": [],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/hoodi#archived-deployments"
+      ]
     },
     {
       "deploymentId": "eip155:324:0x703b52F2b28fEbcB60E1372858AF5b18849FE867",
@@ -1687,6 +1909,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/zkSync-2023-10-Cantina-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1702,6 +1927,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/zkSync-2023-10-Cantina-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1717,6 +1945,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/zkSync-2023-10-Cantina-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1737,6 +1968,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/zkSync-2023-10-Cantina-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1752,6 +1986,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/zkSync-2023-10-Cantina-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1766,11 +2003,15 @@
       },
       "networkId": "eip155:34443",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+        "commit": "082e7eb59de63bd376b30886568813408d04f00b"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Mode-2024-07-18-Cantina-wstETH-deployment-verification.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1781,11 +2022,15 @@
       "address": "0xF27b1B121e55A13047d66dC4AAA8c17BA72c762A",
       "networkId": "eip155:34443",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+        "commit": "082e7eb59de63bd376b30886568813408d04f00b"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Mode-2024-07-18-Cantina-wstETH-deployment-verification.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1797,10 +2042,14 @@
       "networkId": "eip155:34443",
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "commit": "659e236b6592da11943c531fe6947f4858803f96",
         "path": "contracts/bridges/OptimismBridgeExecutor.sol"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1816,7 +2065,8 @@
       },
       "networkId": "eip155:534352",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+        "repositoryUrl": "https://github.com/scroll-tech/scroll",
+        "commit": "69224ebb935d499c055c7859c1c8ade57244249c"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Scroll-2024-01-Lido-Gateway-Zellic-Audit-Report.pdf"
@@ -1830,7 +2080,8 @@
       "address": "0x38224D52ecC979aEdfEb31b1EEa0cfCEbd55247e",
       "networkId": "eip155:534352",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+        "repositoryUrl": "https://github.com/scroll-tech/scroll",
+        "commit": "69224ebb935d499c055c7859c1c8ade57244249c"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Scroll-2024-01-Lido-Gateway-Zellic-Audit-Report.pdf"
@@ -1844,7 +2095,8 @@
       "address": "0x8e34D07Eb348716a1f0a48A507A9de8a3A6DcE45",
       "networkId": "eip155:534352",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+        "repositoryUrl": "https://github.com/scroll-tech/scroll",
+        "commit": "69224ebb935d499c055c7859c1c8ade57244249c"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Scroll-2024-01-Lido-Gateway-Zellic-Audit-Report.pdf"
@@ -1858,7 +2110,8 @@
       "address": "0x0c67D8D067E349669dfEAB132A7c03A90594eE09",
       "networkId": "eip155:534352",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges"
+        "repositoryUrl": "https://github.com/scroll-tech/governance-crosschain-bridges",
+        "commit": "d023beed13f9b7f77c062b8fee43476788e48343"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
@@ -1876,11 +2129,15 @@
       },
       "networkId": "eip155:5000",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+        "commit": "cdd513cd3d25699a8757f8e730b443a495d0240e"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Mantle-2023-09-Verilog-L2-ERC20-Token-Bridge-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1891,11 +2148,15 @@
       "address": "0x1FaBaAec88198291A4efCc85Cabb33a3785165ba",
       "networkId": "eip155:5000",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+        "commit": "cdd513cd3d25699a8757f8e730b443a495d0240e"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Mantle-2023-09-Verilog-L2-ERC20-Token-Bridge-Audit-Report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1907,10 +2168,14 @@
       "networkId": "eip155:5000",
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "commit": "8fa25b0080dd3dcc2390313631aea6796a12c9d8",
         "path": "contracts/bridges/OptimismBridgeExecutor.sol"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1929,6 +2194,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1943,6 +2211,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1958,6 +2229,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1977,6 +2251,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Zircuit_2024-10-02-Quantstamp-wstETH-deployment-verification.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -1992,6 +2269,9 @@
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Zircuit_2024-10-02-Quantstamp-wstETH-deployment-verification.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -2007,6 +2287,9 @@
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -2021,12 +2304,16 @@
       },
       "networkId": "eip155:1868",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth"
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Soneium-2025-01-MixBytes-deployment-verification.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -2037,12 +2324,16 @@
       "address": "0x7591f6BD2301f7EE9267738039054047b5B395B0",
       "networkId": "eip155:1868",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth"
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Soneium-2025-01-MixBytes-deployment-verification.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -2057,12 +2348,16 @@
       },
       "networkId": "eip155:1868",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth"
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Soneium-2025-01-MixBytes-deployment-verification.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -2073,12 +2368,16 @@
       "address": "0x3BC5d0551F48902bDcC036d59F5D23987F581c28",
       "networkId": "eip155:1868",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth"
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+        "commit": "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Soneium-2025-01-MixBytes-deployment-verification.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-Ackee-Blockchain-Audit-report.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/stETH-on-Optimism-2024-06-MixBytes-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -2090,10 +2389,14 @@
       "networkId": "eip155:1868",
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "commit": "8fa25b0080dd3dcc2390313631aea6796a12c9d8",
         "path": "contracts/bridges/OptimismBridgeExecutor.sol"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -2140,11 +2443,15 @@
       },
       "networkId": "eip155:1135",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+        "commit": "082e7eb59de63bd376b30886568813408d04f00b"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/wstETH-on-Lisk-2025-04-MixBytes-deployment-verification.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -2155,11 +2462,15 @@
       "address": "0x16B8006b49db9022BF5457BD2de0144a7d0F970b",
       "networkId": "eip155:1135",
       "source": {
-        "repositoryUrl": "https://github.com/lidofinance/lido-l2"
+        "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+        "commit": "082e7eb59de63bd376b30886568813408d04f00b"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/wstETH-on-Lisk-2025-04-MixBytes-deployment-verification.pdf",
         "https://github.com/lidofinance/audits/blob/main/L2/Lido-L2-2022-07-Oxorio-Smart-Contracts-Security-Audit-Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -2171,10 +2482,14 @@
       "networkId": "eip155:1135",
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/governance-crosschain-bridges",
+        "commit": "8fa25b0080dd3dcc2390313631aea6796a12c9d8",
         "path": "contracts/bridges/OptimismBridgeExecutor.sol"
       },
       "auditReportRefs": [
         "https://github.com/lidofinance/audits/blob/main/L2/Governance-Crosschain-Bridges-2022-08-Oxorio-Audit%20Report.pdf"
+      ],
+      "publicRefs": [
+        "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
       ]
     },
     {
@@ -2205,8 +2520,8 @@
       "publicRefs": [
         "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
         "https://docs.lido.fi/multisigs/emergency-brakes/#12-emergency-brakes-ethereum",
-        "https://research.lido.fi/t/lido-on-l2-first-launches/2786",
         "https://research.lido.fi/t/emergency-brakes-multi-sig-upgrade/2608",
+        "https://research.lido.fi/t/lido-on-l2-first-launches/2786",
         "https://research.lido.fi/t/wsteth-deployment-on-zksync/5701/4"
       ]
     },
@@ -2214,16 +2529,19 @@
       "deploymentId": "eip155:10:0x4Cf8fE0A4c2539F7EFDD2047d8A5D46F14613088",
       "contractId": "emergency-brakes-optimism",
       "deploymentKind": "standalone",
-      "contractName": "Safe",
+      "contractName": "GnosisSafeProxy",
       "address": "0x4Cf8fE0A4c2539F7EFDD2047d8A5D46F14613088",
       "networkId": "eip155:10",
-      "source": null,
+      "source": {
+        "repositoryUrl": "https://github.com/safe-global/safe-smart-account",
+        "commit": "186a21a74b327f17fc41217a927dea7064f74604"
+      },
       "auditReportRefs": [],
       "publicRefs": [
         "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
         "https://docs.lido.fi/multisigs/emergency-brakes/#13-emergency-brakes-optimism",
-        "https://research.lido.fi/t/lido-on-l2-first-launches/2786",
-        "https://research.lido.fi/t/emergency-brakes-multi-sig-upgrade/2608"
+        "https://research.lido.fi/t/emergency-brakes-multi-sig-upgrade/2608",
+        "https://research.lido.fi/t/lido-on-l2-first-launches/2786"
       ]
     },
     {
@@ -2238,8 +2556,8 @@
       "publicRefs": [
         "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
         "https://docs.lido.fi/multisigs/emergency-brakes/#14-emergency-brakes-arbitrum",
-        "https://research.lido.fi/t/lido-on-l2-first-launches/2786",
-        "https://research.lido.fi/t/emergency-brakes-multi-sig-upgrade/2608"
+        "https://research.lido.fi/t/emergency-brakes-multi-sig-upgrade/2608",
+        "https://research.lido.fi/t/lido-on-l2-first-launches/2786"
       ]
     },
     {
@@ -2276,10 +2594,13 @@
       "deploymentId": "eip155:5000:0xa8579D42E34398267dE16e6eeeCdb7ED0EFF953C",
       "contractId": "emergency-brakes-mantle",
       "deploymentKind": "standalone",
-      "contractName": "Safe",
+      "contractName": "GnosisSafeProxy",
       "address": "0xa8579D42E34398267dE16e6eeeCdb7ED0EFF953C",
       "networkId": "eip155:5000",
-      "source": null,
+      "source": {
+        "repositoryUrl": "https://github.com/safe-global/safe-smart-account",
+        "commit": "186a21a74b327f17fc41217a927dea7064f74604"
+      },
       "auditReportRefs": [],
       "publicRefs": [
         "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
@@ -2321,10 +2642,13 @@
       "deploymentId": "eip155:56:0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
       "contractId": "emergency-brakes-bsc",
       "deploymentKind": "standalone",
-      "contractName": "Safe",
+      "contractName": "GnosisSafeProxy",
       "address": "0xC2b778fCc3FF311Cf1abBF4E53880277bfD14C8f",
       "networkId": "eip155:56",
-      "source": null,
+      "source": {
+        "repositoryUrl": "https://github.com/safe-global/safe-smart-account",
+        "commit": "186a21a74b327f17fc41217a927dea7064f74604"
+      },
       "auditReportRefs": [],
       "publicRefs": [
         "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",
@@ -2350,10 +2674,13 @@
       "deploymentId": "eip155:1868:0x993F92e031B86b229D639463325f9d6a51609b43",
       "contractId": "emergency-brakes-soneium",
       "deploymentKind": "standalone",
-      "contractName": "Safe",
+      "contractName": "SafeProxy",
       "address": "0x993F92e031B86b229D639463325f9d6a51609b43",
       "networkId": "eip155:1868",
-      "source": null,
+      "source": {
+        "repositoryUrl": "https://github.com/safe-global/safe-smart-account",
+        "commit": "bf943f80fec5ac647159d26161446ac5d716a294"
+      },
       "auditReportRefs": [],
       "publicRefs": [
         "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs"
@@ -2363,10 +2690,13 @@
       "deploymentId": "eip155:130:0xac8bc65814Dd0501674f6940aff1a4Ea78Fc20eF",
       "contractId": "emergency-brakes-unichain",
       "deploymentKind": "standalone",
-      "contractName": "Safe",
+      "contractName": "SafeProxy",
       "address": "0xac8bc65814Dd0501674f6940aff1a4Ea78Fc20eF",
       "networkId": "eip155:130",
-      "source": null,
+      "source": {
+        "repositoryUrl": "https://github.com/safe-global/safe-smart-account",
+        "commit": "bf943f80fec5ac647159d26161446ac5d716a294"
+      },
       "auditReportRefs": [],
       "publicRefs": [
         "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs"
@@ -2376,10 +2706,13 @@
       "deploymentId": "eip155:1135:0x1356C0b19c2531bBf0Dd23E585b7C7f7096EeC39",
       "contractId": "emergency-brakes-lisk",
       "deploymentKind": "standalone",
-      "contractName": "Safe",
+      "contractName": "SafeProxy",
       "address": "0x1356C0b19c2531bBf0Dd23E585b7C7f7096EeC39",
       "networkId": "eip155:1135",
-      "source": null,
+      "source": {
+        "repositoryUrl": "https://github.com/safe-global/safe-smart-account",
+        "commit": "bf943f80fec5ac647159d26161446ac5d716a294"
+      },
       "auditReportRefs": [],
       "publicRefs": [
         "https://docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs",

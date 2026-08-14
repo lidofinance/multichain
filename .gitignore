@@ -8,4 +8,7 @@ __pycache__/
 .mypy_cache/
 
 /diffyscan/generated/
+/diffyscan/logs/
+/.diffyscan_cache/
 /digest/
+.env
