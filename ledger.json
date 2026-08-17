@@ -11,7 +11,7 @@
     "Soneium, Unichain, Lisk, and Swellchain Emergency Brakes Safes appear on docs.lido.fi/deployed-contracts/#emergency-brakes-multisigs but have no dedicated subsection on docs.lido.fi/multisigs/emergency-brakes (Swellchain shares address 0xC2b778… with BSC; the BSC subsection is not used as a Swellchain publicRef).",
     "The 15 Safe multisig entries record contractName 'Safe' and deploymentKind 'standalone'; neither has been established from the bytecode at those addresses. A Safe deployed through SafeProxyFactory holds GnosisSafeProxy (v1.3.0) or SafeProxy (v1.4.x) bytecode and delegates to the Safe singleton at a different address, which would make these entries proxies. Correcting them requires reading the deployed bytecode and the singleton address per network.",
     "Chainlink CCIP Direct Staking deployments were added on 2026-08-14 from docs.lido.fi/deployed-contracts/ anchors #ethereum-common-ccip-ds, #ethereum-part-{arbitrum,optimism,base,linea}, #{arbitrum,optimism,base,linea}-part and #price-feeds: 35 addresses across eip155:1, 10, 8453, 42161 and 59144. Contract names come from each chain's verified artifact and proxy links from EIP-1967 slot reads, not from the documentation's grouping. Several of these addresses are reused across networks for different contracts, so they are only identifiable as (networkId, address) pairs; an address-only comparison against this ledger will produce false matches.",
-    "No CCIP Direct Staking deployment records a source.commit. Aphyla/chainlink-csr is a third-party fork that lidofinance/l2-direct-staking pins by branch (main), not by revision, so resolving repositoryUrl + path returns whatever main holds rather than the deployed revision. Audit reports name candidate revisions (chainlink-csr 8e08c07ec55bbe32f447b450d915f6813eac6cc7 for the Trail of Bits scope, 62108f7b6cc664e36dbc8100c4b48974d59f572e for LineaAdapterL1toL2, and l2-direct-staking 3d1d484c31d39881cdbe8423614e3043e89e027f for SyncTrigger and CREReceiver); none has been confirmed by a Diffyscan source match, which is this ledger's condition for writing a commit.",
+    "Every CCIP Direct Staking deployment records a source.commit confirmed by a Diffyscan source match on 2026-08-14, across 15 cohorts. The revisions were found by comparing git blob hashes of each explorer-verified file against repository trees, not taken from a branch head: Aphyla/chainlink-csr is a third-party fork that lidofinance/l2-direct-staking pins by branch (main) rather than by revision, so its head is not evidence of what was deployed. Ethereum needs two chainlink-csr cohorts because LineaAdapterL1toL2 verifies only at 62108f7b6cc664e36dbc8100c4b48974d59f572e while the other four L1 contracts verify at 1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed. PausableImmutableOraclePool is recorded against chainlink-csr because that repository owns the file, but its verified bundle was compiled from the l2-direct-staking checkout and carries lib/chainlink-csr/ paths; the chainlink-csr profile resolves them with a self-referential dependency pinned to the cohort commit.",
     "source.repositoryUrl is not written under one rule across the ledger. Entries added on 2026-08-14 name the repository whose git tree contains the compiled file, so OpenZeppelin artifacts cite OpenZeppelin/openzeppelin-contracts. Most earlier entries name the deployment project instead; for example eip155:59144:0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F and eip155:59144:0xF951d7592e03eDB0Bab3D533935e678Ce64Eb927 cite lidofinance/linea-contracts-fix at 0949c4096664e613f73ed3ce51c32f97fc56cdef, whose tree contains neither TransparentUpgradeableProxy.sol nor ProxyAdmin.sol (they are build-time node_modules paths). Which rule an entry follows is not marked."
   ],
   "networks": {
@@ -153,6 +153,7 @@
       "networkId": "eip155:1",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/adapters/ArbitrumLegacyAdapterL1toL2.sol"
       },
       "auditReportRefs": [
@@ -279,6 +280,7 @@
       "networkId": "eip155:42161",
       "source": {
         "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
         "path": "contracts/proxy/transparent/TransparentUpgradeableProxy.sol"
       },
       "auditReportRefs": [],
@@ -295,6 +297,7 @@
       "networkId": "eip155:42161",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/senders/CustomSenderReferral.sol"
       },
       "auditReportRefs": [],
@@ -311,6 +314,7 @@
       "networkId": "eip155:42161",
       "source": {
         "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
         "path": "contracts/proxy/transparent/ProxyAdmin.sol"
       },
       "auditReportRefs": [],
@@ -327,6 +331,7 @@
       "networkId": "eip155:42161",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/utils/PausableImmutableOraclePool.sol"
       },
       "auditReportRefs": [],
@@ -343,6 +348,7 @@
       "networkId": "eip155:42161",
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "commit": "3d1d484c31d39881cdbe8423614e3043e89e027f",
         "path": "src/SyncTrigger.sol"
       },
       "auditReportRefs": [
@@ -361,6 +367,7 @@
       "networkId": "eip155:42161",
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "commit": "3d1d484c31d39881cdbe8423614e3043e89e027f",
         "path": "src/cre/CREReceiver.sol"
       },
       "auditReportRefs": [
@@ -379,6 +386,7 @@
       "networkId": "eip155:42161",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/utils/PriceOracle.sol"
       },
       "auditReportRefs": [
@@ -496,6 +504,7 @@
       "networkId": "eip155:1",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/adapters/OptimismLegacyAdapterL1toL2.sol"
       },
       "auditReportRefs": [
@@ -705,6 +714,7 @@
       "networkId": "eip155:10",
       "source": {
         "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
         "path": "contracts/proxy/transparent/TransparentUpgradeableProxy.sol"
       },
       "auditReportRefs": [],
@@ -721,6 +731,7 @@
       "networkId": "eip155:10",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/senders/CustomSenderReferral.sol"
       },
       "auditReportRefs": [],
@@ -737,6 +748,7 @@
       "networkId": "eip155:10",
       "source": {
         "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
         "path": "contracts/proxy/transparent/ProxyAdmin.sol"
       },
       "auditReportRefs": [],
@@ -753,6 +765,7 @@
       "networkId": "eip155:10",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/utils/PausableImmutableOraclePool.sol"
       },
       "auditReportRefs": [],
@@ -769,6 +782,7 @@
       "networkId": "eip155:10",
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "commit": "3d1d484c31d39881cdbe8423614e3043e89e027f",
         "path": "src/SyncTrigger.sol"
       },
       "auditReportRefs": [
@@ -787,6 +801,7 @@
       "networkId": "eip155:10",
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "commit": "3d1d484c31d39881cdbe8423614e3043e89e027f",
         "path": "src/cre/CREReceiver.sol"
       },
       "auditReportRefs": [
@@ -805,6 +820,7 @@
       "networkId": "eip155:10",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/utils/PriceOracle.sol"
       },
       "auditReportRefs": [
@@ -864,6 +880,7 @@
       "networkId": "eip155:1",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/adapters/BaseLegacyAdapterL1toL2.sol"
       },
       "auditReportRefs": [],
@@ -984,6 +1001,7 @@
       "networkId": "eip155:8453",
       "source": {
         "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
         "path": "contracts/proxy/transparent/TransparentUpgradeableProxy.sol"
       },
       "auditReportRefs": [],
@@ -1000,6 +1018,7 @@
       "networkId": "eip155:8453",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/senders/CustomSenderReferral.sol"
       },
       "auditReportRefs": [],
@@ -1016,6 +1035,7 @@
       "networkId": "eip155:8453",
       "source": {
         "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
         "path": "contracts/proxy/transparent/ProxyAdmin.sol"
       },
       "auditReportRefs": [],
@@ -1032,6 +1052,7 @@
       "networkId": "eip155:8453",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/utils/PausableImmutableOraclePool.sol"
       },
       "auditReportRefs": [],
@@ -1048,6 +1069,7 @@
       "networkId": "eip155:8453",
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "commit": "3d1d484c31d39881cdbe8423614e3043e89e027f",
         "path": "src/SyncTrigger.sol"
       },
       "auditReportRefs": [
@@ -1066,6 +1088,7 @@
       "networkId": "eip155:8453",
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "commit": "3d1d484c31d39881cdbe8423614e3043e89e027f",
         "path": "src/cre/CREReceiver.sol"
       },
       "auditReportRefs": [
@@ -1084,6 +1107,7 @@
       "networkId": "eip155:8453",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/utils/PriceOracle.sol"
       },
       "auditReportRefs": [
@@ -1168,6 +1192,7 @@
       "networkId": "eip155:1",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "62108f7b6cc664e36dbc8100c4b48974d59f572e",
         "path": "contracts/adapters/LineaAdapterL1toL2.sol"
       },
       "auditReportRefs": [
@@ -1333,6 +1358,7 @@
       "networkId": "eip155:59144",
       "source": {
         "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
         "path": "contracts/proxy/transparent/TransparentUpgradeableProxy.sol"
       },
       "auditReportRefs": [],
@@ -1349,6 +1375,7 @@
       "networkId": "eip155:59144",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "62108f7b6cc664e36dbc8100c4b48974d59f572e",
         "path": "contracts/senders/CustomSenderReferral.sol"
       },
       "auditReportRefs": [],
@@ -1365,6 +1392,7 @@
       "networkId": "eip155:59144",
       "source": {
         "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
         "path": "contracts/proxy/transparent/ProxyAdmin.sol"
       },
       "auditReportRefs": [],
@@ -1381,6 +1409,7 @@
       "networkId": "eip155:59144",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "62108f7b6cc664e36dbc8100c4b48974d59f572e",
         "path": "contracts/utils/PausableImmutableOraclePool.sol"
       },
       "auditReportRefs": [],
@@ -1397,6 +1426,7 @@
       "networkId": "eip155:59144",
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "commit": "3d1d484c31d39881cdbe8423614e3043e89e027f",
         "path": "src/SyncTrigger.sol"
       },
       "auditReportRefs": [
@@ -1415,6 +1445,7 @@
       "networkId": "eip155:59144",
       "source": {
         "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+        "commit": "3d1d484c31d39881cdbe8423614e3043e89e027f",
         "path": "src/cre/CREReceiver.sol"
       },
       "auditReportRefs": [
@@ -1433,6 +1464,7 @@
       "networkId": "eip155:59144",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "62108f7b6cc664e36dbc8100c4b48974d59f572e",
         "path": "contracts/utils/PriceOracle.sol"
       },
       "auditReportRefs": [
@@ -2376,6 +2408,7 @@
       "networkId": "eip155:1",
       "source": {
         "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
         "path": "contracts/proxy/transparent/TransparentUpgradeableProxy.sol"
       },
       "auditReportRefs": [
@@ -2394,6 +2427,7 @@
       "networkId": "eip155:1",
       "source": {
         "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
         "path": "contracts/receivers/LidoCustomReceiver.sol"
       },
       "auditReportRefs": [
@@ -2412,6 +2446,7 @@
       "networkId": "eip155:1",
       "source": {
         "repositoryUrl": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
         "path": "contracts/proxy/transparent/ProxyAdmin.sol"
       },
       "auditReportRefs": [
