@@ -1,0 +1,11 @@
+[INFO] Started specific contract check
+[INFO] Fetching source code from GitHub
+Traceback (most recent call last):
+  File "/Users/x/.local/share/uv/tools/diffyscan/lib/python3.12/site-packages/diffyscan/diffyscan.py", line 311, in main
+    run_source_diff(contract_address_from_config, source_diffs, config, deployer)
+  File "/Users/x/.local/share/uv/tools/diffyscan/lib/python3.12/site-packages/diffyscan/utils/github.py", line 79, in _fetch_github_json
+    response = fetch(github_api_url, headers=_get_github_headers(github_api_token))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/x/.local/share/uv/tools/diffyscan/lib/python3.12/site-packages/diffyscan/utils/common.py", line 228, in wrapper
+    raise error_class(f"HTTP error: {exc}{body}")
+diffyscan.utils.custom_exceptions.ExplorerError: Failed to communicate with a remote resource: HTTP error: 403 Client Error: rate limit exceeded for url: https://api.github.com/repos/lidofinance/core/contents/contracts/0.4.24/Lido.sol?ref=dc9066b6f9b5c6c3b65f4a4aac338427198f0e98 Response: {"message":"API rate limit exceeded for 203.0.113.7. (But here's the good news: Authenticated requests get a higher rate limit.)","documentation_url":"https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting"}
