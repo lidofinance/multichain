@@ -40,6 +40,11 @@ jobs:
       # all are a reported gap, not a failure, and do not trip this.
       - name: Check Diffyscan projection coverage
         run: uv run --locked python scripts/render_diffyscan_config.py --coverage
+      # Exits 3 when a proxy the ledger fully describes has no RPC entry, so a
+      # newly added network cannot land with its proxies silently outside every
+      # state check. An unmapped proxyKind is a reported gap, not a failure.
+      - name: Check state-mate linkage projection coverage
+        run: uv run --locked python scripts/render_state_mate_config.py --coverage
       # Without this step CI only ever runs the validators against a known-good
       # ledger, so a validator that has silently stopped validating still passes.
       - name: Test the validators

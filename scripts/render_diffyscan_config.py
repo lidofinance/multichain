@@ -27,10 +27,16 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from jsonschema import Draft202012Validator, FormatChecker
-from jsonschema.exceptions import SchemaError
-
-from _ledger import DEFAULT_LEDGER, ROOT, load_json
+from _ledger import (
+    DEFAULT_LEDGER,
+    ROOT,
+    SLUG_RE,
+    index_deployments,
+    load_json,
+    parse_eip155_chain_id,
+    require_network_slug,
+    validate_json_schema,
+)
 
 DEFAULT_OVERLAY_SCHEMA = ROOT / "diffyscan" / "overlay.schema.json"
 DEFAULT_OVERLAYS_DIR = ROOT / "diffyscan" / "overlays"
@@ -40,7 +46,6 @@ DEFAULT_NETWORKS = ROOT / "diffyscan" / "networks.json"
 DEFAULT_NETWORKS_SCHEMA = ROOT / "diffyscan" / "networks.schema.json"
 DEFAULT_OUT_DIR = ROOT / "diffyscan" / "generated"
 
-SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 COMMIT_RE = re.compile(r"^[0-9a-fA-F]{7,64}$")
 # Filenames this script owns under --out-dir. Pruning is limited to these so a
 # hand overlay rendered into the same directory is never deleted.
@@ -108,26 +113,6 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def validate_json_schema(
-    instance: Any, schema: dict[str, Any], *, label: str
-) -> dict[str, Any]:
-    if not isinstance(instance, dict):
-        raise SystemExit(f"{label} root must be a JSON object")
-    try:
-        Draft202012Validator.check_schema(schema)
-    except SchemaError as exc:
-        raise SystemExit(f"Invalid schema for {label}: {exc}") from exc
-    validator = Draft202012Validator(schema, format_checker=FormatChecker())
-    errors = sorted(validator.iter_errors(instance), key=lambda e: list(e.path))
-    if errors:
-        lines = [f"Schema validation failed for {label}:"]
-        for error in errors:
-            loc = ".".join(str(p) for p in error.path) or "<root>"
-            lines.append(f"  - {loc}: {error.message}")
-        raise SystemExit("\n".join(lines))
-    return instance
-
-
 def normalize_repo_url(url: str) -> str:
     parsed = urlparse(url.strip())
     path = parsed.path.rstrip("/")
@@ -136,52 +121,6 @@ def normalize_repo_url(url: str) -> str:
     if not parsed.scheme or not parsed.netloc or not path:
         raise SystemExit(f"Invalid repositoryUrl: {url!r}")
     return f"{parsed.scheme}://{parsed.netloc}{path}"
-
-
-def parse_eip155_chain_id(network_id: str) -> int | None:
-    namespace, _, reference = network_id.partition(":")
-    if namespace != "eip155" or not reference.isdigit():
-        return None
-    return int(reference)
-
-
-def index_deployments(ledger: Any) -> dict[str, dict[str, Any]]:
-    if not isinstance(ledger, dict):
-        raise SystemExit("Ledger root must be a JSON object")
-    deployments = ledger.get("deployments")
-    if not isinstance(deployments, list):
-        raise SystemExit("Ledger deployments must be an array")
-
-    by_id: dict[str, dict[str, Any]] = {}
-    for index, entry in enumerate(deployments):
-        if not isinstance(entry, dict):
-            raise SystemExit(f"deployments[{index}] must be an object")
-        deployment_id = entry.get("deploymentId")
-        if not isinstance(deployment_id, str) or not deployment_id:
-            raise SystemExit(f"deployments[{index}] missing deploymentId")
-        if deployment_id in by_id:
-            raise SystemExit(f"Duplicate deploymentId in ledger: {deployment_id}")
-        network_id = entry.get("networkId")
-        if not isinstance(network_id, str) or not network_id:
-            raise SystemExit(f"deployments[{index}] missing networkId")
-        by_id[deployment_id] = entry
-    return by_id
-
-
-def require_network_slug(ledger: dict[str, Any], network_id: str) -> str:
-    networks = ledger.get("networks")
-    if not isinstance(networks, dict):
-        raise SystemExit("Ledger networks must be an object")
-    meta = networks.get(network_id)
-    if not isinstance(meta, dict):
-        raise SystemExit(f"Ledger networks missing entry for {network_id!r}")
-    name = meta.get("networkName")
-    if not isinstance(name, str) or not SLUG_RE.fullmatch(name):
-        raise SystemExit(
-            f"networkName for {network_id!r} must be a slug matching "
-            f"{SLUG_RE.pattern}; got {name!r}"
-        )
-    return name
 
 
 def cohort_id(profile_id: str, network_slug: str, commit: str) -> str:

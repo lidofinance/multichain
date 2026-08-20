@@ -9,6 +9,8 @@ __pycache__/
 
 /diffyscan/generated/
 /diffyscan/logs/
+/state-mate/generated/
+/state-mate/logs/
 /.diffyscan_cache/
 /digest/
 .env

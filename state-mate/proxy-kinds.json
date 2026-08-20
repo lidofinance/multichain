@@ -1,0 +1,93 @@
+{
+  "$schema": "./proxy-kinds.schema.json",
+  "note": "EIP-1967 slot constants are bytes32(uint256(keccak256('eip1967.proxy.<role>')) - 1). They are recorded here as dated empirical claims: each was read back from the live deployments named in verifiedAgainst and matched the address ledger.json records for that role. A proxyKind that is not listed cannot be projected — see the ledger's proxyKind enum for the kinds still unmapped.",
+  "proxyKinds": {
+    "ossifiable": {
+      "description": "Lido OssifiableProxy: OpenZeppelin ERC1967Proxy plus proxy__ admin views. Upgrade pointers live in the EIP-1967 slots; ossification is the admin slot holding the zero address.",
+      "storageSlots": {
+        "implementation": "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
+        "admin": "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
+      },
+      "verifiedOn": "2026-08-18",
+      "verifiedAgainst": [
+        "eip155:34443:0x98f96A4B34D03a2E6f225B28b8f8Cb1279562d81",
+        "eip155:1923:0x7c98E0779EB5924b3ba8cE3B17648539ed5b0Ecc",
+        "eip155:48900:0xf0e673Bc224A8Ca3ff67a61605814666b1234833"
+      ]
+    },
+    "transparent": {
+      "description": "OpenZeppelin TransparentUpgradeableProxy. EIP-1967 slots; the admin slot holds the ProxyAdmin contract. admin() and implementation() are ifAdmin-gated, so they are not readable evidence from an ordinary caller and no view is mapped.",
+      "storageSlots": {
+        "implementation": "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
+        "admin": "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
+      },
+      "verifiedOn": "2026-08-18",
+      "verifiedAgainst": [
+        "eip155:59144:0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F",
+        "eip155:324:0x703b52F2b28fEbcB60E1372858AF5b18849FE867"
+      ]
+    },
+    "erc1967": {
+      "description": "Bare OpenZeppelin ERC1967Proxy. Implementation lives in the EIP-1967 implementation slot. No admin slot is asserted: a bare ERC1967Proxy has no admin concept of its own, and upgrade authority sits in the implementation's own storage, which this map does not model.",
+      "storageSlots": {
+        "implementation": "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc"
+      },
+      "verifiedOn": "2026-08-18",
+      "verifiedAgainst": [
+        "eip155:56:0x26c5e01524d2E6280A48F2c50fF6De7e52E9611C"
+      ]
+    }
+  },
+  "proxyAbis": {
+    "OssifiableProxy": {
+      "description": "View-only fragment of Lido's OssifiableProxy. These three functions are defined on the proxy itself, not delegated, so a call that reverts also impeaches the ledger's contractName for the address.",
+      "sourceRef": "https://github.com/lidofinance/lido-l2-with-steth/blob/main/contracts/proxy/OssifiableProxy.sol",
+      "views": {
+        "implementation": "proxy__getImplementation",
+        "admin": "proxy__getAdmin",
+        "ossified": "proxy__getIsOssified"
+      },
+      "abi": [
+        {
+          "inputs": [],
+          "name": "proxy__getAdmin",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "proxy__getImplementation",
+          "outputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "proxy__getIsOssified",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }
+      ]
+    }
+  }
+}
