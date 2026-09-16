@@ -1,0 +1,306 @@
+{
+  "live": {
+    "record": "config/chains.live-mantle-2026-09-15",
+    "deployedAt": "2026-09-15",
+    "env": "testnet",
+    "lane": [
+      11155111,
+      5003
+    ],
+    "tokens": {
+      "11155111": {
+        "chainId": "11155111",
+        "chainName": "Sepolia",
+        "tokenAddress": "0x03EA7F67bDE498c989b22628b5DFCeeeb4cA9434",
+        "poolAddress": "0x60dF5C229afF442dbe94C0E1a87c40036FCca242",
+        "poolType": "lockRelease",
+        "decimals": 18
+      },
+      "5003": {
+        "chainId": "5003",
+        "chainName": "Mantle Sepolia",
+        "tokenAddress": "0x964EC0899Aa702485A2e9FCC3C4832b320319d38",
+        "poolAddress": "0x7C4A71b282d7483EcEB858517d608354286605f1",
+        "poolType": "burnMint",
+        "decimals": 18
+      }
+    },
+    "seeds": {
+      "11155111": [
+        [
+          "0x058b56D4AAaAEb1Fe6Dd192425D7672a7584fa0B",
+          "ours:POM"
+        ],
+        [
+          "0x60dF5C229afF442dbe94C0E1a87c40036FCca242",
+          "ours:pool"
+        ],
+        [
+          "0x49bB57DFdc349eb56CD0a4e2dBfE5cC330980952",
+          "ours:hooks"
+        ],
+        [
+          "0x03EA7F67bDE498c989b22628b5DFCeeeb4cA9434",
+          "ours:token"
+        ],
+        [
+          "0xC570c5949c0cC7460f29fdbFA8c1151e282Ce879",
+          "ours:verifier"
+        ],
+        [
+          "0x160162c04296A96E44296604f4EF3Ab313Dc39e0",
+          "ours:resolver"
+        ],
+        [
+          "0x765D0Dd043f61DcBE0DCcdAe8ce868c105993B25",
+          "ours:lockbox"
+        ]
+      ],
+      "5003": [
+        [
+          "0x7075aF66b3A71ddeA8cB0ac19e96eEB119F1e8DF",
+          "ours:POM"
+        ],
+        [
+          "0x7C4A71b282d7483EcEB858517d608354286605f1",
+          "ours:pool"
+        ],
+        [
+          "0xb073066923aC6C4F20975B7f8C63d7e84dd84DE8",
+          "ours:hooks"
+        ],
+        [
+          "0x964EC0899Aa702485A2e9FCC3C4832b320319d38",
+          "ours:token"
+        ],
+        [
+          "0xE4Fc4eBd1BE17D77C4792AA9E72fC1A0b706F300",
+          "ours:verifier"
+        ],
+        [
+          "0x073198c3e239e064764825380eDc4A5f4B5A7B7e",
+          "ours:resolver"
+        ]
+      ]
+    }
+  },
+  "networks": [
+    {
+      "chainId": 42161,
+      "name": "Arbitrum One",
+      "group": "supported",
+      "bridge": "Lido gateway \u00b7 Arbitrum canonical",
+      "token": "0x5979D7b546E38E414F7E9822514be443A4800529",
+      "escrow": "0x0F25c1DC2a9922304f2eac71DCa9B07E310e8E5a",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "ledger"
+      }
+    },
+    {
+      "chainId": 10,
+      "name": "Optimism",
+      "group": "supported",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "token": "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb",
+      "escrow": "0x76943C0D61395d8F2edF9060e1533529cAe05dE6",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "ledger"
+      }
+    },
+    {
+      "chainId": 8453,
+      "name": "Base",
+      "group": "supported",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "token": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
+      "escrow": "0x9de443AdC5A411E83F1878Ef24C3F52C61571e72",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "ledger"
+      }
+    },
+    {
+      "chainId": 59144,
+      "name": "Linea",
+      "group": "supported",
+      "bridge": "Linea canonical TokenBridge",
+      "token": "0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F",
+      "escrow": "0x051f1d88f0af5763fb888ec4378b4d8b29ea3319",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "ledger"
+      }
+    },
+    {
+      "chainId": 56,
+      "name": "BNB Chain",
+      "group": "supported",
+      "bridge": "Wormhole NTT + Axelar",
+      "token": "0x26c5e01524d2E6280A48F2c50fF6De7e52E9611C",
+      "escrow": "0xb948a93827d68a82F6513Ad178964Da487fe2BD9",
+      "escrowLabel": "NttManager",
+      "src": {
+        "token": "ledger",
+        "escrow": "ledger"
+      }
+    },
+    {
+      "chainId": 130,
+      "name": "Unichain",
+      "group": "supported",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "token": "0xc02fE7317D4eb8753a02c35fe019786854A92001",
+      "escrow": "0x755610f5Be536Ad7afBAa7c10F3E938Ea3aa1877",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "ledger"
+      }
+    },
+    {
+      "chainId": 324,
+      "name": "ZKsync Era",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 ZK Stack",
+      "token": "0x703b52F2b28fEbcB60E1372858AF5b18849FE867",
+      "escrow": "0x41527B2d03844dB6b0945f25702cB958b6d55989",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "docs"
+      }
+    },
+    {
+      "chainId": 34443,
+      "name": "Mode",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "token": "0x98f96A4B34D03a2E6f225B28b8f8Cb1279562d81",
+      "escrow": "0xD0DeA0a3bd8E4D55170943129c025d3fe0493F2A",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "docs"
+      }
+    },
+    {
+      "chainId": 534352,
+      "name": "Scroll",
+      "group": "legacy",
+      "bridge": "Lido gateway \u00b7 Scroll",
+      "token": "0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32",
+      "escrow": "0x6625c6332c9f91f2d27c304e729b86db87a3f504",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "docs"
+      }
+    },
+    {
+      "chainId": 5000,
+      "name": "Mantle",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 Mantle",
+      "token": "0x458ed78EB972a369799fb278c0243b25e5242A83",
+      "escrow": "0x2D001d79E5aF5F65a939781FE228B267a8Ed468B",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "docs"
+      }
+    },
+    {
+      "chainId": 1923,
+      "name": "Swellchain",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "token": "0x7c98E0779EB5924b3ba8cE3B17648539ed5b0Ecc",
+      "escrow": "0xecf3376512EDAcA4FBB63d2c67d12a0397d24121",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "docs"
+      }
+    },
+    {
+      "chainId": 48900,
+      "name": "Zircuit",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "token": "0xf0e673Bc224A8Ca3ff67a61605814666b1234833",
+      "escrow": "0x912C7271a6A3622dfb8B218eb46a6122aB046C79",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "docs"
+      }
+    },
+    {
+      "chainId": 1868,
+      "name": "Soneium",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "token": "0xaA9BD8c957D803466FA92504BDd728cC140f8941",
+      "escrow": "0x2F543A7C9cc80Cc2427c892B96263098d23ee55a",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "docs"
+      }
+    },
+    {
+      "chainId": 137,
+      "name": "Polygon PoS",
+      "group": "legacy",
+      "bridge": "Polygon PoS canonical",
+      "token": "0x03b54A6e9a984069379fae1a4fC4dBAE93B3bCCD",
+      "escrow": "0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf",
+      "escrowLabel": "ERC20Predicate",
+      "src": {
+        "token": "ledger",
+        "escrow": "docs"
+      }
+    },
+    {
+      "chainId": 1135,
+      "name": "Lisk",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "token": "0x76D8de471F54aAA87784119c60Df1bbFc852C415",
+      "escrow": "0x9348AF23B01F2B517AFE8f29B3183d2Bb7d69Fcf",
+      "escrowLabel": null,
+      "src": {
+        "token": "ledger",
+        "escrow": "docs"
+      }
+    }
+  ],
+  "l1Token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+  "provenance": {
+    "takenAt": "2026-08-27",
+    "docsUrl": "https://docs.lido.fi/deployed-contracts/",
+    "ledgerUpdatedAt": "2026-08-26",
+    "ledgerUrl": "https://github.com/lidofinance/multichain/blob/4cda087a88e09d5a3682c991852c8261167ab45b/ledger.json"
+  },
+  "sources": {
+    "upstreamRepository": "https://github.com/lidofinance/wsteth-ccip",
+    "upstreamCommit": null,
+    "upstreamMode": "local",
+    "upstreamFiles": {
+      "docs/CURRENT-DEPLOYMENT.md": "27b8680582f6d3403568e1b1120faeecb6bb7ee2ae902ee39126bfa940da74c0",
+      "docs/deployment-2026-09-15.md": "af91dad2dd610e96065e7b318fb3f69496536a7b9eae433f66ae1463acc53e76",
+      "config/chains.live-mantle-2026-09-15/mantle_sepolia.json": "285ef3ecbd92e6d4de8932d0576a300cb39c71321451ac6cb59925a189d7d111",
+      "config/chains.live-mantle-2026-09-15/sepolia.json": "081c53bf7a884eb6d2a4a0c7bec4a3b9cd2fdac2ee2072e038e5f401a0fc1978"
+    },
+    "ledgerCommit": "4cda087a88e09d5a3682c991852c8261167ab45b",
+    "ledgerSha256": "49c2774128c633525362806eed8b650b28989a89ba4cee74bf2c3a7112b9e271",
+    "metadataSha256": "170205bc9114098667804bec2401d6e67fdd2d156e1437e107575bde04ac6153"
+  },
+  "identity": "ceb060f259c8080edccaf7795229faf3e2fe858e7f126dc56d3934328a5bb9ed"
+}

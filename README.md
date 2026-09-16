@@ -1,6 +1,6 @@
 # Lido Multichain Deployment Ledger
 
-Dashboard: run `just dashboard` to build from this ledger and current `wsteth-ccip` main, then preview locally. See [publishing and data sources](docs/PUBLISHING.md).
+Dashboard: the built site in `docs/` is ready for GitHub Pages. Run `just dashboard` to rebuild from this ledger and current `wsteth-ccip` main, then preview locally. See [publishing and data sources](docs/PUBLISHING.md).
 
 This repository maintains a machine-readable ledger of Lido-related contracts deployed across supported blockchain networks. Its purpose is to make deployed addresses, architectural kinds, and source-code provenance queryable without presenting the ledger itself as the authority that creates those facts.
 

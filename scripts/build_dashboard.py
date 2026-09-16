@@ -16,6 +16,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
 import re
 import os
+import subprocess
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from pathlib import Path
@@ -302,27 +303,44 @@ def table(configs, fields):
     return '<div class="table"><table><tr><th>Contract</th>' + headings + '</tr>' + ''.join(rows) + '</table></div>'
 
 
+def ledger_source(root, ledger_bytes):
+    """Pin provenance only when the working ledger matches the selected commit."""
+    try:
+        commit = subprocess.check_output(
+            ['git', '-C', str(root), 'rev-parse', 'HEAD'], stderr=subprocess.PIPE
+        ).decode().strip()
+        committed = subprocess.check_output(
+            ['git', '-C', str(root), 'show', f'{commit}:ledger.json'], stderr=subprocess.PIPE
+        )
+    except subprocess.CalledProcessError as exc:
+        raise ValueError('Cannot resolve the committed ledger source; build from a Git checkout') from exc
+    if committed != ledger_bytes:
+        raise ValueError('ledger.json differs from HEAD; commit the ledger before building a commit-pinned dashboard')
+    return commit, f'https://github.com/lidofinance/multichain/blob/{commit}/ledger.json'
+
+
 def build(root, output, upstream_path=None):
     root, output = Path(root), Path(output).resolve()
     upstream = GitHubSource() if upstream_path is None else LocalSource(upstream_path)
     sha = upstream.sha
     live, configs, current, report_path, report, inputs = read_upstream(upstream)
     ledger_bytes = (root / 'ledger.json').read_bytes()
+    ledger_commit, ledger_url = ledger_source(root, ledger_bytes)
     ledger = json.loads(ledger_bytes)
     metadata_bytes = (root / 'config/dashboard-networks.json').read_bytes()
     metadata = json.loads(metadata_bytes)
     data = dict(live=live, networks=ledger_networks(ledger, metadata),
                 l1Token=deployed(ledger, 'eip155:1', 'ethereum-ethereum-wsteth-token'),
                 provenance=dict(takenAt=metadata['takenAt'], docsUrl=metadata['docsUrl'],
-                                ledgerUpdatedAt=ledger['updatedAt'], ledgerUrl='ledger.json'),
+                                ledgerUpdatedAt=ledger['updatedAt'], ledgerUrl=ledger_url),
                 sources=dict(upstreamRepository=UPSTREAM, upstreamCommit=sha,
                              upstreamMode="github" if sha else "local",
                              upstreamFiles=inputs,
-                             ledgerSha256=digest(ledger_bytes), metadataSha256=digest(metadata_bytes)))
+                             ledgerCommit=ledger_commit, ledgerSha256=digest(ledger_bytes), metadataSha256=digest(metadata_bytes)))
     data['identity'] = digest(json.dumps(data, sort_keys=True).encode())
     base = f'{UPSTREAM}/blob/{sha}/' if sha else 'upstream/'
     source_label = sha[:12] if sha else 'LOCAL DIRECTORY · unpublished changes may be included'
-    provenance = ('Ledger: <a href="ledger.json">build input</a> · updated ' + html.escape(ledger['updatedAt']) +
+    provenance = ('Ledger: <a href="' + ledger_url + '">build input</a> · updated ' + html.escape(ledger['updatedAt']) +
                   ' · SHA-256 ' + data['sources']['ledgerSha256'][:12] + '<br>Testnet source: <a href="' + base + ACTIVE + '">wsteth-ccip</a> · ' + source_label +
                   ' · record ' + html.escape(live['record']) +
                   '<br><a href="dashboard-build.json">Build provenance</a> · observations are read separately via RPC.')
@@ -337,7 +355,7 @@ def build(root, output, upstream_path=None):
     ccv += evidence + '<section><h2>CCV configuration</h2>' + source_text(section(current, 'CCV configuration'), base + ACTIVE) + '</section>'
     pages = {}
     for name in ('index', 'roles', 'ccv'):
-        text = (root / f'docs/{name}.html').read_text()
+        text = (root / f'dashboard/templates/{name}.html').read_text()
         text = text.replace('<!-- BUILD_PROVENANCE -->', provenance)
         if name == 'index':
             payload = json.dumps(data).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
@@ -360,7 +378,6 @@ def build(root, output, upstream_path=None):
             target = output / 'upstream' / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(raw)
-    (output / 'ledger.json').write_bytes(ledger_bytes)
     (output / 'dashboard-build.json').write_text(json.dumps(data, indent=2) + '\n')
     return data
 
@@ -368,7 +385,7 @@ def build(root, output, upstream_path=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--upstream', type=Path, help='Use this local source directory instead of GitHub')
-    parser.add_argument('--output', type=Path, default=ROOT / 'temp/dashboard-site')
+    parser.add_argument('--output', type=Path, default=ROOT / 'docs')
     parser.add_argument('--serve', action='store_true', help='Preview the built output on localhost:8000')
     args = parser.parse_args()
     try:

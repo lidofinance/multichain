@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
 import test from 'node:test';
 
-const html = readFileSync(new URL('../docs/index.html', import.meta.url), 'utf8');
+const html = readFileSync(new URL('../dashboard/templates/index.html', import.meta.url), 'utf8');
 const script = html.split('<script>\n')[1].split('</script>')[0];
 const source = script.slice(0, script.indexOf('// 8. Refresh cycle and events'));
 const address = n => '0x' + n.toString(16).padStart(40, '0');

@@ -14,7 +14,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit, parse_qs, unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from build_dashboard import ROOT, GitHubSource, LocalSource, build, ledger_networks, read_upstream, source_text, main
+from build_dashboard import ROOT, GitHubSource, LocalSource, build, ledger_networks, read_upstream, source_text, main, ledger_source
 
 
 def addr(n):
@@ -26,6 +26,10 @@ class DashboardBuildTests(unittest.TestCase):
         self.ledger = json.loads((ROOT / 'ledger.json').read_text())
         self.metadata = json.loads((ROOT / 'config/dashboard-networks.json').read_text())
 
+
+    def test_ledger_provenance_rejects_uncommitted_input(self):
+        with self.assertRaisesRegex(ValueError, 'ledger.json differs from HEAD'):
+            ledger_source(ROOT, b'uncommitted ledger')
 
     def test_preview_serves_selected_output_directory(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -149,7 +153,11 @@ One resolver; no delivery claim.
         with tempfile.TemporaryDirectory() as tmp, patch('build_dashboard.urlopen', side_effect=self.response):
             output = Path(tmp) / 'site'
             before = build(ROOT, output)
-            self.assertEqual(json.loads((output / 'ledger.json').read_text()), self.ledger)
+            self.assertFalse((output / 'ledger.json').exists())
+            commit = before['sources']['ledgerCommit']
+            url = f'https://github.com/lidofinance/multichain/blob/{commit}/ledger.json'
+            self.assertEqual(before['provenance']['ledgerUrl'], url)
+            self.assertIn(url, (output / 'index.html').read_text())
             page = (output / 'index.html').read_text()
             payload = json.loads(re.search(r'id="dashboard-data">(.*?)</script>', page).group(1))
             self.assertEqual(payload['identity'], before['identity'])

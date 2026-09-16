@@ -21,7 +21,7 @@ import path from "node:path";
 const ROOT = path.resolve(import.meta.dirname, "..");
 const siteArg = process.argv.indexOf("--site");
 if (siteArg !== -1 && !process.argv[siteArg + 1]) throw new Error("--site requires a directory");
-const SITE = siteArg === -1 ? path.join(ROOT, "temp/dashboard-site") : path.resolve(process.argv[siteArg + 1]);
+const SITE = siteArg === -1 ? path.join(ROOT, "docs") : path.resolve(process.argv[siteArg + 1]);
 const PAGE = path.join(SITE, "index.html");
 const OUT = path.join(SITE, "index.snapshot.json");
 
