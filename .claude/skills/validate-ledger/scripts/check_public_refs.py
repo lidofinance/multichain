@@ -323,7 +323,11 @@ def collect_gaps(ledger: dict[str, Any], checks: list[dict[str, Any]]) -> dict[s
         "publicRefUnverifiable": [
             {"deploymentId": did, "refs": refs} for did, refs in sorted(unverifiable.items())
         ],
-        "noEvidenceAtAll": [],
+        # Deliberately not called "no evidence at all": this workflow reads
+        # publicRefs and source only. An entry here may still carry
+        # auditReportRefs, which nothing in this run fetches or tests, so the
+        # count travels with the finding to keep the label honest.
+        "noPublicRefsAndNoSource": [],
     }
     for entry in ledger["deployments"]:
         deployment_id = entry["deploymentId"]
@@ -338,9 +342,15 @@ def collect_gaps(ledger: dict[str, Any], checks: list[dict[str, Any]]) -> dict[s
             gaps["sourceWithoutCommit"].append(deployment_id)
         if not entry.get("auditReportRefs"):
             gaps["noAuditReportRefs"].append(deployment_id)
-        # The sharpest gap: nothing a reader can follow at all.
+        # The sharpest gap this run can see: no way to cross-check the
+        # address, and no way to check its source.
         if not has_refs and not has_source:
-            gaps["noEvidenceAtAll"].append(deployment_id)
+            gaps["noPublicRefsAndNoSource"].append(
+                {
+                    "deploymentId": deployment_id,
+                    "auditReportRefs": len(entry.get("auditReportRefs") or []),
+                }
+            )
     return gaps
 
 
@@ -564,7 +574,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     print("  gaps:")
     for name, values in gaps.items():
-        print(f"    {name:<24}{len(values)}")
+        print(f"    {name:<26}{len(values)}")
     for check in checks:
         if check["verdict"] != "address-present":
             print(

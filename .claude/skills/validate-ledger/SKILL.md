@@ -72,11 +72,24 @@ Then make the run directories: `mkdir -p reports temp/<stamp>`. Artifacts go in
 
 Two preflight facts belong in the report:
 
-- **Diffyscan is installed unpinned.** `uv tool list` reports `v0.0.0` and
+- **Diffyscan is installed unpinned, but the revision is recoverable.**
+  `uv tool list` reports `v0.0.0` and
   `~/.local/share/uv/tools/diffyscan/uv-receipt.toml` shows it was installed from
-  `git+https://github.com/lidofinance/diffyscan` with no revision. So the sweep
-  is not reproducible from the report alone. Record the receipt contents and say
-  this once — do not pretend to a version you do not have.
+  `git+https://github.com/lidofinance/diffyscan` with no revision. The install
+  itself records one — read it and put it in the report:
+
+  ```sh
+  uv run --locked python3 -c "import json,pathlib;m=sorted(pathlib.Path.home().glob('.local/share/uv/tools/diffyscan/lib/python3.*/site-packages/diffyscan-*.dist-info/direct_url.json'));print(json.loads(m[0].read_text())['vcs_info']['commit_id'] if m else 'direct_url.json not found')"
+  ```
+
+  The interpreter version and the dist-info version are globbed on purpose — a
+  path pinned to one `python3.x` reports "not recoverable" for an install that
+  merely used a different Python, which is the very defect this recovers from.
+  Report the version as `v0.0.0` with that resolved commit, and say which file
+  each came from. Only when the command prints `direct_url.json not found` (a
+  different install layout) say the revision could not be recovered and that the
+  sweep is therefore not reproducible from the report alone — do not pretend to
+  a version you do not have.
 - **Credentials.** `.env` must carry `ETHERSCAN_API_KEY` and
   `ETHERSCAN_EXPLORER_TOKEN`, and `GITHUB_API_TOKEN` must be in the environment —
   Diffyscan treats it as required and aborts without it, and an unauthenticated
@@ -209,7 +222,8 @@ cohort log into outcomes that mean different things:
 - **not compared:** `source-missing-upstream` (the source host answered 404 for
   the pinned tree) · `upstream-unavailable` (the source host failed some other
   way — rate limit, auth, 5xx, network) · `explorer-unavailable` · `tool-error` ·
-  `not-run`
+  `not-reached` (the cohort aborted before this address was requested) ·
+  `not-run` (the cohort projected but left no log)
 - **outside the sweep:** `no-source-claim` (the ledger records no source, so
   there is no revision claim to test) · `unpinned-source-claim` (a repository but
   no commit) · `not-projected` (a full claim exists, no cohort could be built)
@@ -219,6 +233,14 @@ costs a reader most if it is wrong, so the collector takes it from the HTTP
 status and host, not from the exception class: Diffyscan raises one
 `ExplorerError` for a GitHub 404, a GitHub rate limit *and* an explorer refusal.
 A 404 impeaches the ledger's pin. A 403 means the check never ran.
+
+**A crashed cohort is read address by address.** Diffyscan compares a cohort's
+addresses in sequence, so a crash leaves three kinds of member: addresses it
+already compared in full (their own outcome stands, with
+`comparedBeforeCohortAborted` recorded), the address the crash interrupted (the
+crash outcome), and addresses it never requested (`not-reached` — their pins are
+neither confirmed nor impeached). Do not read a sibling's crash as a fact about
+an address the log shows was already compared.
 
 **Read the failing cohort logs yourself before writing any finding.** The
 collector classifies; the log holds the sentence worth quoting.
@@ -240,19 +262,27 @@ unrecognised failure reaches you instead of vanishing into a known gap. Two
 things in that output belong in the report: a blocker whose cohorts failed in a
 way it does not explain (`unexplainedCohorts` — those are findings), and a
 blocker `not exercised by this run`, which means the claim went untested and is
-now that many days old. When a blocker is confirmed against a real log, add its
+now that many days old. Read `notExercisedReason` with it: a blocker whose
+networks project no cohort at all (`cohortsOnNetworks: 0`) cannot be exercised
+by this snapshot however often the sweep is re-run, and stays untestable until
+those entries carry a `source.commit`. That is a different report sentence from
+"its cohorts passed" — and that second case (`cohortsOnNetworks` above zero, no
+failures) is not an untested claim either: cohorts ran on those networks and
+none produced the blocker's `expectedOutcome`, which impeaches the blocker.
+Report it as a registry finding, not as a gap. When a blocker is confirmed
+against a real log, add its
 signature and evidence ref to the registry; that is how a hint becomes evidence.
 
 ## Step 4 — Reason with FPF, then write the report
 
 Invoke the `fpf` skill, then read `references/fpf-frame.md` in this skill
 directory. It carries the routing (`A.10` governs; `A.7` and `C.2` for their
-specific checks), the three bounded uses the report judges, the default
+specific checks), the four bounded uses the report judges (U1–U4), the default
 outcome→disposition mapping, and the traps specific to this repository.
 
 The short version, so you know what you are reaching for: findings are
 **bounded reliance dispositions** drawn from `A.10:4.5`'s canonical set (`pass`,
-`degrade`, `abstain`, `reopen`, `evidence-needed`, `safety-case-required`,
+`degrade`, `abstain`, `reopen`, `evidence-needed`, `assurance-needed`,
 `blocked-current-use`) against a **named use**, never a truth claim about a
 contract. Read `patterns/A.10.md` sections `:4.4`–`:4.5` for the path fields and
 the member set before assigning any of them.

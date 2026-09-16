@@ -20,7 +20,7 @@
         "Splits the deployments outside the sweep into no-source-claim, unpinned-source-claim and not-projected rather than reporting one combined not-projected total",
         "Judges each failure cluster explicitly as one common-mode cause or as that many independent findings, and says what decided it",
         "Reports the state of each known blocker: whether this run exercised it, whether a log signature matched, and how old the claim is",
-        "Uses A.10:4.5 RelianceDisposition member names (pass/degrade/abstain/reopen/evidence-needed/safety-case-required/blocked-current-use) rather than inventing a PASS/FAIL grade",
+        "Uses A.10:4.5 RelianceDisposition member names (pass/degrade/abstain/reopen/evidence-needed/assurance-needed/blocked-current-use) rather than inventing a PASS/FAIL grade",
         "Carries an admissible-use statement saying what the report may and may not be relied on for",
         "Records the ledger sha256 after the run as well as before, and the two match; no git commit was made",
         "Deployments that passed appear as counts or inside collapsed lists, never enumerated inline"

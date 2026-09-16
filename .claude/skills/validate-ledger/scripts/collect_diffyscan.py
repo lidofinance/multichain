@@ -33,6 +33,9 @@ Outcomes per deployment:
   explorer-unavailable     the explorer refused or is incompatible; nothing was
                            compared, so nothing is established either way
   tool-error               Diffyscan crashed for some other reason
+  not-reached              the cohort aborted before Diffyscan requested this
+                           address, so its own pin is neither confirmed nor
+                           impeached
   not-run                  cohort projected but no log present
   no-source-claim          the ledger records no source, so no provenance claim
                            exists for this sweep to test
@@ -74,6 +77,15 @@ FAILED_BULLET_RE = re.compile(
     r"•\s*(?P<name>\S+)\s*\((?P<address>0x[0-9a-fA-F]{40})\):\s*(?P<files>\d+) file"
 )
 DURATION_RE = re.compile(r"Done in ([0-9.]+)s")
+
+# Diffyscan announces each address before comparing it, then reports that
+# address's file counts. A cohort that crashes half-way therefore leaves a
+# complete record for the addresses it already finished, and no record at all
+# for the ones it never reached. Both are read here so a sibling address's
+# crash is not filed as a fact about this address.
+CONTRACT_RUN_RE = re.compile(r"Contract:\s*(0x[0-9a-fA-F]{40})")
+FILES_FOUND_RE = re.compile(r"Files found:\s*(\d+)\s*/\s*(\d+)")
+IDENTICAL_FILES_RE = re.compile(r"Identical files:\s*(\d+)\s*/\s*(\d+)")
 
 SOURCE_SUMMARY_HEADER = "SOURCE CODE COMPARISON SUMMARY:"
 BYTECODE_SUMMARY_HEADER = "BYTECODE COMPARISON SUMMARY:"
@@ -339,6 +351,33 @@ def classify_crash(
     return "tool-error", error_line, detail
 
 
+def parse_contract_runs(text: str) -> list[dict[str, Any]]:
+    """Split one cohort log into the per-address comparisons it contains.
+
+    A run is `completed` when the log reports this address's identical-file
+    count; the address a crash interrupted has an opening line and no counts,
+    and an address the crash never reached has no section at all.
+    """
+    runs: list[dict[str, Any]] = []
+    markers = list(CONTRACT_RUN_RE.finditer(text))
+    for index, marker in enumerate(markers):
+        end = markers[index + 1].start() if index + 1 < len(markers) else len(text)
+        block = text[marker.end() : end]
+        found = FILES_FOUND_RE.search(block)
+        identical = IDENTICAL_FILES_RE.search(block)
+        runs.append(
+            {
+                "address": marker.group(1),
+                "filesFound": int(found.group(1)) if found else None,
+                "filesExpected": int(found.group(2)) if found else None,
+                "identicalFiles": int(identical.group(1)) if identical else None,
+                "filesCompared": int(identical.group(2)) if identical else None,
+                "completed": identical is not None,
+            }
+        )
+    return runs
+
+
 def parse_log(
     path: Path,
     repository_url: str | None = None,
@@ -358,6 +397,7 @@ def parse_log(
         "summary": None,
         "failedContracts": [],
         "allowedDiffAddresses": [],
+        "contractRuns": [],
         "outcome": None,
         "errorLine": None,
         "failure": None,
@@ -393,6 +433,8 @@ def parse_log(
                         "filesWithDiffs": int(match.group("files")),
                     }
                 )
+
+    result["contractRuns"] = parse_contract_runs(text)
 
     for line in text.splitlines():
         if "Allowed source diff" in line:
@@ -456,6 +498,34 @@ def deployment_outcome(
     if outcome == "source-allowed-diff":
         return "source-match", detail
     if outcome in CRASH_OUTCOMES:
+        # A crash aborts the cohort, but not retroactively: `A.10:4.5` ties a
+        # disposition to the evidence for the exact entry, and an address the
+        # log already compared file-by-file carries its own completed evidence.
+        # Attributing a sibling's crash to it would establish a fact by shared
+        # cohort membership, which `A.10:6` item 7 (graph boundary) rejects.
+        run = next(
+            (r for r in log["contractRuns"] if r["address"].lower() == lowered),
+            None,
+        )
+        if run is None:
+            return "not-reached", {
+                "cohortAborted": True,
+                "cohortOutcome": outcome,
+                "errorLine": log["errorLine"],
+                "failure": log["failure"],
+            }
+        if (
+            run["completed"]
+            and run["identicalFiles"] is not None
+            and run["identicalFiles"] == run["filesCompared"]
+            and run["filesFound"] == run["filesExpected"]
+        ):
+            return "source-match", {
+                "comparedBeforeCohortAborted": True,
+                "cohortOutcome": outcome,
+                "filesCompared": run["filesCompared"],
+                "identicalFiles": run["identicalFiles"],
+            }
         detail = {
             "cohortAborted": True,
             "errorLine": log["errorLine"],
@@ -528,11 +598,13 @@ def evaluate_blockers(
     evaluated: list[dict[str, Any]] = []
     for blocker in registry.get("blockers") or []:
         networks = set(blocker.get("appliesToNetworkIds") or [])
+        on_networks = [
+            report for report in cohort_reports if report["networkId"] in networks
+        ]
         failing = [
             report
-            for report in cohort_reports
-            if report["networkId"] in networks
-            and report["outcome"] not in CLEAN_OUTCOMES
+            for report in on_networks
+            if report["outcome"] not in CLEAN_OUTCOMES
         ]
         matched = [r["cohortId"] for r in failing if blocker["id"] in r["matchedBlockers"]]
         as_of = blocker.get("asOf")
@@ -556,6 +628,32 @@ def evaluate_blockers(
                     r["cohortId"] for r in failing if r["cohortId"] not in set(matched)
                 ),
                 "exercisedThisRun": bool(failing),
+                # "Not exercised" has two very different causes and a report
+                # that cannot tell them apart will read an untestable claim as
+                # a merely untested one. A blocker whose networks project no
+                # cohort at all cannot be exercised by this snapshot however
+                # many times the sweep is re-run: nothing requests those
+                # explorers until those entries carry a source.commit. The
+                # other cause is the opposite: cohorts did run on those
+                # networks and all passed, which impeaches the blocker rather
+                # than leaving it untested.
+                "cohortsOnNetworks": len(on_networks),
+                "notExercisedReason": (
+                    None
+                    if failing
+                    else (
+                        "no cohort is built for these networks in this snapshot, "
+                        "so the sweep never reaches those explorers"
+                        if not on_networks
+                        else (
+                            f"{len(on_networks)} cohort(s) ran on these networks "
+                            "and all completed cleanly, so nothing needed "
+                            "absorbing — that contradicts the blocker's expected "
+                            f"outcome ({blocker.get('expectedOutcome') or 'n/a'}); "
+                            "re-check whether the claim still holds"
+                        )
+                    )
+                ),
             }
         )
     return evaluated
@@ -650,6 +748,7 @@ def collect(
                 "summary": None,
                 "failedContracts": [],
                 "allowedDiffAddresses": [],
+                "contractRuns": [],
                 "outcome": "not-run",
                 "errorLine": None,
                 "failure": None,
@@ -780,7 +879,10 @@ def print_summary(report: dict[str, Any]) -> None:
             )
     for blocker in report["knownBlockers"]:
         if not blocker["exercisedThisRun"]:
-            print(f"  known blocker {blocker['id']}: not exercised by this run")
+            print(
+                f"  known blocker {blocker['id']}: not exercised by this run "
+                f"— {blocker['notExercisedReason']}"
+            )
         elif blocker["unexplainedCohorts"]:
             print(
                 f"  known blocker {blocker['id']}: does NOT explain "

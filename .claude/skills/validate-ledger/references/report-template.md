@@ -145,10 +145,13 @@ separately from any address verdict. One line if none.>
 | `source` without `commit` | <N> | no revision claimed, so U2 cannot be judged |
 | No `auditReportRefs` | <N> | no audit-report pointer recorded |
 | `publicRef` present but unverifiable | <N> | cited support does not currently hold |
-| Neither `publicRefs` nor `source` | <N> | nothing a reader can follow at all |
+| Neither `publicRefs` nor `source` (`noPublicRefsAndNoSource`) | <N> | this run offers no way to cross-check the address and no way to check its source |
 
-<Then the sharpest slice — the entries with no evidence at all — listed in full,
-because those are the ones worth a human's next hour. Bulk lists collapsed:>
+<Then the sharpest slice this run can see — the entries with neither
+`publicRefs` nor `source` — listed in full, because those are the ones worth a
+human's next hour. Give each one's `auditReportRefs` count alongside it: the
+bucket is not "no evidence at all", because nothing in this workflow fetches or
+tests an audit-report pointer. Bulk lists collapsed:>
 
 <details>
 <summary>All <N> deployments with no <code>publicRefs</code></summary>

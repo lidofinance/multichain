@@ -20,13 +20,13 @@ unestablished*.
 
 | The live question | Pattern | What to read |
 | --- | --- | --- |
-| Governing pattern for every finding in the report | `A.10` | `:1`, `:4.1`–`:4.6`, `:7` |
+| Governing pattern for every finding in the report | `A.10` | `:1`, `:4.1`–`:4.6`, `:6` (the Conformance Checklist; `:7` is Consequences) |
 | Which distinctions must not collapse | `A.7` | `:1`, `CC-A7.3`, `CC-A7.6`, `CC-A7.13` |
 | How per-entry findings compose into one snapshot verdict | `C.2` | `:4.1`, `:4.3`, `:4.4`, `:6` |
 | First evidence-use classification only (a quick single entry) | `A.2.4` | `:1`, `:4` |
 | Staleness of the snapshot or of a carrier | `A.10:4.6`, `G.11` | `A.10:4.6`; `G.11:0` |
 | An assurance claim is being made or material reliance is at stake | `B.3` | `:1` — then stop and route, do not issue the result |
-| The run's own budget, stop conditions and truncation | `C.24` | `:0.4`, `CC-ATC-2`, `CC-ATC-10` |
+| The run's own budget, stop conditions and truncation | `C.24` | `:0.4`, `ATC-3`, checklist items 3 and 8 |
 
 `A.10` is the governing pattern (`E.11`: one claim, one governing pattern). `A.7`
 and `C.2` are used for their specific checks, not restated. Cite the `CC-*` items
@@ -68,9 +68,9 @@ supports the exact bounded use and no wider one.
 ## Default outcome → disposition
 
 Use the canonical `RelianceDisposition` member set from `A.10:4.5` verbatim —
-`pass`, `degrade`, `abstain`, `reopen`, `evidence-needed`,
-`safety-case-required`, `blocked-current-use`. Do not coin new names, and do not
-relabel these as scores, grades, or gate decisions.
+`pass`, `degrade`, `abstain`, `reopen`, `evidence-needed`, `assurance-needed`,
+`blocked-current-use`. Do not coin new names, and do not relabel these as
+scores, grades, or gate decisions.
 
 These are defaults, not a lookup table. Deviate when an entry's specifics warrant
 it, and say why in the report — that sentence is the valuable part.
@@ -79,12 +79,13 @@ it, and say why in the report — that sentence is the valuable part.
 
 | Outcome | Disposition | Reasoning |
 | --- | --- | --- |
-| `source-match` | `pass` | Bounded: rests on the explorer's own source verification, and `--skip-binary-comparison` means no independent bytecode check ran. |
+| `source-match` | `pass` | Bounded: rests on the explorer's own source verification, and `--skip-binary-comparison` means no independent bytecode check ran. A record carrying `comparedBeforeCohortAborted` earns the same disposition on the same bound — its own comparison completed, and its cohort's later crash is evidence about a different address. Reading it as a fact about this one would establish a relation by shared cohort membership, which `A.10:6` item 7 (graph boundary) rejects. |
 | `source-allowed-diff` | `degrade` | Reliance holds only within the allowlist rule's stated reason; name the rule. |
 | `source-diff` | `reopen` | The pin and the explorer-verified source disagree; the provenance claim must be re-established, not merely flagged. |
 | `source-missing-upstream` | `reopen` | The source host answered 404 for the pinned tree, so the pin itself is impeached. Check the failure clusters first: a 404 on one cohort is a pin problem, a 404 on every cohort of one repository is an auth problem wearing a 404. |
 | `upstream-unavailable` | `evidence-needed` | The source host failed some other way — rate limit, auth, 5xx, network. Nothing was compared and the pin is **not** impeached. |
 | `explorer-unavailable` | `evidence-needed` | Nothing was compared. This is the single most misread outcome — it is not a mismatch. |
+| `not-reached` | `evidence-needed` | The cohort aborted before Diffyscan requested this address. Nothing about this entry was compared and its pin is **not** impeached; the crash is a fact about a sibling address. |
 | `tool-error`, `not-run` | `evidence-needed` | The check did not complete. |
 | `not-projected` | `evidence-needed` | A full source claim exists and no cohort could be built for it: a tooling gap. State the reason the collector gives. |
 | `unpinned-source-claim` | `abstain` | A repository is recorded, no commit is. U2 as defined quantifies over a pinned revision, and this entry does not offer one — there is no claim of that shape to judge. Report it as a ledger completeness gap, not as a failed check. |
@@ -187,7 +188,7 @@ Close the report with the `A.10:4.5` routing, not with reassurance: this report
 is an evidence-provenance publication and carries no assurance result. If anyone
 relies on these addresses for a consequential action — configuring a production
 integration, moving value, granting a role — the `B.3` material-reliance
-threshold is crossed, `safety-case-required` applies, and the decision routes to
+threshold is crossed, `assurance-needed` applies, and the decision routes to
 `B.3` rather than to this document.
 
 ## Admissible use of the report itself
