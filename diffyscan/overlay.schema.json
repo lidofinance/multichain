@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Diffyscan Overlay",
+  "description": "MethodDescription for a Diffyscan verification cohort. Addresses, contract names, and source repository/commit are resolved from ledger.json via deploymentIds; this file must not restate deployment addresses.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "overlayId",
+    "deploymentIds",
+    "explorer_hostname"
+  ],
+  "properties": {
+    "$schema": {
+      "description": "Relative or absolute reference to this overlay schema.",
+      "type": "string",
+      "const": "./overlay.schema.json"
+    },
+    "overlayId": {
+      "description": "Stable identifier for this Diffyscan cohort; used as the generated config basename.",
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1
+    },
+    "description": {
+      "description": "Optional human-readable note about the cohort's verification purpose.",
+      "type": "string",
+      "minLength": 1
+    },
+    "deploymentIds": {
+      "description": "Ledger deploymentId values included in this Diffyscan run. Must share one networkId and one source.repositoryUrl+commit.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}:.+$"
+      }
+    },
+    "explorer_hostname": {
+      "description": "Block explorer API hostname for Diffyscan (for example api-optimistic.etherscan.io).",
+      "type": "string",
+      "minLength": 1
+    },
+    "explorer_token_env_var": {
+      "description": "Environment variable name holding the explorer API token.",
+      "type": "string",
+      "minLength": 1
+    },
+    "explorer_chain_id": {
+      "description": "Optional explicit explorer chain id. When omitted, eip155 networkIds yield the numeric chain id automatically.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "github_repo": {
+      "description": "Diffyscan github_repo fields that are not owned by the ledger. url and commit are always taken from the selected deployments' source.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "relative_root": {
+          "description": "Repository-relative root Diffyscan should use when locating sources.",
+          "type": "string"
+        }
+      }
+    },
+    "dependencies": {
+      "description": "Diffyscan dependency map (name to {url, commit, relative_root}).",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "url",
+          "commit"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "commit": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{7,64}$"
+          },
+          "relative_root": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "fail_on_bytecode_comparison_error": {
+      "description": "Only meaningful when false (Diffyscan already defaults to true).",
+      "type": "boolean",
+      "const": false
+    },
+    "bytecode_comparison": {
+      "description": "Optional Diffyscan bytecode_comparison section. Address-keyed maps use deploymentId keys and are rewritten to addresses at render time.",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "hardhat_config_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "constructor_calldata": {
+          "$ref": "#/$defs/deploymentIdKeyedMap"
+        },
+        "constructor_args": {
+          "$ref": "#/$defs/deploymentIdKeyedMap"
+        },
+        "deployment_from": {
+          "description": "Map of deployable deploymentId to deployer deploymentId; both sides are rewritten to addresses.",
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}:.+$"
+          },
+          "propertyNames": {
+            "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}:.+$"
+          }
+        }
+      }
+    },
+    "allowed_diffs": {
+      "description": "Optional Diffyscan allowed_diffs section. Address-keyed maps use deploymentId keys and are rewritten to addresses at render time.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bytecode": {
+          "$ref": "#/$defs/deploymentIdKeyedMap"
+        },
+        "source": {
+          "$ref": "#/$defs/deploymentIdKeyedMap"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "deploymentIdKeyedMap": {
+      "description": "Object keyed by ledger deploymentId; values are forwarded to Diffyscan after keys are rewritten to addresses.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": true,
+      "propertyNames": {
+        "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}:.+$"
+      }
+    }
+  }
+}

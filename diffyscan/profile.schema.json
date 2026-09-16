@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Diffyscan Repository Profile",
+  "description": "MethodDescription extras for Diffyscan verification of one source repository. Addresses and source url/commit remain ledger-owned; this profile supplies relative_root, dependencies, and optional commit-scoped overrides.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "profileId",
+    "repositoryUrl",
+    "default",
+    "commits"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "./profile.schema.json"
+    },
+    "profileId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "repositoryUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "default": {
+      "$ref": "#/$defs/profileSettings"
+    },
+    "commits": {
+      "description": "Commit-scoped settings. A commit MUST be pinned here to be rendered: an absent commit blocks its cohort rather than falling back to default, so that each revision's dependency set is acknowledged explicitly. A pinned key replaces the matching default key outright (a commit-scoped dependencies object replaces the whole default map, it is not deep-merged); an empty object inherits default unchanged. Commit hex is matched case-insensitively.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/profileSettings"
+      },
+      "propertyNames": {
+        "pattern": "^[0-9a-fA-F]{7,64}$"
+      }
+    }
+  },
+  "$defs": {
+    "profileSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "github_repo": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "relative_root": {
+              "type": "string"
+            }
+          }
+        },
+        "dependencies": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "url",
+              "commit"
+            ],
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "commit": {
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{7,64}$"
+              },
+              "relative_root": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "fail_on_bytecode_comparison_error": {
+          "description": "Only meaningful when false (Diffyscan already defaults to true).",
+          "type": "boolean",
+          "const": false
+        }
+      }
+    }
+  }
+}

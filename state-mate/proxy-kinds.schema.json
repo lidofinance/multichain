@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "state-mate Proxy Kind Map",
+  "description": "What this repository claims to know about each ledger proxyKind and proxy contractName. Two independent lookups: proxyKinds says where a kind keeps its upgrade pointers in storage (required to project a proxy at all), proxyAbis says which view functions a named proxy contract exposes (optional enrichment). A kind absent from proxyKinds blocks its proxies instead of guessing a slot.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "proxyKinds",
+    "proxyAbis"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "./proxy-kinds.schema.json"
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "proxyKinds": {
+      "description": "Keyed by the ledger's proxy.proxyKind enum value. Only kinds listed here can be projected.",
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/proxyKind"
+      },
+      "propertyNames": {
+        "enum": [
+          "transparent",
+          "erc1967",
+          "ossifiable",
+          "uups",
+          "beacon",
+          "diamond",
+          "custom",
+          "unknown"
+        ]
+      }
+    },
+    "proxyAbis": {
+      "description": "Keyed by the ledger's contractName for the proxy address. First-party, view-only ABI fragments written into the generated abi/ directory, so a linkage run needs no block explorer. A contractName absent here gets an empty ABI: storage is then the only evidence, and coverage says so.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/proxyAbi"
+      },
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+      }
+    }
+  },
+  "$defs": {
+    "slot": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "proxyKind": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "storageSlots",
+        "verifiedOn"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "storageSlots": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "implementation": {
+              "$ref": "#/$defs/slot"
+            },
+            "admin": {
+              "$ref": "#/$defs/slot"
+            }
+          }
+        },
+        "verifiedOn": {
+          "description": "Date on which these slot constants were last read back from a live deployment of this kind and found to hold the addresses the ledger records. A slot constant is an empirical claim, not a definition.",
+          "type": "string",
+          "format": "date"
+        },
+        "verifiedAgainst": {
+          "description": "deploymentIds whose live storage was read to support verifiedOn.",
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}:.+$"
+          }
+        }
+      }
+    },
+    "proxyAbi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "description",
+        "views",
+        "abi"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceRef": {
+          "description": "Where this ABI fragment was read from.",
+          "type": "string",
+          "format": "uri"
+        },
+        "views": {
+          "description": "Maps a linkage role to the view function that returns it. Only roles listed here are asserted through proxyChecks.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "implementation": {
+              "type": "string",
+              "minLength": 1
+            },
+            "admin": {
+              "type": "string",
+              "minLength": 1
+            },
+            "ossified": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "abi": {
+          "description": "View-only ABI fragments. state-mate measures 'all non-mutable functions covered' against this array, so it bounds that guarantee: it is a first-party stub, not the deployed interface.",
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}

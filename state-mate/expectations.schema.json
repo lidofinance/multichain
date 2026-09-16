@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "state-mate Proxy Expectations",
+  "description": "Linkage facts ledger.json has no field for. The ledger's proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, so it can only name a separately listed ProxyAdmin contract. An OssifiableProxy administered directly by a bridge executor or the DAO Agent has no way to say so, and this file is where that is said: by deploymentId when the ledger knows the address, and by adminAddress when it does not.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "expectations"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "./expectations.schema.json"
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expectations": {
+      "description": "Keyed by the deploymentId of a ledger entry whose deploymentKind is proxy. A key that does not resolve to a proxy is a hard error, not a skipped line: a stale key would otherwise silently stop asserting what it once asserted.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/expectation"
+      },
+      "propertyNames": {
+        "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}:.+$"
+      }
+    }
+  },
+  "$defs": {
+    "expectation": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "required": [
+        "note"
+      ],
+      "properties": {
+        "adminDeploymentId": {
+          "description": "deploymentId, on the same network, of the address expected in the proxy's admin slot. Contradicting the ledger's own proxy.adminDeploymentId is a hard error rather than a precedence rule.",
+          "type": "string",
+          "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}:.+$"
+        },
+        "basis": {
+          "description": "How this expectation was established, and therefore what a passing check is worth. published-design and governance-record are independent of the chain, so a match corroborates the expectation. chain-baseline was read off the chain itself: a first run is circular by construction and the assertion is worth only continuity - it fails when the admin changes, which is exactly what it is for. Required whenever adminDeploymentId or ossified is asserted.",
+          "enum": [
+            "published-design",
+            "governance-record",
+            "chain-baseline"
+          ]
+        },
+        "observedOn": {
+          "description": "Date the basis was established. Required for chain-baseline, where the assertion is a dated observation and nothing more.",
+          "type": "string",
+          "format": "date"
+        },
+        "ossified": {
+          "description": "Assert ossification explicitly. Omit it when adminDeploymentId is asserted: ossification is then derived (an asserted non-zero admin means not ossified) rather than restated by hand.",
+          "type": "boolean"
+        },
+        "note": {
+          "description": "Why this expectation is believed, and from where. An expectation without a reason is a guess with a schema, so this is required even on an entry that asserts nothing and exists only to record why it cannot.",
+          "type": "string",
+          "minLength": 1
+        },
+        "adminAddress": {
+          "description": "Literal address expected in the proxy's admin slot, for an administrator the ledger does not list at all (the Lido DAO Aragon Agent, for example). This is the one place an address is written outside ledger.json, so it carries adminLabel and note and is marked as declared wherever it is emitted. Use adminDeploymentId instead whenever the ledger does list the address; the renderer rejects an adminAddress that the ledger already carries on that network.",
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{40}$"
+        },
+        "adminLabel": {
+          "description": "Slug naming the declared administrator. Becomes the YAML anchor and the comment beside it, so a reader sees 'lido-dao-agent' rather than a bare hex string. Two expectations on one network may share a label only if they share the address.",
+          "type": "string",
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        }
+      },
+      "allOf": [
+        {
+          "description": "An assertion without a stated basis cannot be judged.",
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "adminDeploymentId"
+                ]
+              },
+              {
+                "required": [
+                  "adminAddress"
+                ]
+              },
+              {
+                "required": [
+                  "ossified"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "basis"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "basis": {
+                "const": "chain-baseline"
+              }
+            },
+            "required": [
+              "basis"
+            ]
+          },
+          "then": {
+            "required": [
+              "observedOn"
+            ]
+          }
+        },
+        {
+          "description": "A declared address must say what it is.",
+          "if": {
+            "required": [
+              "adminAddress"
+            ]
+          },
+          "then": {
+            "required": [
+              "adminLabel"
+            ]
+          }
+        },
+        {
+          "description": "Naming the admin twice invites the two to drift apart; the ledger wins by construction, so the literal form is only for what it cannot hold.",
+          "not": {
+            "required": [
+              "adminDeploymentId",
+              "adminAddress"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

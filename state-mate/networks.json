@@ -1,0 +1,91 @@
+{
+  "$schema": "./networks.schema.json",
+  "note": "One entry per ledger networkId that carries a proxy. rpcUrlEnv is what the rendered config references; publicRpcUrl is documentation of an endpoint that answered on publicRpcCheckedOn, offered so a first run is possible without provisioning 17 endpoints. https://mainnet.base.org is deliberately not the Base entry: on 2026-08-18 it reproducibly returned empty data for one eth_call inside the batch ethers sends, which state-mate reports as 'REVERTED with: missing revert data (data=null)' and which reads exactly like a failed check.",
+  "networks": {
+    "eip155:1": {
+      "rpcUrlEnv": "ETHEREUM_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://ethereum-rpc.publicnode.com",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:10": {
+      "rpcUrlEnv": "OPTIMISM_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://mainnet.optimism.io",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:56": {
+      "rpcUrlEnv": "BNB_SMART_CHAIN_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://bsc-rpc.publicnode.com",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:130": {
+      "rpcUrlEnv": "UNICHAIN_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://mainnet.unichain.org",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:137": {
+      "rpcUrlEnv": "POLYGON_POS_RPC_URL",
+      "publicRpcUrl": "https://polygon-bor-rpc.publicnode.com",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:324": {
+      "rpcUrlEnv": "ZKSYNC_ERA_RPC_URL",
+      "publicRpcUrl": "https://mainnet.era.zksync.io",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:1135": {
+      "rpcUrlEnv": "LISK_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://rpc.api.lisk.com",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:1868": {
+      "rpcUrlEnv": "SONEIUM_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://rpc.soneium.org",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:1923": {
+      "rpcUrlEnv": "SWELLCHAIN_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://rpc.ankr.com/swell",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:5000": {
+      "rpcUrlEnv": "MANTLE_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://rpc.mantle.xyz",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:8453": {
+      "rpcUrlEnv": "BASE_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://base-rpc.publicnode.com",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:34443": {
+      "rpcUrlEnv": "MODE_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://mainnet.mode.network",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:42161": {
+      "rpcUrlEnv": "ARBITRUM_ONE_RPC_URL",
+      "publicRpcUrl": "https://arb1.arbitrum.io/rpc",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:48900": {
+      "rpcUrlEnv": "ZIRCUIT_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://mainnet.zircuit.com",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:59144": {
+      "rpcUrlEnv": "LINEA_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://rpc.linea.build",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:534352": {
+      "rpcUrlEnv": "SCROLL_MAINNET_RPC_URL",
+      "publicRpcUrl": "https://scroll-rpc.publicnode.com",
+      "publicRpcCheckedOn": "2026-08-18"
+    },
+    "eip155:560048": {
+      "rpcUrlEnv": "ETHEREUM_HOODI_RPC_URL",
+      "publicRpcUrl": "https://rpc.hoodi.ethpandaops.io",
+      "publicRpcCheckedOn": "2026-08-18"
+    }
+  }
+}

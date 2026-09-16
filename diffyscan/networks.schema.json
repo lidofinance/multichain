@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Diffyscan Network Explorer Map",
+  "description": "Explorer MethodDescription settings. default applies to every ledger networkId; networks holds per-networkId overrides only (including chains Diffyscan does not serve via api.etherscan.io).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "default"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "./networks.schema.json"
+    },
+    "default": {
+      "$ref": "#/$defs/explorerSettings"
+    },
+    "networks": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/explorerSettings"
+      },
+      "propertyNames": {
+        "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}$"
+      }
+    }
+  },
+  "$defs": {
+    "explorerSettings": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "explorer_hostname": {
+          "type": "string",
+          "minLength": 1
+        },
+        "explorer_token_env_var": {
+          "description": "null in a per-network override drops the inherited default, for explorers that take no token.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "explorer_chain_id": {
+          "description": "null in a per-network override drops the inherited default.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      }
+    }
+  }
+}

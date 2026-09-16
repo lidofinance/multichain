@@ -1,0 +1,21 @@
+{
+  "$schema": "./profile.schema.json",
+  "profileId": "lido-l2-with-steth",
+  "repositoryUrl": "https://github.com/lidofinance/lido-l2-with-steth",
+  "default": {
+    "github_repo": {
+      "relative_root": ""
+    },
+    "dependencies": {
+      "@openzeppelin/contracts": {
+        "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+        "relative_root": "contracts"
+      }
+    }
+  },
+  "commits": {
+    "8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c": {},
+    "c6ffd32fe2cbc3e0b5248f48804291c913275e2e": {}
+  }
+}

@@ -6,3 +6,11 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+
+/diffyscan/generated/
+/diffyscan/logs/
+/state-mate/generated/
+/state-mate/logs/
+/.diffyscan_cache/
+/digest/
+.env

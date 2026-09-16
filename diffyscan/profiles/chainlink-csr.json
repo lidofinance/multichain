@@ -1,0 +1,81 @@
+{
+  "$schema": "./profile.schema.json",
+  "profileId": "chainlink-csr",
+  "repositoryUrl": "https://github.com/Aphyla/chainlink-csr",
+  "description": "Chainlink CSR contracts behind Lido's CCIP Direct Staking. Two build layouts land in one cohort: contracts compiled from this repo carry npm 'node_modules/...' paths, while PausableImmutableOraclePool was compiled from lidofinance/l2-direct-staking and carries 'lib/chainlink-csr/...' submodule paths for the same files. The self-referential 'lib/chainlink-csr' key maps the latter back onto this repo at the cohort's own commit, so both layouts resolve without splitting the cohort. Package versions follow this repo's package.json (@openzeppelin/contracts ^5.0.2, @openzeppelin/contracts-upgradeable ^5.0.2, @chainlink/contracts-ccip ^1.4.0, @chainlink/contracts ^1.1.1). '@chainlink/contracts-ccip' needs its own key but cannot collide with '@chainlink/contracts': Diffyscan matches the longest dependency prefix followed by '/'. Dependencies are pinned per commit because the self-reference must track the cohort commit, and a commit-scoped map replaces the default outright rather than merging.",
+  "default": {
+    "github_repo": {
+      "relative_root": ""
+    }
+  },
+  "commits": {
+    "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed": {
+      "dependencies": {
+        "lib/chainlink-csr": {
+          "url": "https://github.com/Aphyla/chainlink-csr",
+          "commit": "1f33d88d56a01d24591d7e1ca4d7017a1f59e8ed",
+          "relative_root": ""
+        },
+        "lib/openzeppelin-contracts": {
+          "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+          "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
+          "relative_root": ""
+        },
+        "node_modules/@openzeppelin/contracts": {
+          "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+          "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
+          "relative_root": "contracts"
+        },
+        "node_modules/@openzeppelin/contracts-upgradeable": {
+          "url": "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable",
+          "commit": "723f8cab09cdae1aca9ec9cc1cfa040c2d4b06c1",
+          "relative_root": "contracts"
+        },
+        "node_modules/@chainlink/contracts-ccip": {
+          "url": "https://github.com/smartcontractkit/ccip",
+          "commit": "b06a3c2eecb9892ec6f76a015624413fffa1a122",
+          "relative_root": "contracts"
+        },
+        "node_modules/@chainlink/contracts": {
+          "url": "https://github.com/smartcontractkit/chainlink",
+          "commit": "d7d135c8397b5bfbe13d196b561d06b836f4f74d",
+          "relative_root": "contracts"
+        }
+      }
+    },
+    "62108f7b6cc664e36dbc8100c4b48974d59f572e": {
+      "dependencies": {
+        "lib/chainlink-csr": {
+          "url": "https://github.com/Aphyla/chainlink-csr",
+          "commit": "62108f7b6cc664e36dbc8100c4b48974d59f572e",
+          "relative_root": ""
+        },
+        "lib/openzeppelin-contracts": {
+          "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+          "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
+          "relative_root": ""
+        },
+        "node_modules/@openzeppelin/contracts": {
+          "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+          "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
+          "relative_root": "contracts"
+        },
+        "node_modules/@openzeppelin/contracts-upgradeable": {
+          "url": "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable",
+          "commit": "723f8cab09cdae1aca9ec9cc1cfa040c2d4b06c1",
+          "relative_root": "contracts"
+        },
+        "node_modules/@chainlink/contracts-ccip": {
+          "url": "https://github.com/smartcontractkit/ccip",
+          "commit": "b06a3c2eecb9892ec6f76a015624413fffa1a122",
+          "relative_root": "contracts"
+        },
+        "node_modules/@chainlink/contracts": {
+          "url": "https://github.com/smartcontractkit/chainlink",
+          "commit": "d7d135c8397b5bfbe13d196b561d06b836f4f74d",
+          "relative_root": "contracts"
+        }
+      }
+    }
+  }
+}

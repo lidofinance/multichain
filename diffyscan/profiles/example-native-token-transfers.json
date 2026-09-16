@@ -1,0 +1,25 @@
+{
+  "$schema": "./profile.schema.json",
+  "profileId": "example-native-token-transfers",
+  "repositoryUrl": "https://github.com/wormhole-foundation/example-native-token-transfers",
+  "default": {
+    "github_repo": {
+      "relative_root": "evm"
+    },
+    "dependencies": {
+      "lib/openzeppelin-contracts": {
+        "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "0457042d93d9dfd760dbaa06a4d2f1216fdbe297",
+        "relative_root": ""
+      },
+      "lib/wormhole-solidity-sdk": {
+        "url": "https://github.com/wormhole-foundation/wormhole-solidity-sdk",
+        "commit": "b9e129e65d34827d92fceeed8c87d3ecdfc801d0",
+        "relative_root": ""
+      }
+    }
+  },
+  "commits": {
+    "0d37b0f4975084492c72ca881c1218d6e1aae9e3": {}
+  }
+}

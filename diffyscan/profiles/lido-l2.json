@@ -1,0 +1,43 @@
+{
+  "$schema": "./profile.schema.json",
+  "profileId": "lido-l2",
+  "repositoryUrl": "https://github.com/lidofinance/lido-l2",
+  "description": "The cdd513cd pin serves Mantle, whose verified sources carry foundry-style src/ and lib/ prefixes; the self-referential 'src' dependency remaps them onto the repo's contracts/ layout.",
+  "default": {
+    "github_repo": {
+      "relative_root": ""
+    },
+    "dependencies": {
+      "@openzeppelin/contracts": {
+        "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+        "relative_root": "contracts"
+      }
+    }
+  },
+  "commits": {
+    "082e7eb59de63bd376b30886568813408d04f00b": {},
+    "cdd513cd3d25699a8757f8e730b443a495d0240e": {
+      "github_repo": {
+        "relative_root": ""
+      },
+      "dependencies": {
+        "src": {
+          "url": "https://github.com/lidofinance/lido-l2",
+          "commit": "cdd513cd3d25699a8757f8e730b443a495d0240e",
+          "relative_root": "contracts"
+        },
+        "lib/openzeppelin-contracts": {
+          "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+          "commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+          "relative_root": ""
+        },
+        "@openzeppelin/contracts": {
+          "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+          "commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+          "relative_root": "contracts"
+        }
+      }
+    }
+  }
+}
