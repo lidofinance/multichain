@@ -13,6 +13,16 @@ state_mate_dir := env_var_or_default("STATE_MATE_DIR", "../state-mate")
 default:
     @just --list
 
+# Build using this ledger and the latest wsteth-ccip main (requires repository read access)
+[positional-arguments]
+dashboard-build *args:
+    uv run --locked python scripts/build_dashboard.py "$@"
+
+# Build and preview Lane Watch; --upstream PATH selects a local source directory
+[positional-arguments]
+dashboard *args:
+    uv run --locked python scripts/build_dashboard.py --serve "$@"
+
 # Render Diffyscan configs for every ready ledger cohort
 render:
     uv run --locked python scripts/render_diffyscan_config.py --from-ledger
