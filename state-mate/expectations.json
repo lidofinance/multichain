@@ -1,0 +1,148 @@
+{
+  "$schema": "./expectations.schema.json",
+  "note": "Linkage facts ledger.json has no field for. Prefer adminDeploymentId, so the ledger stays the single place an address is maintained; adminAddress is for an administrator the ledger does not list at all, and the renderer rejects it for an address the ledger already carries. Read basis before reading a passing run: a chain-baseline expectation was seeded from the chain it is checked against, so it detects change, it does not corroborate design. Promoting one to published-design or governance-record, with a citation in note, is what turns it into an independent check.",
+  "expectations": {
+    "eip155:1:0x0F25c1DC2a9922304f2eac71DCa9B07E310e8E5a": {
+      "adminAddress": "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c",
+      "adminLabel": "lido-dao-agent",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "Administered by the Lido DAO Aragon Agent, which has no ledger.json entry, so the address is declared here rather than referenced by deploymentId. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18 and cross-read against the l1Agent anchor in lidofinance/state-mate configs/mode/mainnet.yaml; it asserts continuity, not correctness. Adding the Agent to the ledger would let this become a deploymentId reference."
+    },
+    "eip155:42161:0x5979D7b546E38E414F7E9822514be443A4800529": {
+      "adminDeploymentId": "eip155:42161:0x1dcA41859Cd23b526CBe74dA8F48aC96e14B1A29",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is arbitrum-arbitrum-governance-bridge-executor (ArbitrumBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:42161:0x07D4692291B9E30E326fd31706f686f83f331B82": {
+      "adminDeploymentId": "eip155:42161:0x1dcA41859Cd23b526CBe74dA8F48aC96e14B1A29",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is arbitrum-arbitrum-governance-bridge-executor (ArbitrumBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:1:0x76943C0D61395d8F2edF9060e1533529cAe05dE6": {
+      "adminAddress": "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c",
+      "adminLabel": "lido-dao-agent",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "Administered by the Lido DAO Aragon Agent, which has no ledger.json entry, so the address is declared here rather than referenced by deploymentId. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18 and cross-read against the l1Agent anchor in lidofinance/state-mate configs/mode/mainnet.yaml; it asserts continuity, not correctness. Adding the Agent to the ledger would let this become a deploymentId reference."
+    },
+    "eip155:10:0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb": {
+      "adminDeploymentId": "eip155:10:0xefa0db536d2c8089685630fafe88cf7805966fc3",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is optimism-optimism-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:10:0x76A50b8c7349cCDDb7578c6627e79b5d99D24138": {
+      "adminDeploymentId": "eip155:10:0xefa0db536d2c8089685630fafe88cf7805966fc3",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is optimism-optimism-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:10:0x294ED1f214F4e0ecAE31C3Eae4F04EBB3b36C9d0": {
+      "adminDeploymentId": "eip155:10:0xefa0db536d2c8089685630fafe88cf7805966fc3",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is optimism-optimism-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:10:0x8E01013243a96601a86eb3153F0d9Fa4fbFb6957": {
+      "adminDeploymentId": "eip155:10:0xefa0db536d2c8089685630fafe88cf7805966fc3",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is optimism-optimism-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:1:0x9de443AdC5A411E83F1878Ef24C3F52C61571e72": {
+      "adminAddress": "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c",
+      "adminLabel": "lido-dao-agent",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "Administered by the Lido DAO Aragon Agent, which has no ledger.json entry, so the address is declared here rather than referenced by deploymentId. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18 and cross-read against the l1Agent anchor in lidofinance/state-mate configs/mode/mainnet.yaml; it asserts continuity, not correctness. Adding the Agent to the ledger would let this become a deploymentId reference."
+    },
+    "eip155:8453:0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452": {
+      "adminDeploymentId": "eip155:8453:0x0E37599436974a25dDeEdF795C848d30Af46eaCF",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is base-base-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:8453:0xac9D11cD4D7eF6e54F14643a393F68Ca014287AB": {
+      "adminDeploymentId": "eip155:8453:0x0E37599436974a25dDeEdF795C848d30Af46eaCF",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is base-base-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:1:0x755610f5Be536Ad7afBAa7c10F3E938Ea3aa1877": {
+      "adminAddress": "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c",
+      "adminLabel": "lido-dao-agent",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "Administered by the Lido DAO Aragon Agent, which has no ledger.json entry, so the address is declared here rather than referenced by deploymentId. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18 and cross-read against the l1Agent anchor in lidofinance/state-mate configs/mode/mainnet.yaml; it asserts continuity, not correctness. Adding the Agent to the ledger would let this become a deploymentId reference."
+    },
+    "eip155:130:0xc02fE7317D4eb8753a02c35fe019786854A92001": {
+      "adminDeploymentId": "eip155:130:0x3b00f262e39372DF2756f809DD5DC36aeEdFC4A0",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is unichain-unichain-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:130:0x81f2508AAC59757EF7425DDc9717AB5c2AA0A84F": {
+      "adminDeploymentId": "eip155:130:0x3b00f262e39372DF2756f809DD5DC36aeEdFC4A0",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is unichain-unichain-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:130:0xD835fAC9080396CCE95bDf9EcC7cc27Bab12c9f8": {
+      "adminDeploymentId": "eip155:130:0x3b00f262e39372DF2756f809DD5DC36aeEdFC4A0",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is unichain-unichain-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:130:0x1A513e9B6434a12C7bB5B9AF3B21963308DEE372": {
+      "adminDeploymentId": "eip155:130:0x3b00f262e39372DF2756f809DD5DC36aeEdFC4A0",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is unichain-unichain-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:34443:0x98f96A4B34D03a2E6f225B28b8f8Cb1279562d81": {
+      "adminDeploymentId": "eip155:34443:0x2aCeC6D8ABA90685927b61968D84CfFf6192B32C",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is mode-mode-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:5000:0x458ed78EB972a369799fb278c0243b25e5242A83": {
+      "adminDeploymentId": "eip155:5000:0x3a7b055bf88cdc59d20d0245809c6e6b3c5819dd",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is mantle-mantle-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:1923:0x7c98E0779EB5924b3ba8cE3B17648539ed5b0Ecc": {
+      "adminDeploymentId": "eip155:1923:0xFF22ea467301010F1364fc154c13e0c86Fcfb077",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is swellchain-swellchain-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:48900:0xf0e673Bc224A8Ca3ff67a61605814666b1234833": {
+      "adminDeploymentId": "eip155:48900:0x6Bf2cac3ed2481da30aD36Cd3D64325c31065Cc5",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is zircuit-zircuit-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:1868:0xaA9BD8c957D803466FA92504BDd728cC140f8941": {
+      "adminDeploymentId": "eip155:1868:0xB0F7894b3740F68eAca6e3792B14d2C2c25eF5D4",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is soneium-soneium-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:1868:0x0Ce031AEd457C870D74914eCAA7971dd3176cDAF": {
+      "adminDeploymentId": "eip155:1868:0xB0F7894b3740F68eAca6e3792B14d2C2c25eF5D4",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is soneium-soneium-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    },
+    "eip155:1135:0x76D8de471F54aAA87784119c60Df1bbFc852C415": {
+      "adminDeploymentId": "eip155:1135:0xfD050cDa025f6378e54ab5fd5Da377D242Ed74d3",
+      "basis": "chain-baseline",
+      "observedOn": "2026-08-18",
+      "note": "ledger.json cannot express this link: proxy.adminDeploymentId is typed x-refDeploymentKind: proxy-admin, and the administrator here is lisk-lisk-governance-bridge-executor (OptimismBridgeExecutor), a standalone entry. Seeded from the proxy's EIP-1967 admin slot on 2026-08-18, so it asserts continuity, not correctness."
+    }
+  }
+}

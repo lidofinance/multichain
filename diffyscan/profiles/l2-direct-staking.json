@@ -1,0 +1,31 @@
+{
+  "$schema": "./profile.schema.json",
+  "profileId": "l2-direct-staking",
+  "repositoryUrl": "https://github.com/lidofinance/l2-direct-staking",
+  "description": "Lido's automation layer for CCIP Direct Staking (SyncTrigger, CREReceiver). A Foundry project, so verified bundles carry 'lib/<submodule>/...' paths; each dependency commit below is the gitlink this revision actually pins, read from the tree rather than inferred from a version range.",
+  "default": {
+    "github_repo": {
+      "relative_root": ""
+    },
+    "dependencies": {
+      "lib/chainlink-csr": {
+        "url": "https://github.com/Aphyla/chainlink-csr",
+        "commit": "62108f7b6cc664e36dbc8100c4b48974d59f572e",
+        "relative_root": ""
+      },
+      "lib/openzeppelin-contracts": {
+        "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+        "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
+        "relative_root": ""
+      },
+      "lib/openzeppelin-contracts-upgradeable": {
+        "url": "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable",
+        "commit": "723f8cab09cdae1aca9ec9cc1cfa040c2d4b06c1",
+        "relative_root": ""
+      }
+    }
+  },
+  "commits": {
+    "3d1d484c31d39881cdbe8423614e3043e89e027f": {}
+  }
+}

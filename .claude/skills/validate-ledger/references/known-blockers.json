@@ -1,0 +1,39 @@
+{
+  "kind": "diffyscan-known-blockers",
+  "note": "Claims about why a chain cannot be swept. Each entry is a dated observation, not a rule. A cohort failure is only attributed to a blocker when the cohort's own log matches that blocker's logSignature; an entry with a null logSignature can never absorb a failure, so the failure is reported as unrecognised and reaches the reader.",
+  "blockers": [
+    {
+      "id": "zksync-era-explorer-schema",
+      "claim": "Diffyscan's explorer fetcher reads JSON keys the zkSync Era explorer API does not return, so no source can be pulled for this network.",
+      "appliesToNetworkIds": ["eip155:324"],
+      "expectedOutcome": "explorer-unavailable",
+      "asOf": "2026-08-17",
+      "source": "authoring-time manual probe",
+      "evidenceRef": null,
+      "logSignature": null,
+      "reverifyBy": "2026-11-17"
+    },
+    {
+      "id": "swellchain-no-explorer-api",
+      "claim": "explorer.swellnetwork.io exposes no API Diffyscan can read verified sources from.",
+      "appliesToNetworkIds": ["eip155:1923"],
+      "expectedOutcome": "explorer-unavailable",
+      "asOf": "2026-08-17",
+      "source": "authoring-time manual probe",
+      "evidenceRef": null,
+      "logSignature": null,
+      "reverifyBy": "2026-11-17"
+    },
+    {
+      "id": "zircuit-no-explorer-api",
+      "claim": "Zircuit has no explorer API Diffyscan can read verified sources from; the network has no diffyscan/networks.json entry, so it falls through to the Etherscan default.",
+      "appliesToNetworkIds": ["eip155:48900"],
+      "expectedOutcome": "explorer-unavailable",
+      "asOf": "2026-08-17",
+      "source": "authoring-time manual probe",
+      "evidenceRef": null,
+      "logSignature": null,
+      "reverifyBy": "2026-11-17"
+    }
+  ]
+}

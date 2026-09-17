@@ -1,0 +1,31 @@
+{
+  "$schema": "./profile.schema.json",
+  "profileId": "safe-smart-account",
+  "repositoryUrl": "https://github.com/safe-global/safe-smart-account",
+  "description": "Safe multisig proxies. Explorers serve some of these flat (a bare GnosisSafeProxy.sol key, resolved via relative_root) and others as a full standard-JSON bundle (contracts/... keys, remapped by the self-referential 'contracts' dependency), so both resolutions are configured at once.",
+  "default": {
+    "github_repo": {
+      "relative_root": "contracts/proxies"
+    }
+  },
+  "commits": {
+    "186a21a74b327f17fc41217a927dea7064f74604": {
+      "dependencies": {
+        "contracts": {
+          "url": "https://github.com/safe-global/safe-smart-account",
+          "commit": "186a21a74b327f17fc41217a927dea7064f74604",
+          "relative_root": "contracts"
+        }
+      }
+    },
+    "bf943f80fec5ac647159d26161446ac5d716a294": {
+      "dependencies": {
+        "contracts": {
+          "url": "https://github.com/safe-global/safe-smart-account",
+          "commit": "bf943f80fec5ac647159d26161446ac5d716a294",
+          "relative_root": "contracts"
+        }
+      }
+    }
+  }
+}

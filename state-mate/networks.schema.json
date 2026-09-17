@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "state-mate Network RPC Map",
+  "description": "Read endpoints state-mate uses per ledger networkId. Unlike diffyscan/networks.json there is no default entry: a state check reads chain state, and silently falling back to some other chain's endpoint would produce confident answers about the wrong chain.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "networks"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "./networks.schema.json"
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "networks": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/networkRpc"
+      },
+      "propertyNames": {
+        "pattern": "^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}$"
+      }
+    }
+  },
+  "$defs": {
+    "networkRpc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rpcUrlEnv"
+      ],
+      "properties": {
+        "rpcUrlEnv": {
+          "description": "Name of the environment variable holding the RPC endpoint. The rendered config carries this name, not a URL, so the endpoint stays the runner's choice and is never committed.",
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "publicRpcUrl": {
+          "description": "A public endpoint that answered eth_blockNumber when this entry was written. Emitted into the config only under --public-rpc, and recorded in the config header as an unauthenticated carrier. Not a recommendation and not monitored.",
+          "type": "string",
+          "format": "uri"
+        },
+        "publicRpcCheckedOn": {
+          "description": "Date publicRpcUrl was last observed to answer. An endpoint is a claim with a date, like every other carrier in this repository.",
+          "type": "string",
+          "format": "date"
+        }
+      }
+    }
+  }
+}

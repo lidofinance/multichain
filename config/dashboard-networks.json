@@ -1,0 +1,98 @@
+{
+  "docsUrl": "https://docs.lido.fi/deployed-contracts/",
+  "takenAt": "2026-08-27",
+  "networks": {
+    "arbitrum-arbitrum-wsteth-token": {
+      "name": "Arbitrum One",
+      "group": "supported",
+      "bridge": "Lido gateway \u00b7 Arbitrum canonical",
+      "escrowContractId": "arbitrum-ethereum-l1-token-gateway"
+    },
+    "optimism-optimism-wsteth-token": {
+      "name": "Optimism",
+      "group": "supported",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "escrowContractId": "optimism-ethereum-l1-token-bridge"
+    },
+    "base-base-wsteth-token": {
+      "name": "Base",
+      "group": "supported",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "escrowContractId": "base-ethereum-l1-token-bridge"
+    },
+    "linea-linea-wsteth-token": {
+      "name": "Linea",
+      "group": "supported",
+      "bridge": "Linea canonical TokenBridge",
+      "escrowContractId": "linea-ethereum-l1-token-bridge"
+    },
+    "bsc-bsc-wsteth-token": {
+      "name": "BNB Chain",
+      "group": "supported",
+      "bridge": "Wormhole NTT + Axelar",
+      "escrowLabel": "NttManager",
+      "escrowContractId": "bsc-ethereum-wsteth-ntt-manager"
+    },
+    "unichain-unichain-wsteth-token": {
+      "name": "Unichain",
+      "group": "supported",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "escrowContractId": "unichain-ethereum-l1-token-bridge"
+    },
+    "polygon-polygon-wsteth-token": {
+      "name": "Polygon PoS",
+      "group": "legacy",
+      "bridge": "Polygon PoS canonical",
+      "escrowLabel": "ERC20Predicate",
+      "escrowFromDocs": "0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf"
+    },
+    "zksync-zksync-wsteth-token": {
+      "name": "ZKsync Era",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 ZK Stack",
+      "escrowFromDocs": "0x41527B2d03844dB6b0945f25702cB958b6d55989"
+    },
+    "lisk-lisk-wsteth-token": {
+      "name": "Lisk",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "escrowFromDocs": "0x9348AF23B01F2B517AFE8f29B3183d2Bb7d69Fcf"
+    },
+    "soneium-soneium-wsteth-token": {
+      "name": "Soneium",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "escrowFromDocs": "0x2F543A7C9cc80Cc2427c892B96263098d23ee55a"
+    },
+    "swellchain-swellchain-wsteth-token": {
+      "name": "Swellchain",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "escrowFromDocs": "0xecf3376512EDAcA4FBB63d2c67d12a0397d24121"
+    },
+    "mantle-mantle-wsteth-token": {
+      "name": "Mantle",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 Mantle",
+      "escrowFromDocs": "0x2D001d79E5aF5F65a939781FE228B267a8Ed468B"
+    },
+    "mode-mode-wsteth-token": {
+      "name": "Mode",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "escrowFromDocs": "0xD0DeA0a3bd8E4D55170943129c025d3fe0493F2A"
+    },
+    "zircuit-zircuit-wsteth-token": {
+      "name": "Zircuit",
+      "group": "legacy",
+      "bridge": "Lido bridge \u00b7 OP Stack",
+      "escrowFromDocs": "0x912C7271a6A3622dfb8B218eb46a6122aB046C79"
+    },
+    "scroll-scroll-wsteth-token": {
+      "name": "Scroll",
+      "group": "legacy",
+      "bridge": "Lido gateway \u00b7 Scroll",
+      "escrowFromDocs": "0x6625c6332c9f91f2d27c304e729b86db87a3f504"
+    }
+  }
+}

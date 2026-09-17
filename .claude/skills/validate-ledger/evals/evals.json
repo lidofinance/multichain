@@ -1,0 +1,77 @@
+{
+  "skill_name": "validate-ledger",
+  "notes": "Assertions below test behaviour, not values, so a corrected ledger does not fail them. The narrative figures here are context for a grader and go stale on purpose: they were derived from ledger.json sha256 631d371134c5511f1a4d06198465eb24c58d7596214d87d157b5332218a713d0 on 2026-08-18, and must be re-derived whenever that hash changes — check it before trusting a number in this paragraph. As of that snapshot: 175 deployments, 142 projected across 59 cohorts. Diffyscan: 133 source-match, 3 source-diff (all linea: 0x74Be82F0, 0xF951d759, 0xc0583e2F), 6 source-missing-upstream (2 example-wormhole-axelar-wsteth cohorts, GitHub 404 on the pinned tree), 20 unpinned-source-claim, 13 no-source-claim, 0 not-projected. publicRefs: 173 citations over 15 carriers, 171 address-present, 2 address-absent (both on research.lido.fi/t/emergency-brakes-multi-sig-upgrade/2608, deployments eip155:10:0x4Cf8fE0A and eip155:42161:0xfDCf209A). Gaps: 31 no publicRefs, 38 no auditReportRefs, 4 with neither refs nor source. All three registry blockers were unexercised by that run and carry no logSignature.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "full-validation-report",
+      "prompt": "we're prepping the multichain ledger for review — can you validate ledger.json properly and drop a report in reports/? i want the diffyscan source checks and the public refs actually verified, not just the schema validators",
+      "expected_output": "A dated markdown report in reports/ that separates tooling failures from source mismatches, names every source-diff deployment and every unreachable-upstream cohort correctly, records the method edition alongside the ledger hash, states bytecode comparison was skipped, reports every absent publicRef, and warns about entries with no evidence. ledger.json unmodified, nothing committed.",
+      "files": [],
+      "assertions": [
+        "Wrote a markdown report under reports/ whose filename contains a datetime",
+        "Ran the full Diffyscan sweep (just diffyscan-sources) rather than only reading existing logs",
+        "Records the ledger sha256 AND the skill's own edition (SKILL.md and script hashes), so the report identifies both what it read and what read it",
+        "Classifies every cohort that failed on a source-host fetch as a fetch failure — evidence-needed — and never as a source mismatch, whatever the HTTP status was",
+        "Names every source-diff deployment individually with its address, rather than reporting a count",
+        "States that bytecode comparison was skipped (--skip-binary-comparison), so a source match does not establish bytecode equivalence",
+        "Reports every address-absent publicRef individually, with its deploymentId and the carrier it cites",
+        "Reports U4 — role fulfilment — as evidence-needed, and does not let a U1 or U2 pass stand in for it",
+        "Splits the deployments outside the sweep into no-source-claim, unpinned-source-claim and not-projected rather than reporting one combined not-projected total",
+        "Judges each failure cluster explicitly as one common-mode cause or as that many independent findings, and says what decided it",
+        "Reports the state of each known blocker: whether this run exercised it, whether a log signature matched, and how old the claim is",
+        "Uses A.10:4.5 RelianceDisposition member names (pass/degrade/abstain/reopen/evidence-needed/assurance-needed/blocked-current-use) rather than inventing a PASS/FAIL grade",
+        "Carries an admissible-use statement saying what the report may and may not be relied on for",
+        "Records the ledger sha256 after the run as well as before, and the two match; no git commit was made",
+        "Deployments that passed appear as counts or inside collapsed lists, never enumerated inline"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "public-refs-and-orphans",
+      "prompt": "quick one before standup: are the docs.lido.fi and research.lido.fi links in ledger.json still actually naming the addresses they're attached to? and which entries have literally nothing backing them — no public refs, no source?",
+      "expected_output": "Identifies every address-absent citation with its deployment id, and the deployments carrying neither publicRefs nor source. Does not claim every link is fine.",
+      "files": [],
+      "assertions": [
+        "Identifies every address-absent citation individually, with its deploymentId and the carrier URL",
+        "Reports the deployments carrying neither publicRefs nor source",
+        "Says how many citations were checked in total, not only the failures",
+        "Distinguishes an unreachable carrier from an absent address, if any carrier was unreachable",
+        "Does not assert that the cited carriers establish address correctness, role fulfilment, or DAO approval",
+        "Fetched the carriers rather than reasoning from the ledger alone"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "what-does-it-establish",
+      "prompt": "i'm handing this ledger to an integrator on friday. what does it actually establish right now, and what would i be overclaiming if i just said 'it's verified'?",
+      "expected_output": "A bounded answer: what the evidence supports per use, what it does not (bytecode equivalence, role fulfilment, currentness, approval, completeness), and the coverage numbers that set the bound.",
+      "files": [],
+      "assertions": [
+        "Separates source-provenance evidence (U2) from public cross-check evidence (U1) instead of giving one blended verdict",
+        "Names role fulfilment (U4) as untested by anything in this workflow, and identifies 'it's verified' as overclaiming exactly that",
+        "States that no source check ran for the deployments outside the sweep, gives their count, and says a green sweep does not cover them",
+        "States that bytecode equivalence was not established",
+        "Names at least one concrete unresolved finding rather than answering only in generalities",
+        "Says what the defensible sentence would be instead"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "fetch-failure-is-not-a-mismatch",
+      "prompt": "the sweep ran while our GITHUB_API_TOKEN was expired. .claude/skills/validate-ledger/evals/fixtures/github-rate-limit.log is what most of the cohort logs look like. what does that do to the source-provenance result — do we have a pile of ledger problems?",
+      "expected_output": "No. A GitHub 403 rate limit means nothing was compared: upstream-unavailable, evidence-needed for U2, the pin untouched. A run where most cohorts failed this way is one finding about the run, not N findings about the ledger, and the fix is to restore the token and re-run.",
+      "files": [
+        ".claude/skills/validate-ledger/evals/fixtures/github-rate-limit.log"
+      ],
+      "assertions": [
+        "Classifies the 403 as a fetch failure that compared nothing, NOT as source-missing-upstream and NOT as a source mismatch",
+        "States explicitly that the ledger's pin is not impeached by this failure",
+        "Assigns evidence-needed (not reopen) for U2 on the affected deployments",
+        "Treats a sweep where most cohorts failed this way as one common-mode finding about the run rather than one finding per deployment",
+        "Recommends restoring the token and re-running rather than recording findings against the deployments",
+        "Does not claim any source-provenance result for the affected cohorts"
+      ]
+    }
+  ]
+}

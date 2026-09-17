@@ -1,5 +1,7 @@
 # Lido Multichain Deployment Ledger
 
+Dashboard: the built site in `docs/` is ready for GitHub Pages. Run `just dashboard` to rebuild from this ledger and current `wsteth-ccip` main, then preview locally. See [publishing and data sources](docs/PUBLISHING.md).
+
 This repository maintains a machine-readable ledger of Lido-related contracts deployed across supported blockchain networks. Its purpose is to make deployed addresses, architectural kinds, and source-code provenance queryable without presenting the ledger itself as the authority that creates those facts.
 
 The current ledger is [ledger.json](./ledger.json). Its data model is defined by [ledger.schema.json](./ledger.schema.json).
@@ -153,6 +155,31 @@ Integrity checks (after schema validation succeeds) enforce:
 - one live entry per `(contractId, networkId, deploymentKind)`, which is what makes the `-archive` suffix rule enforceable;
 - each deployment `networkId` exists as a key in `networks`;
 - proxy relation fields declared with `x-refDeploymentKind` resolve to entries of that `deploymentKind`, **on the same network** as the referring deployment.
+
+## State checks
+
+Schema and integrity validation establishes that the snapshot is internally
+coherent — including that `proxy.*` links resolve to entries of the right kind
+on the right network. It never leaves the file.
+
+`state-mate/` projects those same links into
+[state-mate](https://github.com/lidofinance/state-mate) configs and asks the
+chains whether they hold: for every proxy the ledger describes, that the
+implementation and admin slots contain the addresses the ledger records.
+
+```sh
+just state-mate-coverage    # what projects, what does not, what is asserted
+just state-mate <network>   # re-render, then check one network
+```
+
+Configs are generated from `ledger.json`, never hand-edited, so no address is
+restated outside the ledger. The checks are deliberately narrow — linkage only,
+nothing semantic — and reading a storage slot needs no block explorer, so they
+run on chains whose explorers Diffyscan cannot use.
+
+See [state-mate/README.md](./state-mate/README.md) for what a passing run does
+and does not establish, and for the failure modes that look like findings but
+are not.
 
 ## Tests
 
