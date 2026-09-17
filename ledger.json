@@ -1,7 +1,10 @@
 {
   "$schema": "./ledger.schema.json",
   "schemaVersion": "0.2.0",
-  "updatedAt": "2026-08-26",
+  "updatedAt": "2026-09-17",
+  "coverage": {
+    "notes": "CCIP Direct Staking documentation cross-check on 2026-09-17: all 31 network/address pairs listed at https://docs.lido.fi/deployed-contracts/#ccip-direct-staking are represented (7 Ethereum, 6 Arbitrum, 6 Optimism, 6 Base, 6 Linea). Network identity follows each linked explorer domain. The four existing PriceOracle entries are documented separately under #price-feeds and are outside this 31-entry count. This check establishes ledger coverage of the cited documentation; source revisions, deployed bytecode, and current proxy slots were not reverified."
+  },
   "knownGaps": [
     "Linea L1/L2 token-bridge proxy links were refreshed on 2026-08-06.",
     "Source revision for current Linea TokenBridge implementations is not yet established (source is null).",
@@ -163,7 +166,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#ethereum-part-arbitrum"
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-arbitrum",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -288,7 +292,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#arbitrum-part"
+        "https://docs.lido.fi/deployed-contracts/#arbitrum-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -305,7 +310,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#arbitrum-part"
+        "https://docs.lido.fi/deployed-contracts/#arbitrum-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -322,7 +328,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#arbitrum-part"
+        "https://docs.lido.fi/deployed-contracts/#arbitrum-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -339,7 +346,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#arbitrum-part"
+        "https://docs.lido.fi/deployed-contracts/#arbitrum-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -358,7 +366,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#arbitrum-part"
+        "https://docs.lido.fi/deployed-contracts/#arbitrum-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -377,7 +386,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#arbitrum-part"
+        "https://docs.lido.fi/deployed-contracts/#arbitrum-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -514,7 +524,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#ethereum-part-optimism"
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-optimism",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -722,7 +733,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#optimism-part"
+        "https://docs.lido.fi/deployed-contracts/#optimism-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -739,7 +751,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#optimism-part"
+        "https://docs.lido.fi/deployed-contracts/#optimism-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -756,7 +769,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#optimism-part"
+        "https://docs.lido.fi/deployed-contracts/#optimism-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -773,7 +787,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#optimism-part"
+        "https://docs.lido.fi/deployed-contracts/#optimism-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -792,7 +807,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#optimism-part"
+        "https://docs.lido.fi/deployed-contracts/#optimism-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -811,7 +827,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#optimism-part"
+        "https://docs.lido.fi/deployed-contracts/#optimism-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -888,7 +905,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#ethereum-part-base"
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-base",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1009,7 +1027,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#base-part"
+        "https://docs.lido.fi/deployed-contracts/#base-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1026,7 +1045,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#base-part"
+        "https://docs.lido.fi/deployed-contracts/#base-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1043,7 +1063,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#base-part"
+        "https://docs.lido.fi/deployed-contracts/#base-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1060,7 +1081,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#base-part"
+        "https://docs.lido.fi/deployed-contracts/#base-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1079,7 +1101,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#base-part"
+        "https://docs.lido.fi/deployed-contracts/#base-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1098,7 +1121,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#base-part"
+        "https://docs.lido.fi/deployed-contracts/#base-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1202,7 +1226,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-Linea-Adapter-2026-08-MixBytes-Security-Audit-Report.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#ethereum-part-linea"
+        "https://docs.lido.fi/deployed-contracts/#ethereum-part-linea",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1366,7 +1391,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#linea-part"
+        "https://docs.lido.fi/deployed-contracts/#linea-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1383,7 +1409,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#linea-part"
+        "https://docs.lido.fi/deployed-contracts/#linea-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1400,7 +1427,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#linea-part"
+        "https://docs.lido.fi/deployed-contracts/#linea-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1417,7 +1445,8 @@
       },
       "auditReportRefs": [],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#linea-part"
+        "https://docs.lido.fi/deployed-contracts/#linea-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1436,7 +1465,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#linea-part"
+        "https://docs.lido.fi/deployed-contracts/#linea-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -1455,7 +1485,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2026-08-MixBytes-Security-Audit-Report.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#linea-part"
+        "https://docs.lido.fi/deployed-contracts/#linea-part",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -2418,7 +2449,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#ethereum-common-ccip-ds"
+        "https://docs.lido.fi/deployed-contracts/#ethereum-common-ccip-ds",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -2437,7 +2469,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#ethereum-common-ccip-ds"
+        "https://docs.lido.fi/deployed-contracts/#ethereum-common-ccip-ds",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
@@ -2456,7 +2489,8 @@
         "https://github.com/lidofinance/audits/blob/main/L2/Direct-Staking-2025-02-Trail-of-Bits-Chainlink-CSR-Security-Review.pdf"
       ],
       "publicRefs": [
-        "https://docs.lido.fi/deployed-contracts/#ethereum-common-ccip-ds"
+        "https://docs.lido.fi/deployed-contracts/#ethereum-common-ccip-ds",
+        "https://docs.lido.fi/deployed-contracts/#ccip-direct-staking"
       ]
     },
     {
