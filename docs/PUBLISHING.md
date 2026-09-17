@@ -3,7 +3,9 @@
 The dashboard is built from this checkout's `ledger.json` and the current `main`
 branch of `lidofinance/wsteth-ccip` by default, or an explicitly supplied local
 source directory. The generated static site goes to
-`temp/dashboard-site/`; `docs/*.html` are templates, not the deployable site.
+`docs/` and is intended to be committed for branch-based GitHub Pages. Editable
+templates live in `dashboard/templates/`; edit those and rebuild, rather than
+editing generated HTML. Builds preserve the other documentation in `docs/`.
 
 ## Local preview
 
@@ -64,9 +66,12 @@ fails the build; it does not switch to GitHub. Pages continues using GitHub by d
 - **Observations:** Chainlink registry and public RPCs are still queried in the
   visitor's browser. Building does not query balances or prove current chain state.
 
-Every build publishes the exact ledger input as `ledger.json` and writes
-`dashboard-build.json` with the upstream commit, input hashes, derived data, and
-build identity. GitHub builds link to that commit; local builds link to their
+Every build links to `ledger.json` on GitHub at this checkout's exact HEAD commit
+and writes `dashboard-build.json` with the ledger commit, upstream commit, input
+hashes, derived data, and
+build identity. The working ledger must match HEAD; commit ledger edits before
+building so the link identifies the exact input. No ledger copy is published.
+GitHub builds link to that commit; local builds link to their
 bundled source inputs and record a null upstream commit. The identity
 namespaces observation caches and optional offline snapshots, preventing reuse
 when ledger, deployment, or metadata inputs change.
@@ -84,6 +89,22 @@ falls back to an older deployment or copies the old dashboard's embedded data.
 No commits or remote publishing are performed by the local builder.
 
 ## GitHub Pages
+
+### Publish the committed build
+
+Build locally with `just dashboard-build` (or explicitly pass `--upstream PATH`).
+Review and commit the generated `docs/index.html`, `docs/roles.html`,
+`docs/ccv.html`, and `docs/dashboard-build.json`, plus
+`docs/upstream/` when using local inputs. Local-source builds publish those
+consumed inputs, including any unpublished changes; their provenance is marked
+in the pages. The builder never commits or pushes.
+
+Set **Settings → Pages → Source** to **Deploy from a branch**, select the branch
+containing your build, and choose **/docs**. Push your commit to that branch to
+publish it. No build on GitHub is needed in this mode.
+
+### Build and deploy with Actions instead
+
 
 Expected site URL after deployment: <https://lidofinance.github.io/multichain/>.
 
