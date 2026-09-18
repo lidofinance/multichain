@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
 import test from 'node:test';
 
-const html = readFileSync(new URL('../dashboard/templates/index.html', import.meta.url), 'utf8');
+const html = readFileSync(new URL('../templates/index.html', import.meta.url), 'utf8');
 const script = html.split('<script>\n')[1].split('</script>')[0];
 const source = script.slice(0, script.indexOf('// 8. Refresh cycle and events'));
 const address = n => '0x' + n.toString(16).padStart(40, '0');
@@ -94,7 +94,7 @@ test('snapshot extraction names missing opening and section rule markers', () =>
       [built.replace(/\/\/ ─+\n(\/\/ 8\. Refresh)/, '$1'), 'section 8 rule marker not found'],
     ]) {
       writeFileSync(path.join(dir, 'index.html'), input);
-      const result = spawnSync(process.execPath, ['scripts/build-lane-watch-snapshot.mjs', '--site', dir], { encoding: 'utf8' });
+      const result = spawnSync(process.execPath, [new URL('../scripts/build-lane-watch-snapshot.mjs', import.meta.url).pathname, '--site', dir], { encoding: 'utf8' });
       assert.notEqual(result.status, 0);
       assert.ok(result.stderr.includes(expected), result.stderr);
     }

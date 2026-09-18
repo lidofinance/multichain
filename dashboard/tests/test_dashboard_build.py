@@ -23,12 +23,12 @@ def addr(n):
 
 class DashboardBuildTests(unittest.TestCase):
     def setUp(self):
-        self.ledger = json.loads((ROOT / 'ledger.json').read_text())
-        self.metadata = json.loads((ROOT / 'config/dashboard-networks.json').read_text())
+        self.ledger = json.loads((ROOT / 'ledger' / 'ledger.json').read_text())
+        self.metadata = json.loads((ROOT / 'dashboard/config/dashboard-networks.json').read_text())
 
 
     def test_ledger_provenance_rejects_uncommitted_input(self):
-        with self.assertRaisesRegex(ValueError, 'ledger.json differs from HEAD'):
+        with self.assertRaisesRegex(ValueError, 'ledger/ledger.json differs from HEAD'):
             ledger_source(ROOT, b'uncommitted ledger')
 
     def test_preview_serves_selected_output_directory(self):
@@ -155,7 +155,7 @@ One resolver; no delivery claim.
             before = build(ROOT, output)
             self.assertFalse((output / 'ledger.json').exists())
             commit = before['sources']['ledgerCommit']
-            url = f'https://github.com/lidofinance/multichain/blob/{commit}/ledger.json'
+            url = f'https://github.com/lidofinance/multichain/blob/{commit}/ledger/ledger.json'
             self.assertEqual(before['provenance']['ledgerUrl'], url)
             self.assertIn(url, (output / 'index.html').read_text())
             page = (output / 'index.html').read_text()

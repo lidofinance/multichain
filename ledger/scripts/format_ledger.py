@@ -173,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         print(
-            "Fix with: uv run python scripts/format_ledger.py format",
+            "Fix with: uv run python ledger/scripts/format_ledger.py format",
             file=sys.stderr,
         )
         return 1

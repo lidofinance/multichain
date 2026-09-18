@@ -7,8 +7,8 @@
 // have filled itself, by running the page's OWN code — sections 1 to 7 of its script are lifted
 // out verbatim and evaluated here — so there is no second implementation of the crawl to drift.
 //
-//   node scripts/build-lane-watch-snapshot.mjs                       # write index.snapshot.json
-//   node scripts/build-lane-watch-snapshot.mjs --inline out.html     # + a self-contained copy
+//   node dashboard/scripts/build-lane-watch-snapshot.mjs             # write index.snapshot.json
+//   node dashboard/scripts/build-lane-watch-snapshot.mjs --inline out.html  # + a self-contained copy
 //
 // The snapshot is dated the moment it is taken, and every figure inside it keeps the timestamp of
 // the read that produced it: the page's header stamp reports that age rather than passing the
@@ -18,7 +18,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import vm from "node:vm";
 import path from "node:path";
 
-const ROOT = path.resolve(import.meta.dirname, "..");
+const ROOT = path.resolve(import.meta.dirname, "..", "..");  // repository root
 const siteArg = process.argv.indexOf("--site");
 if (siteArg !== -1 && !process.argv[siteArg + 1]) throw new Error("--site requires a directory");
 const SITE = siteArg === -1 ? path.join(ROOT, "docs") : path.resolve(process.argv[siteArg + 1]);

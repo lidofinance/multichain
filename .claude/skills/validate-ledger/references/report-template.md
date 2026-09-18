@@ -183,7 +183,7 @@ assurance result.>
 | Diffyscan collection | `<path>` |
 | Public-ref check | `<path>` |
 | Fetched carriers | `<path>` |
-| Cohort logs | `diffyscan/logs/` |
+| Cohort logs | `ledger/diffyscan/logs/` |
 | Diff renderings | `digest/` |
 
 Commands, in order:

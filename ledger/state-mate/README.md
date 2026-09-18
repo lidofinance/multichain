@@ -70,7 +70,7 @@ fifth, which none of those four covers:
 > the recorded block window.
 
 U5 is genuinely new. **U3** (structural navigation) is settled by
-`scripts/validate_ledger.py`, which only checks that the proxy graph is
+`ledger/scripts/validate_ledger.py`, which only checks that the proxy graph is
 *internally* coherent — that a link points at an entry of the right kind on the
 right network. It never leaves the file. U5 is the first check in this
 repository that asks a chain whether the graph is true.
@@ -156,7 +156,7 @@ export STATE_MATE_DIR="$PWD/state-mate"
 export MODE_MAINNET_RPC_URL=https://mainnet.mode.network
 
 just state-mate-coverage        # what projects, what does not, what is asserted
-just state-mate-render          # write state-mate/generated/<network>/
+just state-mate-render          # write ledger/state-mate/generated/<network>/
 just state-mate mode            # re-render, then check networks matching "mode"
 just state-mate                 # every network
 ```
