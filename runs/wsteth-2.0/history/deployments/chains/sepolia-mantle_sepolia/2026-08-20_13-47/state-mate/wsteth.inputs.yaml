@@ -1,0 +1,42 @@
+# Inputs for the wiring-only config/state-mate/wsteth.yaml (state-mate `.inputs` feature).
+# The input dual of wsteth.deployed.yaml: that file holds the addresses THIS REPO DEPLOYED
+# (steps 01–04); this file holds the authored INPUTS, split by authorship into two sections.
+# Auto-loaded as the <name>.inputs.<ext> sibling, and passed explicitly via --inputs in step 08.
+# This file is the default (mantle_sepolia) pair's inputs; other L2s carry per-pair copies named
+# wsteth.inputs.<L2_CHAIN>.yaml (the L2 selector + the L2 Chainlink addresses differ), selected by
+# step 08 via L2_CHAIN.
+#
+#   config:    project-chosen knobs — the POM governance-role holders (testnet placeholders, the
+#              same on both forks). No address-format check (authorship: we choose these).
+#              NOT the deploying EOA: that one is stamped per run from the signing key
+#              (04_ccip_deploy.sh:99-103), so it stays a generated address-book entry.
+#   externals: fixed external facts we only REFERENCE, never deploy — the Chainlink-owned CCIP
+#              infrastructure (router + TokenAdminRegistry per chain) and the CCIP chain selectors
+#              (decimal integers, exempt from the address check).
+#
+# Kept in sync with the deploy record (config/chains/*.json) by the guard in
+# script/08_verify_state.sh, which fails loudly if the two ever disagree.
+config:
+  # LIVE TESTNET INTERIM: all three gov roles are held by the deployer for now, so the
+  # guardian-vs-pausers separation does not hold. Restore distinct addresses when rotating
+  # (fork placeholders were 0x15d3…6A65 / 0x3C44…93BC / 0x90F7…b906).
+  - &guardian "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+  - &emergencyBrakes "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+  - &chainlinkMcms "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+  # Expected result of hasRole(GUARDIAN_ROLE, emergency_brakes): true ONLY while the roles above
+  # are collapsed onto one address (live-testnet interim). Step 08 derives the truth from the
+  # deploy record and fails on drift — flip this to false when rotating to distinct addresses,
+  # which restores the §4.3 guardian/pauser separation assert.
+  - &guardianBrakesCollapsed true
+externals:
+  # Chainlink-owned CCIP 1.5/2.0 infrastructure. We reference these, we do NOT deploy them (see
+  # docs/LIVE_DEPLOY_CONCERNS.md §1) — hence externals, not the address book. Pinning them here
+  # is also a check: step 04 FFI-hydrates .ccip from the Chainlink API into the record, so if the
+  # published infra ever moves, the step-08 guard fails loudly instead of silently verifying
+  # against a different router/registry than the one reviewed.
+  - &l1CCIPRouter "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59"          # sepolia        — ccip.router
+  - &l1TokenAdminRegistry "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82"  # sepolia        — ccip.token_admin_registry
+  - &l2CCIPRouter "0xFd33fd627017fEf041445FC19a2B6521C9778f86"          # mantle_sepolia — ccip.router
+  - &l2TokenAdminRegistry "0x0F1eE88A582f31d92510E300fc1330AA5a525D51"  # mantle_sepolia — ccip.token_admin_registry
+  - &l1ChainSelector "16015286601757825753"                             # sepolia        — ccip.chain_selector
+  - &l2ChainSelector "8236463271206331221"                              # mantle_sepolia — ccip.chain_selector

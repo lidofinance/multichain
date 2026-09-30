@@ -1,0 +1,46 @@
+{
+  "addresses": {
+    "token": "0xE0d8BEE3Db8dad3383561760E7704229838BB6A6"
+  },
+  "ccip": {
+    "chain_selector": "16015286601757825753",
+    "registry_module_owner": "0xa3c796d480638d7476792230da1E2ADa86e031b0",
+    "rmn_proxy": "0xba3f6251de62dED61Ff98590cB2fDf6871FbB991",
+    "router": "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+    "token_admin_registry": "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82"
+  },
+  "ccv": {
+    "message_id_verifier": "0x9e4015f4C5D7f4576936903AE96DCA2fF36E0998",
+    "verifier_resolver": "0xd17C644b5F5c058BB57AcC3c285c5C3aFCEbC5E4"
+  },
+  "chain": {
+    "chain_id": 11155111,
+    "chain_name": "sepolia",
+    "pool_type": "SiloedLockRelease"
+  },
+  "deployed": {
+    "lock_boxes": [
+      {
+        "remote_chain_name": "mantle_sepolia",
+        "lock_box": "0x1A84d705549084C1cF7750A23dB9d0AECd0852Bb"
+      }
+    ],
+    "pool_operation_manager": "0xe2F13D85d34CEC0E46BC878044B88d3cA8ec3F14",
+    "token_pool": "0xD8b378EA0e530E1F4D281d6ef913eF0AcB70DdDa",
+    "advanced_pool_hooks": "0xCc32162E343dAA169e0487d9Bbe1866E5aB20a37"
+  },
+  "governance_addresses": {
+    "chainlink_executors": [],
+    "chainlink_mcms": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+    "emergency_brakes": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+    "guardian": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+    "lido_dao_agent": "0x0A0D5a059Da0e5E61e1d9e5264450b093dFcfD35",
+    "deployer": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": true,
+      "remote_chain_name": "mantle_sepolia"
+    }
+  ]
+}

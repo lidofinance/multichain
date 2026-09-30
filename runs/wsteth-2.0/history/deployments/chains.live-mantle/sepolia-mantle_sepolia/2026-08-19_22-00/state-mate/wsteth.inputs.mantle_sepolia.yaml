@@ -1,0 +1,27 @@
+# Inputs for the wiring-only config/state-mate/wsteth.yaml — sepolia + mantle_sepolia pair.
+# Per-pair copy of wsteth.inputs.yaml (the default pair's file): only the L2_SEL anchor differs.
+# Selected by script/08_verify_state.sh when L2_CHAIN=mantle_sepolia and passed via --inputs
+# (the explicit flag overrides state-mate's <name>.inputs.<ext> sibling auto-load).
+#
+#   config:    project-chosen knobs — the POM governance-role holders (testnet placeholders, the
+#              same on both forks). No address-format check (authorship: we choose these).
+#   externals: fixed external facts — the CCIP chain selectors (decimal integers, exempt from the
+#              address check).
+#
+# Kept in sync with the deploy record (config/chains/*.json) by the guard in
+# script/08_verify_state.sh, which fails loudly if the two ever disagree.
+config:
+  # LIVE TESTNET INTERIM: all three gov roles are held by the deployer for now, so the
+  # guardian-vs-pausers separation does not hold. Restore distinct addresses when rotating
+  # (fork placeholders were 0x15d3…6A65 / 0x3C44…93BC / 0x90F7…b906).
+  - &guardian "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+  - &emergencyBrakes "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+  - &chainlinkMcms "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+  # Expected result of hasRole(GUARDIAN_ROLE, emergency_brakes): true ONLY while the roles above
+  # are collapsed onto one address (live-testnet interim). Step 08 derives the truth from the
+  # deploy record and fails on drift — flip this to false when rotating to distinct addresses,
+  # which restores the §4.3 guardian/pauser separation assert.
+  - &guardianBrakesCollapsed true
+externals:
+  - &L1_SEL "16015286601757825753"   # sepolia        — ccip.chain_selector
+  - &L2_SEL "8236463271206331221"    # mantle_sepolia — ccip.chain_selector
