@@ -16,7 +16,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["components/ledger/tests", "components/dashboard/tests"]
+testpaths = ["components/ledger/tests", "components/dashboard/tests", "orchestration/wsteth-ccip/tests"]
 # The project is not installed (package = false), so the ledger tooling modules
 # under components/ledger/scripts/ and the dashboard builder under components/dashboard/scripts/ are imported
 # from there directly. The validate-ledger skill's own
