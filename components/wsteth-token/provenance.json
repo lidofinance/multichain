@@ -1,0 +1,57 @@
+{
+  "upstream": "https://github.com/lidofinance/lido-l2-with-steth",
+  "commit": "6b4ef322ac479bedf4db787b6a19aab9e0ff8d36",
+  "files": [
+    {
+      "source": "contracts/token/ERC20BridgedPermit.sol",
+      "destination": "contracts/token/ERC20BridgedPermit.sol",
+      "sha256": "627a12b7b24ac7dfa25eb7d518e6d6877f5fac16620f4b4e114994f4ced4aebc"
+    },
+    {
+      "source": "contracts/token/ERC20Bridged.sol",
+      "destination": "contracts/token/ERC20Bridged.sol",
+      "sha256": "4a60d2ad9231f74478cd41bcb75528afd1ac4a2eae3682afacc436cf347c32b5"
+    },
+    {
+      "source": "contracts/token/ERC20Core.sol",
+      "destination": "contracts/token/ERC20Core.sol",
+      "sha256": "720a03c98117a95ce9db9ea96e82567770451c3fe39c64f7fc6b30a80eca5c77"
+    },
+    {
+      "source": "contracts/token/ERC20Metadata.sol",
+      "destination": "contracts/token/ERC20Metadata.sol",
+      "sha256": "fe50ce6902617505f7432e595dfa1dce738b2328591de2671ab208aa92e7e546"
+    },
+    {
+      "source": "contracts/token/PermitExtension.sol",
+      "destination": "contracts/token/PermitExtension.sol",
+      "sha256": "4a5e8253d885c78c6d1d287cff4ba39450a93f910614320d46fc7232d1fab0ec"
+    },
+    {
+      "source": "contracts/utils/Versioned.sol",
+      "destination": "contracts/utils/Versioned.sol",
+      "sha256": "b814b645a56dafa86cf4f6913e49195391a29de6977462a5cb53e3e284fd78c9"
+    },
+    {
+      "source": "contracts/lib/UnstructuredStorage.sol",
+      "destination": "contracts/lib/UnstructuredStorage.sol",
+      "sha256": "8f05775b77ac57f280c89c76eabdf01cff395cf95d87d875ecb53c9e5156438a"
+    },
+    {
+      "source": "contracts/lib/UnstructuredRefStorage.sol",
+      "destination": "contracts/lib/UnstructuredRefStorage.sol",
+      "sha256": "93eb076b9406c29af4cfa95c8042947bf77ee02eb869b38c2d9080426882761f"
+    },
+    {
+      "source": "contracts/proxy/OssifiableProxy.sol",
+      "destination": "contracts/proxy/OssifiableProxy.sol",
+      "sha256": "a614df351d1dfa219cbb4e0e77f462d636028fe2deddd2c9ab45fbac5da5854d"
+    },
+    {
+      "source": "orchestration/wsteth-ccip/src/vendor/BurnMintERC20BridgedPermit.sol",
+      "destination": "contracts/token/ERC20BridgedPermit.sol",
+      "sha256": "6ba7ddf2f41f06cbaf43b9e60148032dce828af4ebbe462ed2b90542c865783c"
+    }
+  ],
+  "notes": "Historical source hashes describe the original imports, not current file contents. The MIT-licensed BurnMintERC20BridgedPermit extension was merged into ERC20BridgedPermit (roles, atomic initialization, implementation locking and mint/burn). ERC20Bridged comments now refer to the merged contract. Other imported upstream sources remain unchanged."
+}

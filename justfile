@@ -59,3 +59,7 @@ state-mate-coverage:
 [positional-arguments]
 state-mate filter="":
     STATE_MATE_CHECKOUT="{{state_mate_dir}}" bash orchestration/ledger/state-mate.sh "$1"
+
+# Test the locally maintained wstETH token and proxy
+wsteth-token-test:
+    forge test --root components/wsteth-token --offline
