@@ -1,0 +1,31 @@
+{
+  "addresses": {
+    "token": ""
+  },
+  "ccip": {
+    "chain_selector": "16015286601757825753",
+    "registry_module_owner": "0xa3c796d480638d7476792230da1E2ADa86e031b0",
+    "rmn_proxy": "0xba3f6251de62dED61Ff98590cB2fDf6871FbB991",
+    "router": "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+    "token_admin_registry": "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82"
+  },
+  "chain": {
+    "chain_id": 11155111,
+    "chain_name": "sepolia",
+    "pool_type": "SiloedLockRelease"
+  },
+  "governance_addresses": {
+    "chainlink_executors": [],
+    "chainlink_mcms": "0x1D72FbCcfC86C88E23771d6D58a8F1Cb77186d1d",
+    "emergency_brakes": "0x608056b8d596da5816146014E88DFfDECAF59DcD",
+    "guardian": "0x608056b8d596da5816146014E88DFfDECAF59DcD",
+    "lido_dao_agent": "0x0000000000000000000000000000000000000000",
+    "deployer": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": true,
+      "remote_chain_name": "mantle_sepolia"
+    }
+  ]
+}

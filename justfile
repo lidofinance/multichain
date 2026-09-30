@@ -16,6 +16,21 @@ state_mate_dir := env_var_or_default("STATE_MATE_DIR", "libs/state-mate")
 default:
     @just --list
 
+# List or run wstETH CCIP orchestration recipes
+[positional-arguments]
+wsteth *args:
+    python3 orchestration/wsteth-ccip/workspace.py run "$@"
+
+# Copy target inputs into a new run; preparation does not deploy
+[positional-arguments]
+wsteth-prepare target run *args:
+    python3 orchestration/wsteth-ccip/workspace.py prepare "$@"
+
+# Select an existing run without resetting its records
+[positional-arguments]
+wsteth-use run:
+    python3 orchestration/wsteth-ccip/workspace.py use "$1"
+
 # Build using this ledger and the latest wsteth-ccip main (requires repository read access)
 [positional-arguments]
 dashboard-build *args:

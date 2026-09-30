@@ -1,0 +1,1416 @@
+{
+  "BurnMintTokenPool": [
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getToken",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getDynamicConfig",
+      "outputs": [
+        {
+          "type": "address"
+        },
+        {
+          "type": "address"
+        },
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "uint64"
+        }
+      ],
+      "name": "isSupportedChain",
+      "outputs": [
+        {
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "uint64"
+        },
+        {
+          "type": "bool"
+        }
+      ],
+      "name": "getCurrentRateLimiterState",
+      "outputs": [
+        {
+          "type": "tuple",
+          "name": "outbound",
+          "components": [
+            {
+              "name": "tokens",
+              "type": "uint128"
+            },
+            {
+              "name": "lastUpdated",
+              "type": "uint32"
+            },
+            {
+              "name": "isEnabled",
+              "type": "bool"
+            },
+            {
+              "name": "capacity",
+              "type": "uint128"
+            },
+            {
+              "name": "rate",
+              "type": "uint128"
+            }
+          ]
+        },
+        {
+          "type": "tuple",
+          "name": "inbound",
+          "components": [
+            {
+              "name": "tokens",
+              "type": "uint128"
+            },
+            {
+              "name": "lastUpdated",
+              "type": "uint32"
+            },
+            {
+              "name": "isEnabled",
+              "type": "bool"
+            },
+            {
+              "name": "capacity",
+              "type": "uint128"
+            },
+            {
+              "name": "rate",
+              "type": "uint128"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "uint64"
+        }
+      ],
+      "name": "getRemotePools",
+      "outputs": [
+        {
+          "type": "bytes[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "uint64"
+        }
+      ],
+      "name": "getRemoteToken",
+      "outputs": [
+        {
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "typeAndVersion",
+      "outputs": [
+        {
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAdvancedPoolHooks",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getRmnProxy",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getSupportedChains",
+      "outputs": [
+        {
+          "type": "uint64[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getTokenDecimals",
+      "outputs": [
+        {
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAllowedFinalityConfig",
+      "outputs": [
+        {
+          "type": "bytes4"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "address"
+        },
+        {
+          "type": "uint64"
+        },
+        {
+          "type": "bytes4"
+        },
+        {
+          "type": "bytes"
+        }
+      ],
+      "name": "getTokenTransferFeeConfig",
+      "outputs": [
+        {
+          "name": "feeConfig",
+          "type": "tuple",
+          "components": [
+            {
+              "name": "destGasOverhead",
+              "type": "uint32"
+            },
+            {
+              "name": "destBytesOverhead",
+              "type": "uint32"
+            },
+            {
+              "name": "finalityFeeUSDCents",
+              "type": "uint32"
+            },
+            {
+              "name": "fastFinalityFeeUSDCents",
+              "type": "uint32"
+            },
+            {
+              "name": "finalityTransferFeeBps",
+              "type": "uint16"
+            },
+            {
+              "name": "fastFinalityTransferFeeBps",
+              "type": "uint16"
+            },
+            {
+              "name": "isEnabled",
+              "type": "bool"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "DummyMessageIdVerifier": [
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getDynamicConfig",
+      "outputs": [
+        {
+          "type": "tuple",
+          "components": [
+            {
+              "name": "feeAggregator",
+              "type": "address"
+            },
+            {
+              "name": "allowlistAdmin",
+              "type": "address"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "typeAndVersion",
+      "outputs": [
+        {
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "versionTag",
+      "outputs": [
+        {
+          "type": "bytes4"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAllowedFinalityConfig",
+      "outputs": [
+        {
+          "type": "bytes4"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getStorageLocations",
+      "outputs": [
+        {
+          "type": "string[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "uint64"
+        }
+      ],
+      "name": "getRemoteChainConfig",
+      "outputs": [
+        {
+          "name": "remoteChainConfig",
+          "type": "tuple",
+          "components": [
+            {
+              "name": "router",
+              "type": "address"
+            },
+            {
+              "name": "remoteChainSelector",
+              "type": "uint64"
+            },
+            {
+              "name": "allowlistEnabled",
+              "type": "bool"
+            },
+            {
+              "name": "feeUSDCents",
+              "type": "uint16"
+            },
+            {
+              "name": "gasForVerification",
+              "type": "uint32"
+            },
+            {
+              "name": "payloadSizeBytes",
+              "type": "uint16"
+            }
+          ]
+        },
+        {
+          "name": "allowedSendersList",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "ERC20LockBox": [
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAllAuthorizedCallers",
+      "outputs": [
+        {
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "typeAndVersion",
+      "outputs": [
+        {
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getToken",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "L2WstETH": [
+    {
+      "inputs": [
+        {
+          "type": "bytes32"
+        },
+        {
+          "type": "address"
+        }
+      ],
+      "name": "hasRole",
+      "outputs": [
+        {
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleMemberCount",
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "name",
+      "outputs": [
+        {
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "symbol",
+      "outputs": [
+        {
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "decimals",
+      "outputs": [
+        {
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getContractVersion",
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "OptimismBridgeExecutor": [
+    {
+      "inputs": [],
+      "name": "getEthereumGovernanceExecutor",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getGuardian",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getDelay",
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getGracePeriod",
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getMinimumDelay",
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getMaximumDelay",
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "PausableAdvancedPoolHooks": [
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getThresholdAmount",
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "uint64"
+        }
+      ],
+      "name": "getCCVConfig",
+      "outputs": [
+        {
+          "type": "tuple",
+          "components": [
+            {
+              "name": "outboundCCVs",
+              "type": "address[]"
+            },
+            {
+              "name": "thresholdOutboundCCVs",
+              "type": "address[]"
+            },
+            {
+              "name": "inboundCCVs",
+              "type": "address[]"
+            },
+            {
+              "name": "thresholdInboundCCVs",
+              "type": "address[]"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "typeAndVersion",
+      "outputs": [
+        {
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAllCCVConfigs",
+      "outputs": [
+        {
+          "type": "tuple[]",
+          "components": [
+            {
+              "name": "remoteChainSelector",
+              "type": "uint64"
+            },
+            {
+              "name": "outboundCCVs",
+              "type": "address[]"
+            },
+            {
+              "name": "thresholdOutboundCCVs",
+              "type": "address[]"
+            },
+            {
+              "name": "inboundCCVs",
+              "type": "address[]"
+            },
+            {
+              "name": "thresholdInboundCCVs",
+              "type": "address[]"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "address"
+        },
+        {
+          "type": "uint64"
+        },
+        {
+          "type": "uint256"
+        },
+        {
+          "type": "bytes4"
+        },
+        {
+          "type": "bytes"
+        },
+        {
+          "type": "uint8"
+        }
+      ],
+      "name": "getRequiredCCVs",
+      "outputs": [
+        {
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "paused",
+      "outputs": [
+        {
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAllowListEnabled",
+      "outputs": [
+        {
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAllowList",
+      "outputs": [
+        {
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getPolicyEngine",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAllAuthorizedCallers",
+      "outputs": [
+        {
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getDisabledRemoteLanes",
+      "outputs": [
+        {
+          "name": "remoteLanes",
+          "type": "tuple[]",
+          "components": [
+            {
+              "name": "chainSelector",
+              "type": "uint64"
+            },
+            {
+              "name": "direction",
+              "type": "uint8"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "PoolOperationManager": [
+    {
+      "inputs": [],
+      "name": "UPGRADE_INTERFACE_VERSION",
+      "outputs": [
+        {
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "typeAndVersion",
+      "outputs": [
+        {
+          "type": "string"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "bytes32"
+        },
+        {
+          "type": "address"
+        }
+      ],
+      "name": "hasRole",
+      "outputs": [
+        {
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getGlobalMinDelay",
+      "outputs": [
+        {
+          "type": "uint40"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "bytes4"
+        }
+      ],
+      "name": "getSelectorMinDelay",
+      "outputs": [
+        {
+          "type": "uint40"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "bytes4"
+        }
+      ],
+      "name": "isSelectorBlocked",
+      "outputs": [
+        {
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getGlobalExpiryPeriod",
+      "outputs": [
+        {
+          "type": "uint40"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getTokenPool",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAdvancedPoolHooks",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getEpoch",
+      "outputs": [
+        {
+          "type": "uint24"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "paused",
+      "outputs": [
+        {
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoleMemberCount",
+      "outputs": [
+        {
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "SiloedLockReleaseTokenPool": [
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getToken",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getDynamicConfig",
+      "outputs": [
+        {
+          "type": "address"
+        },
+        {
+          "type": "address"
+        },
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "uint64"
+        }
+      ],
+      "name": "isSupportedChain",
+      "outputs": [
+        {
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "uint64"
+        },
+        {
+          "type": "bool"
+        }
+      ],
+      "name": "getCurrentRateLimiterState",
+      "outputs": [
+        {
+          "type": "tuple",
+          "name": "outbound",
+          "components": [
+            {
+              "name": "tokens",
+              "type": "uint128"
+            },
+            {
+              "name": "lastUpdated",
+              "type": "uint32"
+            },
+            {
+              "name": "isEnabled",
+              "type": "bool"
+            },
+            {
+              "name": "capacity",
+              "type": "uint128"
+            },
+            {
+              "name": "rate",
+              "type": "uint128"
+            }
+          ]
+        },
+        {
+          "type": "tuple",
+          "name": "inbound",
+          "components": [
+            {
+              "name": "tokens",
+              "type": "uint128"
+            },
+            {
+              "name": "lastUpdated",
+              "type": "uint32"
+            },
+            {
+              "name": "isEnabled",
+              "type": "bool"
+            },
+            {
+              "name": "capacity",
+              "type": "uint128"
+            },
+            {
+              "name": "rate",
+              "type": "uint128"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "uint64"
+        }
+      ],
+      "name": "getRemotePools",
+      "outputs": [
+        {
+          "type": "bytes[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "uint64"
+        }
+      ],
+      "name": "getRemoteToken",
+      "outputs": [
+        {
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "typeAndVersion",
+      "outputs": [
+        {
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAdvancedPoolHooks",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getRmnProxy",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getSupportedChains",
+      "outputs": [
+        {
+          "type": "uint64[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getTokenDecimals",
+      "outputs": [
+        {
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAllowedFinalityConfig",
+      "outputs": [
+        {
+          "type": "bytes4"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "address"
+        },
+        {
+          "type": "uint64"
+        },
+        {
+          "type": "bytes4"
+        },
+        {
+          "type": "bytes"
+        }
+      ],
+      "name": "getTokenTransferFeeConfig",
+      "outputs": [
+        {
+          "name": "feeConfig",
+          "type": "tuple",
+          "components": [
+            {
+              "name": "destGasOverhead",
+              "type": "uint32"
+            },
+            {
+              "name": "destBytesOverhead",
+              "type": "uint32"
+            },
+            {
+              "name": "finalityFeeUSDCents",
+              "type": "uint32"
+            },
+            {
+              "name": "fastFinalityFeeUSDCents",
+              "type": "uint32"
+            },
+            {
+              "name": "finalityTransferFeeBps",
+              "type": "uint16"
+            },
+            {
+              "name": "fastFinalityTransferFeeBps",
+              "type": "uint16"
+            },
+            {
+              "name": "isEnabled",
+              "type": "bool"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAllLockBoxConfigs",
+      "outputs": [
+        {
+          "name": "lockBoxConfigs",
+          "type": "tuple[]",
+          "components": [
+            {
+              "name": "remoteChainSelector",
+              "type": "uint64"
+            },
+            {
+              "name": "lockBox",
+              "type": "address"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "TokenAdminRegistry": [
+    {
+      "inputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "name": "getTokenConfig",
+      "outputs": [
+        {
+          "components": [
+            {
+              "name": "administrator",
+              "type": "address"
+            },
+            {
+              "name": "pendingAdministrator",
+              "type": "address"
+            },
+            {
+              "name": "tokenPool",
+              "type": "address"
+            }
+          ],
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "VersionedVerifierResolver": [
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getFeeAggregator",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "typeAndVersion",
+      "outputs": [
+        {
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAllOutboundImplementations",
+      "outputs": [
+        {
+          "type": "tuple[]",
+          "components": [
+            {
+              "name": "destChainSelector",
+              "type": "uint64"
+            },
+            {
+              "name": "verifier",
+              "type": "address"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getAllInboundImplementations",
+      "outputs": [
+        {
+          "type": "tuple[]",
+          "components": [
+            {
+              "name": "version",
+              "type": "bytes4"
+            },
+            {
+              "name": "verifier",
+              "type": "address"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "uint64"
+        },
+        {
+          "type": "bytes"
+        }
+      ],
+      "name": "getOutboundImplementation",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "type": "bytes"
+        }
+      ],
+      "name": "getInboundImplementation",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "OssifiableProxy": [
+    {
+      "inputs": [],
+      "name": "proxy__getAdmin",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "proxy__getImplementation",
+      "outputs": [
+        {
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "ERC1967Proxy": []
+}

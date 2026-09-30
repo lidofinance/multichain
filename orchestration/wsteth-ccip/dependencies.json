@@ -1,0 +1,18 @@
+[
+  "../../components/ccip",
+  "../../components/core",
+  "../../components/core/foundry/lib/dual-governance",
+  "../../components/core/foundry/lib/dual-governance/lib/forge-std",
+  "../../components/core/foundry/lib/dual-governance/lib/kontrol-cheatcodes",
+  "../../components/core/foundry/lib/dual-governance/lib/openzeppelin-contracts",
+  "../../components/core/foundry/lib/dual-governance/lib/openzeppelin-contracts/lib/erc4626-tests",
+  "../../components/core/foundry/lib/dual-governance/lib/openzeppelin-contracts/lib/forge-std",
+  "../../components/core/foundry/lib/dual-governance/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test",
+  "../../components/core/foundry/lib/forge-std",
+  "../../components/core/foundry/lib/state-mate",
+  "../../libs/forge-std",
+  "../../components/governance-crosschain-bridges",
+  "../../components/openzeppelin-contracts-upgradeable-4x",
+  "../../libs/state-mate",
+  "../../components/openzeppelin-contracts-4x"
+]

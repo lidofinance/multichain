@@ -1,0 +1,61 @@
+# Top-level Foundry project for wsteth-2.0's OWN sources/scripts:
+#   src/    - legacy build entrypoints and the 2nd mock CCV (Hyperlane leg)
+#   script/ - 02 OpExec, 03 L2 token, 06 dual-CCV + relayer, verify
+#   test/   - Claim-B scenario tests (gov round-trip, bridge both ways, negatives)
+#
+# OZ version split is handled by PROFILE, not contextual remaps (which don't propagate past
+# the first hop). The default profile resolves @openzeppelin/contracts -> 5.3.0 (CCIP + our
+# 5.3 code). The `token` profile resolves it -> 4.8.3 + upgradeable 4.7.3 for the locally maintained wsteth-token
+# wstETH (pragma 0.8.10). Build its artifacts with FOUNDRY_PROFILE=token; deploy scripts use default.
+#
+# The CCIP pool/hook/CCV/POM deploy is driven by the vendored ccip submodule's OWN foundry
+# project (../../components/ccip/chains/evm), not compiled here — see the justfile.
+
+[profile.default]
+src = "src"
+script = "script"
+test = "../../targets/wsteth-ccip-sepolia-mantle-dev/test"
+out = "out"
+libs = ["../../components", "../../libs"]
+# Scripts and scenarios use the modern compiler; upstream 0.8.10 artifacts use profile.token.
+solc = "0.8.34"
+evm_version = "osaka"
+optimizer = true
+optimizer_runs = 200
+ffi = true
+# Token sources are OZ-4.x/0.8.10 — compiled only under [profile.token], skipped by default.
+skip = ["src/vendor/*"]
+fs_permissions = [
+    { access = "read-write", path = "../../runs/wsteth-2.0/workspaces" },
+    { access = "read", path = "../../runs/wsteth-2.0/history" },
+    { access = "read", path = "../../runs/wsteth-2.0/imported" },
+    { access = "read-write", path = "./state" },
+    { access = "read-write", path = "./config" },
+    { access = "read", path = "./deployments" },
+    { access = "read", path = "./out-token" },
+]
+remappings = [
+    "@openzeppelin/contracts/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.3.0/",
+    "@openzeppelin/contracts@5.3.0/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.3.0/",
+    "@openzeppelin/contracts-upgradeable/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.3.0/contracts/",
+    "@openzeppelin/contracts-upgradeable@5.3.0/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.3.0/",
+]
+
+# Upstream 0.8.10 contracts, built separately from the modern deployment scripts.
+[profile.token]
+src = "src/vendor"
+script = "src/vendor"
+test = "src/vendor"
+out = "out-token"
+cache_path = "cache-token"
+solc = "0.8.10"
+evm_version = "london"
+skip = []
+remappings = [
+    "@openzeppelin/contracts/=../../components/openzeppelin-contracts-4x/contracts/",
+    "@openzeppelin/contracts-upgradeable/=../../components/openzeppelin-contracts-upgradeable-4x/contracts/",
+]
+
+[fmt]
+line_length = 120
+tab_width = 4
