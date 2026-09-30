@@ -16,27 +16,27 @@ default:
 # Build using this ledger and the latest wsteth-ccip main (requires repository read access)
 [positional-arguments]
 dashboard-build *args:
-    uv run --locked python dashboard/scripts/build_dashboard.py "$@"
+    uv run --locked python components/dashboard/scripts/build_dashboard.py "$@"
 
 # Build and preview Lane Watch; --upstream PATH selects a local source directory
 [positional-arguments]
 dashboard *args:
-    uv run --locked python dashboard/scripts/build_dashboard.py --serve "$@"
+    uv run --locked python components/dashboard/scripts/build_dashboard.py --serve "$@"
 
 # Render Diffyscan configs for every ready ledger cohort
 render:
-    uv run --locked python ledger/scripts/render_diffyscan_config.py --from-ledger
+    uv run --locked python components/ledger/scripts/render_diffyscan_config.py --from-ledger
 
 # Report ledger -> Diffyscan projection coverage
 coverage:
-    uv run --locked python ledger/scripts/render_diffyscan_config.py --coverage
+    uv run --locked python components/ledger/scripts/render_diffyscan_config.py --coverage
 
 # Run the ledger validators and tests the way CI does
 test:
-    uv run --locked python ledger/scripts/format_ledger.py check
-    uv run --locked python ledger/scripts/validate_ledger.py
-    uv run --locked python ledger/scripts/render_diffyscan_config.py --coverage
-    uv run --locked python ledger/scripts/render_state_mate_config.py --coverage
+    uv run --locked python components/ledger/scripts/format_ledger.py check
+    uv run --locked python components/ledger/scripts/validate_ledger.py
+    uv run --locked python components/ledger/scripts/render_diffyscan_config.py --coverage
+    uv run --locked python components/ledger/scripts/render_state_mate_config.py --coverage
     uv run --locked python -m pytest -q
 
 # Re-render configs, then run source-only Diffyscan per cohort (optional name filter)
@@ -57,7 +57,7 @@ diffyscan-sources filter="":
     # what the ledger says today.
     render_log="$(mktemp)"
     trap 'rm -f "$render_log"' EXIT
-    uv run --locked python ledger/scripts/render_diffyscan_config.py --from-ledger \
+    uv run --locked python components/ledger/scripts/render_diffyscan_config.py --from-ledger \
         | tee "$render_log"
     render_status=${PIPESTATUS[0]}
     # 3 means the configs were written but some deployments did not project;
@@ -68,12 +68,12 @@ diffyscan-sources filter="":
         exit 1
     fi
 
-    mkdir -p ledger/diffyscan/logs
+    mkdir -p components/ledger/diffyscan/logs
     shopt -s nullglob
     passed=(); failed=()
     tmp_passed="$(mktemp)"
     trap 'rm -f "$tmp_passed" "$render_log"' EXIT
-    for config in ledger/diffyscan/generated/*.json; do
+    for config in components/ledger/diffyscan/generated/*.json; do
         name="$(basename "$config" .json)"
         if [[ -n "{{ filter }}" && "$name" != *"{{ filter }}"* ]]; then
             continue
@@ -82,11 +82,11 @@ diffyscan-sources filter="":
         # from an overlay that no longer exists would otherwise be verified
         # against a stale pin and counted as a pass.
         if [[ ! "$name" =~ ^[a-z0-9-]+__[a-z0-9-]+__[0-9a-f]{7,64}$ ]] \
-            && [[ ! -f "ledger/diffyscan/overlays/$name.json" ]]; then
+            && [[ ! -f "components/ledger/diffyscan/overlays/$name.json" ]]; then
             echo "==> $name ... SKIPPED (orphaned: no ledger cohort, no overlay)" >&2
             continue
         fi
-        log="ledger/diffyscan/logs/$name.log"
+        log="components/ledger/diffyscan/logs/$name.log"
         printf '==> %s ... ' "$name"
         if diffyscan --skip-binary-comparison --yes {{ diffyscan_flags }} \
             "$config" >"$log" 2>&1; then
@@ -112,7 +112,7 @@ diffyscan-sources filter="":
     names = [n for n in pathlib.Path(sys.argv[1]).read_text().split() if n]
     total = sum(
         len(json.loads(p.read_text())["contracts"])
-        for p in (pathlib.Path("ledger/diffyscan/generated") / f"{n}.json" for n in names)
+        for p in (pathlib.Path("components/ledger/diffyscan/generated") / f"{n}.json" for n in names)
         if p.is_file()
     )
     print(f"contracts verified in passing cohorts: {total}")
@@ -138,11 +138,11 @@ diffyscan-sources filter="":
 
 # Re-render state-mate linkage configs from the ledger
 state-mate-render:
-    uv run --locked python ledger/scripts/render_state_mate_config.py --from-ledger
+    uv run --locked python components/ledger/scripts/render_state_mate_config.py --from-ledger
 
 # Report ledger -> state-mate linkage projection coverage
 state-mate-coverage:
-    uv run --locked python ledger/scripts/render_state_mate_config.py --coverage
+    uv run --locked python components/ledger/scripts/render_state_mate_config.py --coverage
 
 # Re-render, then run state-mate linkage checks per network (optional slug filter)
 state-mate filter="":
@@ -172,23 +172,23 @@ state-mate filter="":
     # Configs are generated, never hand-edited: re-render so every run checks
     # what the ledger says today. 3 means "written, but some proxies did not
     # project" — those are reported by --coverage and are not a render failure.
-    uv run --locked python ledger/scripts/render_state_mate_config.py --from-ledger
+    uv run --locked python components/ledger/scripts/render_state_mate_config.py --from-ledger
     render_status=$?
     if (( render_status != 0 && render_status != 3 )); then
         echo "render failed (exit $render_status); refusing to check stale configs" >&2
         exit 1
     fi
 
-    mkdir -p ledger/state-mate/logs
+    mkdir -p components/ledger/state-mate/logs
     shopt -s nullglob
     passed=(); failed=(); skipped=()
-    for config in ledger/state-mate/generated/*/config.yaml; do
+    for config in components/ledger/state-mate/generated/*/config.yaml; do
         slug="$(basename "$(dirname "$config")")"
         if [[ -n "{{ filter }}" && "$slug" != *"{{ filter }}"* ]]; then
             continue
         fi
 
-        rpc_var="$(uv run --locked python ledger/scripts/render_state_mate_config.py \
+        rpc_var="$(uv run --locked python components/ledger/scripts/render_state_mate_config.py \
             --rpc-url "$slug")" || { echo "==> $slug ... SKIPPED (no RPC entry)"; skipped+=("$slug"); continue; }
         rpc_url="${!rpc_var:-}"
         if [[ -z "$rpc_url" ]]; then
@@ -205,7 +205,7 @@ state-mate filter="":
                 --data '{"jsonrpc":"2.0","id":1,"method":"eth_blockNumber","params":[]}' \
                 "$rpc_url" | sed -n 's/.*"result":"\([^"]*\)".*/\1/p'
         }
-        log="ledger/state-mate/logs/$slug.log"
+        log="components/ledger/state-mate/logs/$slug.log"
         printf '==> %s ... ' "$slug"
         {
             echo "# network-slug: $slug"
@@ -237,7 +237,7 @@ state-mate filter="":
     import json, pathlib, sys
     total = 0
     for slug in sys.argv[1:]:
-        p = pathlib.Path("ledger/state-mate/generated") / slug / "manifest.json"
+        p = pathlib.Path("components/ledger/state-mate/generated") / slug / "manifest.json"
         if p.is_file():
             total += len(json.loads(p.read_text())["proxies"])
     print(f"proxies checked in passing networks: {total}")

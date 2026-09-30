@@ -7,12 +7,12 @@ presents it. The intended repository shape and its reasoning are in
 
 ## Layout
 
-- [`ledger/`](./ledger/README.md) — the deployment catalogue
-  ([ledger.json](./ledger/ledger.json), its
-  [schema](./ledger/ledger.schema.json)), validators, formatter, and the
+- [`ledger.json`](./ledger.json) — the shared deployment catalogue.
+- [`components/ledger/`](./components/ledger/README.md) — its
+  [schema](./components/ledger/ledger.schema.json), validators, formatter, and the
   Diffyscan and state-mate projections that check the catalogue against
   sources and chain state.
-- [`dashboard/`](./dashboard/README.md) — the dashboard: templates, build
+- [`components/dashboard/`](./components/dashboard/README.md) — the dashboard: templates, build
   script, network metadata, and tests. The generated site is written to
   `docs/`, which GitHub Pages serves.
 - `.githooks/` — the pre-commit dispatcher. It runs each module's own hook

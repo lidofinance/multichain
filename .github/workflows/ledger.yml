@@ -3,7 +3,7 @@ name: Ledger
 # No paths filter: the validators are two short Python runs, and filtering has
 # two costs that outweigh the saving. A PR touching only README.md would never
 # produce this check, so a required status check would block on a run that
-# never arrives; and .githooks/** and ledger/hooks/** would never be exercised by CI at all.
+# never arrives; and .githooks/** and components/ledger/hooks/** would never be exercised by CI at all.
 on:
   push:
     branches: [main, develop]
@@ -30,21 +30,21 @@ jobs:
         with:
           enable-cache: true
       - name: Check ledger formatting
-        run: uv run --locked python ledger/scripts/format_ledger.py check
+        run: uv run --locked python components/ledger/scripts/format_ledger.py check
       - name: Validate ledger
-        run: uv run --locked python ledger/scripts/validate_ledger.py
+        run: uv run --locked python components/ledger/scripts/validate_ledger.py
       # Exits 3 when a deployment that has both repositoryUrl and commit still
       # fails to project (no profile, unpinned commit, missing network
       # metadata, unusable URL) — i.e. the ledger claims a revision the config
       # set silently would not check. Deployments with no source recorded at
       # all are a reported gap, not a failure, and do not trip this.
       - name: Check Diffyscan projection coverage
-        run: uv run --locked python ledger/scripts/render_diffyscan_config.py --coverage
+        run: uv run --locked python components/ledger/scripts/render_diffyscan_config.py --coverage
       # Exits 3 when a proxy the ledger fully describes has no RPC entry, so a
       # newly added network cannot land with its proxies silently outside every
       # state check. An unmapped proxyKind is a reported gap, not a failure.
       - name: Check state-mate linkage projection coverage
-        run: uv run --locked python ledger/scripts/render_state_mate_config.py --coverage
+        run: uv run --locked python components/ledger/scripts/render_state_mate_config.py --coverage
       # Without this step CI only ever runs the validators against a known-good
       # ledger, so a validator that has silently stopped validating still passes.
       - name: Test the validators

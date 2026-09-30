@@ -51,9 +51,9 @@ Work from the repository root. Record, before anything else:
 ```sh
 date -u +%Y-%m-%d-%H%M%SZ                 # the run stamp; reuse it everywhere
 git rev-parse --short HEAD && git branch --show-current
-git status --porcelain                     # a dirty ledger/ledger.json changes what you validated
-shasum -a 256 ledger/ledger.json
-uv run --locked python3 -c "import json;d=json.load(open('ledger/ledger.json'));print(d['schemaVersion'],d['updatedAt'],len(d['deployments']),len(d['networks']))"
+git status --porcelain                     # a dirty ledger.json changes what you validated
+shasum -a 256 ledger.json
+uv run --locked python3 -c "import json;d=json.load(open('ledger.json'));print(d['schemaVersion'],d['updatedAt'],len(d['deployments']),len(d['networks']))"
 command -v just uv diffyscan
 shasum -a 256 .claude/skills/validate-ledger/SKILL.md \
               .claude/skills/validate-ledger/references/known-blockers.json \
@@ -172,9 +172,9 @@ the first failure, and a validation report wants every result — a formatting d
 must not hide a schema error:
 
 ```sh
-uv run --locked python ledger/scripts/format_ledger.py check
-uv run --locked python ledger/scripts/validate_ledger.py
-uv run --locked python ledger/scripts/render_diffyscan_config.py --coverage
+uv run --locked python components/ledger/scripts/format_ledger.py check
+uv run --locked python components/ledger/scripts/validate_ledger.py
+uv run --locked python components/ledger/scripts/render_diffyscan_config.py --coverage
 uv run --locked python -m pytest -q
 ```
 
@@ -306,7 +306,7 @@ not add `reports/` to `.gitignore` without asking.
 Re-hash the ledger and put both hashes in the report:
 
 ```sh
-shasum -a 256 ledger/ledger.json           # must equal the Step 0 hash
+shasum -a 256 ledger.json           # must equal the Step 0 hash
 ```
 
 "Never edit `ledger.json`" is a promise this skill makes; a promise nobody checks

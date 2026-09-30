@@ -16,10 +16,10 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["ledger/tests", "dashboard/tests"]
+testpaths = ["components/ledger/tests", "components/dashboard/tests"]
 # The project is not installed (package = false), so the ledger tooling modules
-# under ledger/scripts/ and the dashboard builder under dashboard/scripts/ are imported
+# under components/ledger/scripts/ and the dashboard builder under components/dashboard/scripts/ are imported
 # from there directly. The validate-ledger skill's own
 # classifiers decide what every finding in a validation report says, so they are
 # exercised here alongside the repo's validators.
-pythonpath = ["ledger/scripts", "dashboard/scripts", ".claude/skills/validate-ledger/scripts"]
+pythonpath = ["components/ledger/scripts", "components/dashboard/scripts", ".claude/skills/validate-ledger/scripts"]

@@ -13,7 +13,8 @@ from jsonschema import Draft202012Validator, FormatChecker
 from jsonschema.exceptions import SchemaError
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_LEDGER = ROOT / "ledger.json"
+REPO_ROOT = ROOT.parents[1]
+DEFAULT_LEDGER = REPO_ROOT / "ledger.json"
 DEFAULT_SCHEMA = ROOT / "ledger.schema.json"
 
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")

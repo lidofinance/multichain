@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import re
 import sys
+import subprocess
 import tempfile
 import contextlib
 import unittest
@@ -23,13 +24,38 @@ def addr(n):
 
 class DashboardBuildTests(unittest.TestCase):
     def setUp(self):
-        self.ledger = json.loads((ROOT / 'ledger' / 'ledger.json').read_text())
-        self.metadata = json.loads((ROOT / 'dashboard/config/dashboard-networks.json').read_text())
+        self.ledger = json.loads((ROOT / 'ledger.json').read_text())
+        self.metadata = json.loads((ROOT / 'components/dashboard/config/dashboard-networks.json').read_text())
 
 
     def test_ledger_provenance_rejects_uncommitted_input(self):
-        with self.assertRaisesRegex(ValueError, 'ledger/ledger.json differs from HEAD'):
+        with patch('build_dashboard.subprocess.check_output', side_effect=[b'a' * 40, b'committed ledger']), \
+                self.assertRaisesRegex(ValueError, 'ledger.json differs from HEAD'):
             ledger_source(ROOT, b'uncommitted ledger')
+
+    def test_ledger_provenance_reads_root_catalogue(self):
+        commit = 'c' * 40
+        with patch('build_dashboard.subprocess.check_output', side_effect=[commit.encode(), b'ledger']) as git:
+            revision, url = ledger_source(ROOT, b'ledger')
+        self.assertEqual(revision, commit)
+        self.assertEqual(git.call_args.args[0][-1], f'{commit}:ledger.json')
+        self.assertEqual(url, f'https://github.com/lidofinance/multichain/blob/{commit}/ledger.json')
+
+    def test_ledger_provenance_with_real_git(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            def git(*args):
+                return subprocess.check_output(['git', '-C', str(root), *args], stderr=subprocess.PIPE)
+            git('init', '-q')
+            (root / 'ledger.json').write_bytes(b'{"root":true}\n')
+            git('add', 'ledger.json')
+            git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+                '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture')
+            revision, url = ledger_source(root, (root / 'ledger.json').read_bytes())
+            self.assertEqual(revision, git('rev-parse', 'HEAD').decode().strip())
+            self.assertTrue(url.endswith(f'{revision}/ledger.json'))
+            with self.assertRaisesRegex(ValueError, 'differs from HEAD'):
+                ledger_source(root, b'changed')
 
     def test_preview_serves_selected_output_directory(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -150,12 +176,13 @@ One resolver; no delivery claim.
 
     def test_build_fetches_main_once_and_pins_files_and_cache(self):
         record = self.upstream()
-        with tempfile.TemporaryDirectory() as tmp, patch('build_dashboard.urlopen', side_effect=self.response):
+        with tempfile.TemporaryDirectory() as tmp, patch('build_dashboard.urlopen', side_effect=self.response), \
+                patch('build_dashboard.subprocess.check_output', side_effect=[b'c' * 40, (ROOT / 'ledger.json').read_bytes()] * 2):
             output = Path(tmp) / 'site'
             before = build(ROOT, output)
             self.assertFalse((output / 'ledger.json').exists())
             commit = before['sources']['ledgerCommit']
-            url = f'https://github.com/lidofinance/multichain/blob/{commit}/ledger/ledger.json'
+            url = f'https://github.com/lidofinance/multichain/blob/{commit}/ledger.json'
             self.assertEqual(before['provenance']['ledgerUrl'], url)
             self.assertIn(url, (output / 'index.html').read_text())
             page = (output / 'index.html').read_text()
@@ -192,7 +219,8 @@ One resolver; no delivery claim.
 
     def test_explicit_local_directory_uses_working_files_without_network(self):
         record = self.upstream()
-        with tempfile.TemporaryDirectory() as tmp, patch('build_dashboard.urlopen', side_effect=AssertionError('Network must not be used')):
+        with tempfile.TemporaryDirectory() as tmp, patch('build_dashboard.urlopen', side_effect=AssertionError('Network must not be used')), \
+                patch('build_dashboard.subprocess.check_output', side_effect=[b'c' * 40, (ROOT / 'ledger.json').read_bytes()] * 3):
             local = Path(tmp) / 'local source'
             output = Path(tmp) / 'site'
             for relative, text in self.files.items():

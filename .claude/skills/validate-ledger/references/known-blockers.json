@@ -26,7 +26,7 @@
     },
     {
       "id": "zircuit-no-explorer-api",
-      "claim": "Zircuit has no explorer API Diffyscan can read verified sources from; the network has no ledger/diffyscan/networks.json entry, so it falls through to the Etherscan default.",
+      "claim": "Zircuit has no explorer API Diffyscan can read verified sources from; the network has no components/ledger/diffyscan/networks.json entry, so it falls through to the Etherscan default.",
       "appliesToNetworkIds": ["eip155:48900"],
       "expectedOutcome": "explorer-unavailable",
       "asOf": "2026-08-17",

@@ -1,13 +1,13 @@
 # Deployment ledger
 
-This directory owns the deployment catalogue: the ledger, its schema, the
+This component owns the shared root `ledger.json` catalogue: its schema, the
 validators and formatter, and the catalogue-based verification tooling
 (Diffyscan and state-mate projections). Commands below run from the repository
 root, which holds the shared `uv` environment and the `justfile`.
 
 The ledger maintains a machine-readable ledger of Lido-related contracts deployed across supported blockchain networks. Its purpose is to make deployed addresses, architectural kinds, and source-code provenance queryable without presenting the ledger itself as the authority that creates those facts.
 
-The current ledger is [ledger.json](./ledger.json). Its data model is defined by [ledger.schema.json](./ledger.schema.json).
+The current ledger is [ledger.json](../../ledger.json). Its data model is defined by [ledger.schema.json](./ledger.schema.json).
 
 ## Purpose
 
@@ -120,7 +120,7 @@ When adding or refreshing a deployment:
 6. Record the architectural `deploymentKind` and add identifier-based proxy relationships where applicable.
 7. Add the narrowest source provenance supported by the evidence (`source` may be `null` when none is established).
 8. Update `updatedAt` and validate the complete snapshot.
-9. Run `uv run python ledger/scripts/format_ledger.py format` so object keys follow schema `properties` order.
+9. Run `uv run python components/ledger/scripts/format_ledger.py format` so object keys follow schema `properties` order.
 
 Prefer exact network-and-address matches in deployment artifacts or configuration files. A contract-name match can support partial source provenance, but should not be represented as deployment-verified source provenance without an address mapping, verified bytecode, or equivalent evidence.
 
@@ -138,16 +138,16 @@ git config core.hooksPath .githooks
 Object key order in `ledger.json` is derived from schema `properties` order (document root and `$defs` object schemas). Optional keys are omitted when absent; array element order is not rewritten. Keys under `networks` keep their existing order; nested network objects are reordered.
 
 ```sh
-uv run python ledger/scripts/format_ledger.py format
-uv run python ledger/scripts/format_ledger.py check
+uv run python components/ledger/scripts/format_ledger.py format
+uv run python components/ledger/scripts/format_ledger.py check
 ```
 
-`ledger/hooks/pre-commit`, run by the root `.githooks/pre-commit` dispatcher, runs the formatting check (non-mutating) and ledger validation against the **staged** content, not the working tree — `git add -p` can stage a subset of hunks, so a working-tree check can pass on a commit whose recorded content is invalid. Reformat locally with `format` and re-stage if formatting drifted.
+`components/ledger/hooks/pre-commit`, run by the root `.githooks/pre-commit` dispatcher, runs the formatting check (non-mutating) and ledger validation against the **staged** content, not the working tree — `git add -p` can stage a subset of hunks, so a working-tree check can pass on a commit whose recorded content is invalid. Reformat locally with `format` and re-stage if formatting drifted.
 
 ## Validation
 
 ```sh
-uv run python ledger/scripts/validate_ledger.py
+uv run python components/ledger/scripts/validate_ledger.py
 ```
 
 Integrity checks (after schema validation succeeds) enforce:
@@ -190,7 +190,7 @@ are not.
 uv run pytest
 ```
 
-`ledger/tests/` mutates a well-formed ledger one way at a time and asserts the matching rule fires. Without it, CI would only ever run the validators against a known-good `ledger.json`, so a validator that had silently stopped validating would still pass.
+`components/ledger/tests/` mutates a well-formed ledger one way at a time and asserts the matching rule fires. Without it, CI would only ever run the validators against a known-good `ledger.json`, so a validator that had silently stopped validating would still pass.
 
 CI (`.github/workflows/ledger.yml`) runs the formatting check, the validators, and the tests on pull requests and on pushes to `main` and `develop`. It carries no paths filter: a filtered workflow never produces a status for PRs that touch other files, and would never exercise `githooks/**`.
 

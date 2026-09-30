@@ -7,10 +7,10 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 
-/ledger/diffyscan/generated/
-/ledger/diffyscan/logs/
-/ledger/state-mate/generated/
-/ledger/state-mate/logs/
+/components/ledger/diffyscan/generated/
+/components/ledger/diffyscan/logs/
+/components/ledger/state-mate/generated/
+/components/ledger/state-mate/logs/
 /.diffyscan_cache/
 /digest/
 .env

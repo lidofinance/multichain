@@ -3,9 +3,9 @@
 
 One config per ledger network that carries at least one projectable proxy:
 
-    ledger/state-mate/generated/<network-slug>/config.yaml
-    ledger/state-mate/generated/<network-slug>/abi/*.json
-    ledger/state-mate/generated/<network-slug>/manifest.json
+    components/ledger/state-mate/generated/<network-slug>/config.yaml
+    components/ledger/state-mate/generated/<network-slug>/abi/*.json
+    components/ledger/state-mate/generated/<network-slug>/manifest.json
 
 What the rendered configs check is deliberately narrow — call it *linkage*:
 
@@ -22,7 +22,7 @@ That keeps every rendered value ledger-derived or expectations-derived, so this
 tool cannot drift from the ledger the way a hand-written config would.
 
 Storage reads need no block explorer, only an RPC endpoint. That is why the
-shipped ABIs are first-party stubs from ledger/state-mate/proxy-kinds.json: it lets
+shipped ABIs are first-party stubs from components/ledger/state-mate/proxy-kinds.json: it lets
 linkage run on chains whose explorers Diffyscan cannot use at all. The cost is
 that state-mate's "all non-mutable functions covered" guarantee is measured
 against those stubs, so it says nothing about the deployed interface. The
@@ -430,7 +430,7 @@ def render_from_ledger(
             for proxy in proxies:
                 blockers["missing_network_rpc"].append(proxy["deploymentId"])
                 blockers["skipped"].append(
-                    f"{proxy['deploymentId']}: ledger/state-mate/networks.json has no "
+                    f"{proxy['deploymentId']}: components/ledger/state-mate/networks.json has no "
                     f"entry for {network_id}"
                 )
             continue
@@ -443,7 +443,7 @@ def render_from_ledger(
                 blockers["unmapped_proxy_kind"].append(proxy["deploymentId"])
                 blockers["skipped"].append(
                     f"{proxy['deploymentId']}: proxyKind {proxy_kind!r} has no "
-                    "ledger/state-mate/proxy-kinds.json entry, so no storage layout "
+                    "components/ledger/state-mate/proxy-kinds.json entry, so no storage layout "
                     "is known for it"
                 )
                 continue
@@ -524,7 +524,7 @@ def emit_config(
     lines: list[str] = ["---"]
     lines += [
         "# GENERATED — do not edit. Re-render with:",
-        "#   uv run python ledger/scripts/render_state_mate_config.py --from-ledger",
+        "#   uv run python components/ledger/scripts/render_state_mate_config.py --from-ledger",
         "#",
         f"# network:       {config['networkId']} ({config['networkSlug']})",
         f"# ledger:        schemaVersion {ledger['schemaVersion']}, "
@@ -540,7 +540,7 @@ def emit_config(
         "#",
         "# WHAT THE ABI COVERAGE FIGURE IS WORTH",
         "#   The abi/ files beside this config are first-party stubs from",
-        "#   ledger/state-mate/proxy-kinds.json, not explorer-verified ABIs. state-mate's",
+        "#   components/ledger/state-mate/proxy-kinds.json, not explorer-verified ABIs. state-mate's",
         "#   'all non-mutable functions covered' check is therefore measured",
         "#   against those stubs and says nothing about the deployed interface.",
         "#   Do not run this config with --update-abi: it would overwrite them.",
@@ -550,7 +550,7 @@ def emit_config(
         lines += [
             "# CARRIER",
             "#   rpcUrl is the unauthenticated public endpoint recorded in",
-            f"#   ledger/state-mate/networks.json (checked "
+            f"#   components/ledger/state-mate/networks.json (checked "
             f"{network_cfg.get('publicRpcCheckedOn', 'unknown')}). It is one",
             "#   more untrusted party between you and the chain; re-render",
             "#   without --public-rpc to use your own endpoint.",
@@ -583,12 +583,12 @@ def emit_config(
             basis = facts["adminBasis"].split(":", 1)[1]
             lines.append(
                 "      # admin asserted from an address DECLARED in "
-                f"ledger/state-mate/expectations.json, not in the ledger (basis: {basis})"
+                f"components/ledger/state-mate/expectations.json, not in the ledger (basis: {basis})"
             )
         elif facts["adminBasis"] and facts["adminBasis"].startswith("expectations:"):
             basis = facts["adminBasis"].split(":", 1)[1]
             lines.append(
-                f"      # admin asserted from ledger/state-mate/expectations.json "
+                f"      # admin asserted from components/ledger/state-mate/expectations.json "
                 f"(basis: {basis})"
             )
         elif facts["adminBasis"] == "ledger":
@@ -830,7 +830,7 @@ def resolve_rpc_for(
         network_id = matches[0]
     cfg = networks_map["networks"].get(network_id)
     if cfg is None:
-        raise SystemExit(f"ledger/state-mate/networks.json has no entry for {network_id}")
+        raise SystemExit(f"components/ledger/state-mate/networks.json has no entry for {network_id}")
     if use_public_rpc:
         url = cfg.get("publicRpcUrl")
         if not url:

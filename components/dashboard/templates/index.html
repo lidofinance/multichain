@@ -20,10 +20,10 @@
   for the ramps; RMNRemote / FeeQuoter / NonceManager and the whole 2.0 CCV stack are absent from
   the API altogether — the crawl is what finds them.
 
-  The build reads ledger/ledger.json and the active public record from wsteth-ccip main.
+  The build reads ledger.json and the active public record from wsteth-ccip main.
   LIVE overlays the testnet contracts that are absent from the Chainlink registry.
 
-  Build with dashboard/scripts/build_dashboard.py; serve the generated site from any static host.
+  Build with components/dashboard/scripts/build_dashboard.py; serve the generated site from any static host.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -250,7 +250,7 @@ td.ovshare{white-space:nowrap; min-width:132px}
 
 <footer class="wrap foot">Read-only dashboard · Live: mainnet · Dev: testnet · Refresh to update<br><!-- BUILD_PROVENANCE --></footer>
 
-<!-- Baked snapshot. Empty in the repository; dashboard/scripts/build-lane-watch-snapshot.mjs fills it in a
+<!-- Baked snapshot. Empty in the repository; components/dashboard/scripts/build-lane-watch-snapshot.mjs fills it in a
      copy meant to be published somewhere that cannot reach the registry or any RPC. -->
 <script type="application/json" id="dashboard-data">{}</script>
 <script type="application/json" id="snapshot"></script>
@@ -363,7 +363,7 @@ const EXPLORER = {
 const BUILD = JSON.parse(document.getElementById("dashboard-data").textContent);
 if (!BUILD.live) {
   document.getElementById("views").textContent = "Build the dashboard first: run just dashboard from the repository root.";
-  throw new Error("Missing dashboard build data; run python3 dashboard/scripts/build_dashboard.py");
+  throw new Error("Missing dashboard build data; run python3 components/dashboard/scripts/build_dashboard.py");
 }
 const LIDO_SNAPSHOT = BUILD.provenance;
 const LIDO_NETWORKS = BUILD.networks;

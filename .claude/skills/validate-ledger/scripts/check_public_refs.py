@@ -433,7 +433,7 @@ def carrier_filename(url: str) -> str:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     repo_root = args.repo_root.resolve()
-    ledger_path = (args.ledger or repo_root / "ledger" / "ledger.json").resolve()
+    ledger_path = (args.ledger or repo_root / "ledger.json").resolve()
     if not ledger_path.is_file():
         print(f"Ledger not found: {ledger_path}", file=sys.stderr)
         return EXIT_USAGE

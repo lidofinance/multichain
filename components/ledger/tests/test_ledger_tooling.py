@@ -57,7 +57,7 @@ def entry(
 
 def ledger(*deployments: dict[str, Any]) -> dict[str, Any]:
     return {
-        "$schema": "./ledger.schema.json",
+        "$schema": "./components/ledger/ledger.schema.json",
         "schemaVersion": "0.2.0",
         "updatedAt": "2026-08-07",
         "networks": {

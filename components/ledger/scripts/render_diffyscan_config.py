@@ -4,12 +4,12 @@
 Primary path (--from-ledger):
   Group every ledger deployment that has source.repositoryUrl + source.commit
   into Diffyscan cohorts (networkId, repositoryUrl, commit). Apply
-  ledger/diffyscan/networks.json explorer settings and ledger/diffyscan/profiles/*
+  components/ledger/diffyscan/networks.json explorer settings and components/ledger/diffyscan/profiles/*
   MethodDescription extras. Blocked cohorts are skipped; healthy ones are
   written. Stale generated/*.json files are pruned.
 
 Optional overlay path:
-  Hand overlays under ledger/diffyscan/overlays/ may list deploymentIds plus
+  Hand overlays under components/ledger/diffyscan/overlays/ may list deploymentIds plus
   Diffyscan-only extras (allowed_diffs, bytecode_comparison). Use when a
   cohort needs constructor args or scoped allowlists.
 

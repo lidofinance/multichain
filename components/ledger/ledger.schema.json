@@ -15,7 +15,7 @@
     "$schema": {
       "description": "Relative or absolute reference to the JSON Schema governing this ledger document.",
       "type": "string",
-      "const": "./ledger.schema.json"
+      "const": "./components/ledger/ledger.schema.json"
     },
     "schemaVersion": {
       "description": "Version of the ledger data model, independent of the JSON Schema specification version. Pinned by const so a document written for an older data model cannot validate silently against a newer schema; bump both together when the model changes.",

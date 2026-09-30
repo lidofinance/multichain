@@ -5,11 +5,11 @@ and tests. Commands run from the repository root.
 
 ## Build and publishing
 
-The dashboard is built from this checkout's `ledger/ledger.json` and the current `main`
+The dashboard is built from this checkout's `ledger.json` and the current `main`
 branch of `lidofinance/wsteth-ccip` by default, or an explicitly supplied local
 source directory. The generated static site goes to
 `docs/` and is intended to be committed for branch-based GitHub Pages. Editable
-templates live in `dashboard/templates/`; edit those and rebuild, rather than
+templates live in `components/dashboard/templates/`; edit those and rebuild, rather than
 editing generated HTML. Builds preserve the other documentation in `docs/`.
 
 ## Local preview
@@ -51,7 +51,7 @@ fails the build; it does not switch to GitHub. Pages continues using GitHub by d
 - **Mainnet tokens:** every mainnet EVM `*-wsteth-token` role in `ledger.json`,
   selecting `proxy` or `standalone`, excluding Ethereum from destination rows.
   Ethereum's own token address is also resolved from the ledger.
-- **Escrows:** resolve the contract roles in `dashboard/config/dashboard-networks.json`
+- **Escrows:** resolve the contract roles in `components/dashboard/config/dashboard-networks.json`
   against the ledger. Nine legacy escrows still come from the dated docs mapping
   because the ledger has no corresponding entries.
 - **Support labels and bridge descriptions:** the same dated mapping; ledger
@@ -71,17 +71,19 @@ fails the build; it does not switch to GitHub. Pages continues using GitHub by d
 - **Observations:** Chainlink registry and public RPCs are still queried in the
   visitor's browser. Building does not query balances or prove current chain state.
 
-Every build links to `ledger/ledger.json` on GitHub at this checkout's exact HEAD commit
+Every build links to `ledger.json` on GitHub at this checkout's exact HEAD commit
 and writes `dashboard-build.json` with the ledger commit, upstream commit, input
 hashes, derived data, and
 build identity. The working ledger must match HEAD; commit ledger edits before
-building so the link identifies the exact input. No ledger copy is published.
+building so the link identifies the exact input. The move to root `ledger.json`
+must also be committed before a production build can pin that path. Tests use
+controlled Git responses and temporary output directories. No ledger copy is published.
 GitHub builds link to that commit; local builds link to their
 bundled source inputs and record a null upstream commit. The identity
 namespaces observation caches and optional offline snapshots, preventing reuse
 when ledger, deployment, or metadata inputs change.
 
-`dashboard/docs/FPF-REVIEW.md` remains a historical review of the original dashboard; it does not
+`components/dashboard/docs/FPF-REVIEW.md` remains a historical review of the original dashboard; it does not
 claim to verify this build pipeline.
 
 ## Upstream publishing prerequisite
@@ -133,7 +135,7 @@ upload and deployment, leaving the previously published site intact.
 After building, with Node.js 22 or later:
 
 ```sh
-node dashboard/scripts/build-lane-watch-snapshot.mjs --inline /tmp/wsteth-dashboard.html
+node components/dashboard/scripts/build-lane-watch-snapshot.mjs --inline /tmp/wsteth-dashboard.html
 ```
 
 Use `--site PATH` for a nondefault build directory. The generator writes

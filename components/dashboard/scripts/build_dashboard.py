@@ -22,7 +22,7 @@ from urllib.request import Request, urlopen
 from pathlib import Path
 from urllib.parse import quote, urljoin, urlsplit
 
-ROOT = Path(__file__).resolve().parents[2]  # repository root
+ROOT = Path(__file__).resolve().parents[3]  # repository root
 UPSTREAM = "https://github.com/lidofinance/wsteth-ccip"
 ACTIVE = "docs/CURRENT-DEPLOYMENT.md"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]{40}\Z")
@@ -310,13 +310,13 @@ def ledger_source(root, ledger_bytes):
             ['git', '-C', str(root), 'rev-parse', 'HEAD'], stderr=subprocess.PIPE
         ).decode().strip()
         committed = subprocess.check_output(
-            ['git', '-C', str(root), 'show', f'{commit}:ledger/ledger.json'], stderr=subprocess.PIPE
+            ['git', '-C', str(root), 'show', f'{commit}:ledger.json'], stderr=subprocess.PIPE
         )
     except subprocess.CalledProcessError as exc:
-        raise ValueError('Cannot resolve the committed ledger source; build from a Git checkout') from exc
+        raise ValueError('Cannot resolve ledger.json at HEAD; build from a Git checkout with the root ledger committed') from exc
     if committed != ledger_bytes:
-        raise ValueError('ledger/ledger.json differs from HEAD; commit the ledger before building a commit-pinned dashboard')
-    return commit, f'https://github.com/lidofinance/multichain/blob/{commit}/ledger/ledger.json'
+        raise ValueError('ledger.json differs from HEAD; commit the ledger before building a commit-pinned dashboard')
+    return commit, f'https://github.com/lidofinance/multichain/blob/{commit}/ledger.json'
 
 
 def build(root, output, upstream_path=None):
@@ -324,10 +324,10 @@ def build(root, output, upstream_path=None):
     upstream = GitHubSource() if upstream_path is None else LocalSource(upstream_path)
     sha = upstream.sha
     live, configs, current, report_path, report, inputs = read_upstream(upstream)
-    ledger_bytes = (root / 'ledger' / 'ledger.json').read_bytes()
+    ledger_bytes = (root / 'ledger.json').read_bytes()
     ledger_commit, ledger_url = ledger_source(root, ledger_bytes)
     ledger = json.loads(ledger_bytes)
-    metadata_bytes = (root / 'dashboard/config/dashboard-networks.json').read_bytes()
+    metadata_bytes = (root / 'components/dashboard/config/dashboard-networks.json').read_bytes()
     metadata = json.loads(metadata_bytes)
     data = dict(live=live, networks=ledger_networks(ledger, metadata),
                 l1Token=deployed(ledger, 'eip155:1', 'ethereum-ethereum-wsteth-token'),
@@ -355,7 +355,7 @@ def build(root, output, upstream_path=None):
     ccv += evidence + '<section><h2>CCV configuration</h2>' + source_text(section(current, 'CCV configuration'), base + ACTIVE) + '</section>'
     pages = {}
     for name in ('index', 'roles', 'ccv'):
-        text = (root / f'dashboard/templates/{name}.html').read_text()
+        text = (root / f'components/dashboard/templates/{name}.html').read_text()
         text = text.replace('<!-- BUILD_PROVENANCE -->', provenance)
         if name == 'index':
             payload = json.dumps(data).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')

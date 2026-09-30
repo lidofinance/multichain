@@ -70,7 +70,7 @@ fifth, which none of those four covers:
 > the recorded block window.
 
 U5 is genuinely new. **U3** (structural navigation) is settled by
-`ledger/scripts/validate_ledger.py`, which only checks that the proxy graph is
+`components/ledger/scripts/validate_ledger.py`, which only checks that the proxy graph is
 *internally* coherent — that a link points at an entry of the right kind on the
 right network. It never leaves the file. U5 is the first check in this
 repository that asks a chain whether the graph is true.
@@ -147,16 +147,16 @@ and a zero that matches nothing is indistinguishable from a finding.
 
 ```sh
 # One-time: a state-mate checkout (it is a yarn project, not a CLI on PATH)
-git clone https://github.com/lidofinance/state-mate
-(cd state-mate && corepack enable && yarn install)
-export STATE_MATE_DIR="$PWD/state-mate"
+git submodule update --init libs/state-mate
+(cd libs/state-mate && corepack yarn install)
+# Optional: export STATE_MATE_DIR=/path/to/another/compatible/checkout
 
 # Endpoints: the configs name env vars, so nothing is committed.
 # networks.json records a public endpoint per network to start from.
 export MODE_MAINNET_RPC_URL=https://mainnet.mode.network
 
 just state-mate-coverage        # what projects, what does not, what is asserted
-just state-mate-render          # write ledger/state-mate/generated/<network>/
+just state-mate-render          # write components/ledger/state-mate/generated/<network>/
 just state-mate mode            # re-render, then check networks matching "mode"
 just state-mate                 # every network
 ```
