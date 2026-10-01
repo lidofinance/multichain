@@ -281,152 +281,26 @@
       }
     }
   ],
-  "ldo": {
-    "takenAt": "2026-10-01",
-    "l1Token": "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32",
-    "l1Source": "https://docs.lido.fi/lido-dao/",
-    "networks": [
-      {
-        "chainId": 42161,
-        "name": "Arbitrum One",
-        "token": "0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60",
-        "decimals": 18,
-        "bridge": "Arbitrum canonical",
-        "source": "https://arbiscan.io/token/0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60#code"
-      },
-      {
-        "chainId": 10,
-        "name": "Optimism",
-        "token": "0xFdb794692724153d1488CcdBE0C56c252596735F",
-        "decimals": 18,
-        "bridge": "OP Stack canonical",
-        "source": "https://github.com/ethereum-optimism/ethereum-optimism.github.io/blob/d2065d3c28ea4a3006d147bd16508a9bb1e016ad/data/LDO/data.json"
-      },
-      {
-        "chainId": 137,
-        "name": "Polygon PoS",
-        "token": "0xC3C7d422809852031b44ab29EEC9F1EfF2A58756",
-        "decimals": 18,
-        "bridge": "Polygon PoS canonical",
-        "source": "https://github.com/maticnetwork/polygon-token-list/blob/ba9ffe887764cccdf5a0fc437011ec4eb8511dab/src/tokens/mappedTokens.json"
-      },
-      {
-        "chainId": 56,
-        "name": "BNB Chain",
-        "token": "0x986854779804799C1d68867F5E03e601E781e41b",
-        "decimals": 18,
-        "bridge": "Wormhole Portal",
-        "source": "https://github.com/wormhole-foundation/wormhole-token-list/blob/31d6cbc6e072d03731d7cd43997d0363b5339809/content/by_source.csv"
-      },
-      {
-        "chainId": 130,
-        "name": "Unichain",
-        "token": "0x68A6dbc7214a0F2b0d875963663F1613814E8829",
-        "decimals": 18,
-        "bridge": "OP Stack canonical",
-        "source": "https://github.com/ethereum-optimism/ethereum-optimism.github.io/blob/d2065d3c28ea4a3006d147bd16508a9bb1e016ad/data/LDO/data.json"
-      },
-      {
-        "chainId": 42220,
-        "name": "Celo",
-        "token": "0x6981f932c2ec5f9e15d44d7ef46859a133f544dd",
-        "decimals": 18,
-        "bridge": "OP Stack canonical",
-        "source": "https://github.com/ethereum-optimism/ethereum-optimism.github.io/blob/d2065d3c28ea4a3006d147bd16508a9bb1e016ad/data/LDO/data.json"
-      }
-    ],
-    "priceFeeds": [
-      {
-        "pair": "LDO / ETH",
-        "address": "0x4e844125952D32AcdF339BE976c98E22F6F318dB",
-        "decimals": 18,
-        "maxAgeSeconds": 86400,
-        "source": "https://data.chain.link/feeds/ethereum/mainnet/ldo-eth"
-      },
-      {
-        "pair": "ETH / USD",
-        "address": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419",
-        "decimals": 8,
-        "maxAgeSeconds": 3600,
-        "source": "https://data.chain.link/feeds/ethereum/mainnet/eth-usd"
-      }
-    ]
-  },
-  "steth": {
-    "takenAt": "2026-10-01",
-    "docsUrl": "https://docs.lido.fi/deployed-contracts/",
-    "rateSource": "https://github.com/lidofinance/lido-l2-with-steth/blob/8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c/contracts/optimism/TokenRateOracle.sol",
-    "priceFeed": {
-      "pair": "stETH / USD",
-      "address": "0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8",
-      "decimals": 8,
-      "maxAgeSeconds": 3600,
-      "source": "https://data.chain.link/feeds/ethereum/mainnet/steth-usd"
-    },
-    "l1Token": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
-    "networks": [
-      {
-        "chainId": 10,
-        "name": "Optimism",
-        "bridge": "Lido / OP Stack",
-        "token": "0x76A50b8c7349cCDDb7578c6627e79b5d99D24138",
-        "decimals": 18,
-        "oracle": "0x294ED1f214F4e0ecAE31C3Eae4F04EBB3b36C9d0",
-        "rateDecimals": 27,
-        "pusher": "0xd54c1c6413caac3477AC14b2a80D5398E3c32FfE",
-        "source": "https://docs.lido.fi/deployed-contracts/#optimism-part",
-        "oracleSource": "ledger"
-      },
-      {
-        "chainId": 130,
-        "name": "Unichain",
-        "bridge": "Lido / OP Stack",
-        "token": "0x81f2508AAC59757EF7425DDc9717AB5c2AA0A84F",
-        "decimals": 18,
-        "oracle": "0xD835fAC9080396CCE95bDf9EcC7cc27Bab12c9f8",
-        "rateDecimals": 27,
-        "pusher": "0x3F9600439Ad97fC6f55C2AC7C118f8Fd0595eB74",
-        "source": "https://docs.lido.fi/deployed-contracts/#unichain",
-        "oracleSource": "ledger"
-      },
-      {
-        "chainId": 1868,
-        "name": "Soneium",
-        "bridge": "Lido / OP Stack \u00b7 legacy",
-        "token": "0x0Ce031AEd457C870D74914eCAA7971dd3176cDAF",
-        "decimals": 18,
-        "oracle": "0xDff6f372e8c16b2b9e95c55bDfe74C0bA3F90265",
-        "rateDecimals": 27,
-        "pusher": "0x927C99fC46226bd5131420B16aF0b0371165C3FC",
-        "source": "https://docs.lido.fi/deployed-contracts/#legacy-contracts",
-        "oracleSource": "docs"
-      }
-    ]
-  },
   "l1Token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
   "provenance": {
     "takenAt": "2026-08-27",
     "docsUrl": "https://docs.lido.fi/deployed-contracts/",
-    "ledgerUpdatedAt": "2026-09-17",
-    "ledgerUrl": "https://github.com/lidofinance/multichain/blob/1429b8866810394d050d640870a1a1f8389f515d/ledger.json"
+    "ledgerUpdatedAt": "2026-08-26",
+    "ledgerUrl": "https://github.com/lidofinance/multichain/blob/4cda087a88e09d5a3682c991852c8261167ab45b/ledger.json"
   },
   "sources": {
     "upstreamRepository": "https://github.com/lidofinance/wsteth-ccip",
     "upstreamCommit": null,
-    "upstreamMode": "reused-build",
+    "upstreamMode": "local",
     "upstreamFiles": {
       "docs/CURRENT-DEPLOYMENT.md": "27b8680582f6d3403568e1b1120faeecb6bb7ee2ae902ee39126bfa940da74c0",
       "docs/deployment-2026-09-15.md": "af91dad2dd610e96065e7b318fb3f69496536a7b9eae433f66ae1463acc53e76",
       "config/chains.live-mantle-2026-09-15/mantle_sepolia.json": "285ef3ecbd92e6d4de8932d0576a300cb39c71321451ac6cb59925a189d7d111",
       "config/chains.live-mantle-2026-09-15/sepolia.json": "081c53bf7a884eb6d2a4a0c7bec4a3b9cd2fdac2ee2072e038e5f401a0fc1978"
     },
-    "ledgerCommit": "1429b8866810394d050d640870a1a1f8389f515d",
-    "ledgerSha256": "1e294ff4cf2620c71be68d1fcab85fcdbf96ac8ffdebbf09dd61002308156edf",
-    "metadataSha256": "170205bc9114098667804bec2401d6e67fdd2d156e1437e107575bde04ac6153",
-    "ldoMetadataSha256": "44839d38ef45e42003f547009dcc6581b538cd7d001e3236ab6df300dc39e49b",
-    "stethMetadataSha256": "4a0ea96ff75bbf0c70e6a152654f9743adf90eb69b118dad7c281ea19b005bd7",
-    "upstreamBuildSha256": "c62cb8488e7aa73864b974939ae8ff0b8d991ad6a1504afbd89d114366052966",
-    "upstreamBuildFile": "upstream/dashboard-build.json"
+    "ledgerCommit": "4cda087a88e09d5a3682c991852c8261167ab45b",
+    "ledgerSha256": "49c2774128c633525362806eed8b650b28989a89ba4cee74bf2c3a7112b9e271",
+    "metadataSha256": "170205bc9114098667804bec2401d6e67fdd2d156e1437e107575bde04ac6153"
   },
-  "identity": "a9a8d774b66e1d462b7550114c0565ee1ad622cf6cf908a23e65b651403054df"
+  "identity": "ceb060f259c8080edccaf7795229faf3e2fe858e7f126dc56d3934328a5bb9ed"
 }

@@ -23,7 +23,7 @@
   The build reads ledger.json and the active public record from wsteth-ccip main.
   LIVE overlays the testnet contracts that are absent from the Chainlink registry.
 
-  Build with scripts/build_dashboard.py; serve the generated site from any static host.
+  Build with components/dashboard/scripts/build_dashboard.py; serve the generated site from any static host.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -231,7 +231,7 @@ td.ovshare{white-space:nowrap; min-width:132px}
       <div class="mark">CCIP</div>
       <div>
         <h1>CCIP Lane Watch</h1>
-        <p class="sub">wstETH across networks</p>
+        <p class="sub">wstETH, stETH and LDO across networks</p>
       </div>
     </div>
     <nav class="tabs" id="tabs"></nav>
@@ -248,11 +248,11 @@ td.ovshare{white-space:nowrap; min-width:132px}
 
 <main class="wrap" id="views"></main>
 
-<footer class="wrap foot">Read-only dashboard · Live: mainnet · Dev: testnet · Refresh to update<br>Ledger: <a href="https://github.com/lidofinance/multichain/blob/4cda087a88e09d5a3682c991852c8261167ab45b/ledger.json">build input</a> · updated 2026-08-26 · SHA-256 49c2774128c6<br>Testnet source: <a href="upstream/docs/CURRENT-DEPLOYMENT.md">wsteth-ccip</a> · LOCAL DIRECTORY · unpublished changes may be included · record config/chains.live-mantle-2026-09-15<br><a href="dashboard-build.json">Build provenance</a> · observations are read separately via RPC.</footer>
+<footer class="wrap foot">Read-only dashboard · Live: mainnet · Dev: testnet · Refresh to update<br>Ledger: <a href="https://github.com/lidofinance/multichain/blob/1429b8866810394d050d640870a1a1f8389f515d/ledger.json">build input</a> · updated 2026-09-17 · SHA-256 1e294ff4cf26<br>Testnet source: <a href="upstream/dashboard-build.json">saved dashboard build data</a> · REUSED BUILD DATA · record config/chains.live-mantle-2026-09-15<br>Upstream deployment inputs were not refreshed. <a href="dashboard-build.json">Build provenance</a> · observations are read separately via RPC.</footer>
 
-<!-- Baked snapshot. Empty in the repository; scripts/build-lane-watch-snapshot.mjs fills it in a
+<!-- Baked snapshot. Empty in the repository; components/dashboard/scripts/build-lane-watch-snapshot.mjs fills it in a
      copy meant to be published somewhere that cannot reach the registry or any RPC. -->
-<script type="application/json" id="dashboard-data">{"live": {"record": "config/chains.live-mantle-2026-09-15", "deployedAt": "2026-09-15", "env": "testnet", "lane": [11155111, 5003], "tokens": {"11155111": {"chainId": "11155111", "chainName": "Sepolia", "tokenAddress": "0x03EA7F67bDE498c989b22628b5DFCeeeb4cA9434", "poolAddress": "0x60dF5C229afF442dbe94C0E1a87c40036FCca242", "poolType": "lockRelease", "decimals": 18}, "5003": {"chainId": "5003", "chainName": "Mantle Sepolia", "tokenAddress": "0x964EC0899Aa702485A2e9FCC3C4832b320319d38", "poolAddress": "0x7C4A71b282d7483EcEB858517d608354286605f1", "poolType": "burnMint", "decimals": 18}}, "seeds": {"11155111": [["0x058b56D4AAaAEb1Fe6Dd192425D7672a7584fa0B", "ours:POM"], ["0x60dF5C229afF442dbe94C0E1a87c40036FCca242", "ours:pool"], ["0x49bB57DFdc349eb56CD0a4e2dBfE5cC330980952", "ours:hooks"], ["0x03EA7F67bDE498c989b22628b5DFCeeeb4cA9434", "ours:token"], ["0xC570c5949c0cC7460f29fdbFA8c1151e282Ce879", "ours:verifier"], ["0x160162c04296A96E44296604f4EF3Ab313Dc39e0", "ours:resolver"], ["0x765D0Dd043f61DcBE0DCcdAe8ce868c105993B25", "ours:lockbox"]], "5003": [["0x7075aF66b3A71ddeA8cB0ac19e96eEB119F1e8DF", "ours:POM"], ["0x7C4A71b282d7483EcEB858517d608354286605f1", "ours:pool"], ["0xb073066923aC6C4F20975B7f8C63d7e84dd84DE8", "ours:hooks"], ["0x964EC0899Aa702485A2e9FCC3C4832b320319d38", "ours:token"], ["0xE4Fc4eBd1BE17D77C4792AA9E72fC1A0b706F300", "ours:verifier"], ["0x073198c3e239e064764825380eDc4A5f4B5A7B7e", "ours:resolver"]]}}, "networks": [{"chainId": 42161, "name": "Arbitrum One", "group": "supported", "bridge": "Lido gateway \u00b7 Arbitrum canonical", "token": "0x5979D7b546E38E414F7E9822514be443A4800529", "escrow": "0x0F25c1DC2a9922304f2eac71DCa9B07E310e8E5a", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 10, "name": "Optimism", "group": "supported", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb", "escrow": "0x76943C0D61395d8F2edF9060e1533529cAe05dE6", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 8453, "name": "Base", "group": "supported", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452", "escrow": "0x9de443AdC5A411E83F1878Ef24C3F52C61571e72", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 59144, "name": "Linea", "group": "supported", "bridge": "Linea canonical TokenBridge", "token": "0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F", "escrow": "0x051f1d88f0af5763fb888ec4378b4d8b29ea3319", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 56, "name": "BNB Chain", "group": "supported", "bridge": "Wormhole NTT + Axelar", "token": "0x26c5e01524d2E6280A48F2c50fF6De7e52E9611C", "escrow": "0xb948a93827d68a82F6513Ad178964Da487fe2BD9", "escrowLabel": "NttManager", "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 130, "name": "Unichain", "group": "supported", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xc02fE7317D4eb8753a02c35fe019786854A92001", "escrow": "0x755610f5Be536Ad7afBAa7c10F3E938Ea3aa1877", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 324, "name": "ZKsync Era", "group": "legacy", "bridge": "Lido bridge \u00b7 ZK Stack", "token": "0x703b52F2b28fEbcB60E1372858AF5b18849FE867", "escrow": "0x41527B2d03844dB6b0945f25702cB958b6d55989", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 34443, "name": "Mode", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x98f96A4B34D03a2E6f225B28b8f8Cb1279562d81", "escrow": "0xD0DeA0a3bd8E4D55170943129c025d3fe0493F2A", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 534352, "name": "Scroll", "group": "legacy", "bridge": "Lido gateway \u00b7 Scroll", "token": "0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32", "escrow": "0x6625c6332c9f91f2d27c304e729b86db87a3f504", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 5000, "name": "Mantle", "group": "legacy", "bridge": "Lido bridge \u00b7 Mantle", "token": "0x458ed78EB972a369799fb278c0243b25e5242A83", "escrow": "0x2D001d79E5aF5F65a939781FE228B267a8Ed468B", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 1923, "name": "Swellchain", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x7c98E0779EB5924b3ba8cE3B17648539ed5b0Ecc", "escrow": "0xecf3376512EDAcA4FBB63d2c67d12a0397d24121", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 48900, "name": "Zircuit", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xf0e673Bc224A8Ca3ff67a61605814666b1234833", "escrow": "0x912C7271a6A3622dfb8B218eb46a6122aB046C79", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 1868, "name": "Soneium", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xaA9BD8c957D803466FA92504BDd728cC140f8941", "escrow": "0x2F543A7C9cc80Cc2427c892B96263098d23ee55a", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 137, "name": "Polygon PoS", "group": "legacy", "bridge": "Polygon PoS canonical", "token": "0x03b54A6e9a984069379fae1a4fC4dBAE93B3bCCD", "escrow": "0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf", "escrowLabel": "ERC20Predicate", "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 1135, "name": "Lisk", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x76D8de471F54aAA87784119c60Df1bbFc852C415", "escrow": "0x9348AF23B01F2B517AFE8f29B3183d2Bb7d69Fcf", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}], "l1Token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0", "provenance": {"takenAt": "2026-08-27", "docsUrl": "https://docs.lido.fi/deployed-contracts/", "ledgerUpdatedAt": "2026-08-26", "ledgerUrl": "https://github.com/lidofinance/multichain/blob/4cda087a88e09d5a3682c991852c8261167ab45b/ledger.json"}, "sources": {"upstreamRepository": "https://github.com/lidofinance/wsteth-ccip", "upstreamCommit": null, "upstreamMode": "local", "upstreamFiles": {"docs/CURRENT-DEPLOYMENT.md": "27b8680582f6d3403568e1b1120faeecb6bb7ee2ae902ee39126bfa940da74c0", "docs/deployment-2026-09-15.md": "af91dad2dd610e96065e7b318fb3f69496536a7b9eae433f66ae1463acc53e76", "config/chains.live-mantle-2026-09-15/mantle_sepolia.json": "285ef3ecbd92e6d4de8932d0576a300cb39c71321451ac6cb59925a189d7d111", "config/chains.live-mantle-2026-09-15/sepolia.json": "081c53bf7a884eb6d2a4a0c7bec4a3b9cd2fdac2ee2072e038e5f401a0fc1978"}, "ledgerCommit": "4cda087a88e09d5a3682c991852c8261167ab45b", "ledgerSha256": "49c2774128c633525362806eed8b650b28989a89ba4cee74bf2c3a7112b9e271", "metadataSha256": "170205bc9114098667804bec2401d6e67fdd2d156e1437e107575bde04ac6153"}, "identity": "ceb060f259c8080edccaf7795229faf3e2fe858e7f126dc56d3934328a5bb9ed"}</script>
+<script type="application/json" id="dashboard-data">{"live": {"record": "config/chains.live-mantle-2026-09-15", "deployedAt": "2026-09-15", "env": "testnet", "lane": [11155111, 5003], "tokens": {"11155111": {"chainId": "11155111", "chainName": "Sepolia", "tokenAddress": "0x03EA7F67bDE498c989b22628b5DFCeeeb4cA9434", "poolAddress": "0x60dF5C229afF442dbe94C0E1a87c40036FCca242", "poolType": "lockRelease", "decimals": 18}, "5003": {"chainId": "5003", "chainName": "Mantle Sepolia", "tokenAddress": "0x964EC0899Aa702485A2e9FCC3C4832b320319d38", "poolAddress": "0x7C4A71b282d7483EcEB858517d608354286605f1", "poolType": "burnMint", "decimals": 18}}, "seeds": {"11155111": [["0x058b56D4AAaAEb1Fe6Dd192425D7672a7584fa0B", "ours:POM"], ["0x60dF5C229afF442dbe94C0E1a87c40036FCca242", "ours:pool"], ["0x49bB57DFdc349eb56CD0a4e2dBfE5cC330980952", "ours:hooks"], ["0x03EA7F67bDE498c989b22628b5DFCeeeb4cA9434", "ours:token"], ["0xC570c5949c0cC7460f29fdbFA8c1151e282Ce879", "ours:verifier"], ["0x160162c04296A96E44296604f4EF3Ab313Dc39e0", "ours:resolver"], ["0x765D0Dd043f61DcBE0DCcdAe8ce868c105993B25", "ours:lockbox"]], "5003": [["0x7075aF66b3A71ddeA8cB0ac19e96eEB119F1e8DF", "ours:POM"], ["0x7C4A71b282d7483EcEB858517d608354286605f1", "ours:pool"], ["0xb073066923aC6C4F20975B7f8C63d7e84dd84DE8", "ours:hooks"], ["0x964EC0899Aa702485A2e9FCC3C4832b320319d38", "ours:token"], ["0xE4Fc4eBd1BE17D77C4792AA9E72fC1A0b706F300", "ours:verifier"], ["0x073198c3e239e064764825380eDc4A5f4B5A7B7e", "ours:resolver"]]}}, "networks": [{"chainId": 42161, "name": "Arbitrum One", "group": "supported", "bridge": "Lido gateway \u00b7 Arbitrum canonical", "token": "0x5979D7b546E38E414F7E9822514be443A4800529", "escrow": "0x0F25c1DC2a9922304f2eac71DCa9B07E310e8E5a", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 10, "name": "Optimism", "group": "supported", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb", "escrow": "0x76943C0D61395d8F2edF9060e1533529cAe05dE6", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 8453, "name": "Base", "group": "supported", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452", "escrow": "0x9de443AdC5A411E83F1878Ef24C3F52C61571e72", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 59144, "name": "Linea", "group": "supported", "bridge": "Linea canonical TokenBridge", "token": "0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F", "escrow": "0x051f1d88f0af5763fb888ec4378b4d8b29ea3319", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 56, "name": "BNB Chain", "group": "supported", "bridge": "Wormhole NTT + Axelar", "token": "0x26c5e01524d2E6280A48F2c50fF6De7e52E9611C", "escrow": "0xb948a93827d68a82F6513Ad178964Da487fe2BD9", "escrowLabel": "NttManager", "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 130, "name": "Unichain", "group": "supported", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xc02fE7317D4eb8753a02c35fe019786854A92001", "escrow": "0x755610f5Be536Ad7afBAa7c10F3E938Ea3aa1877", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 324, "name": "ZKsync Era", "group": "legacy", "bridge": "Lido bridge \u00b7 ZK Stack", "token": "0x703b52F2b28fEbcB60E1372858AF5b18849FE867", "escrow": "0x41527B2d03844dB6b0945f25702cB958b6d55989", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 34443, "name": "Mode", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x98f96A4B34D03a2E6f225B28b8f8Cb1279562d81", "escrow": "0xD0DeA0a3bd8E4D55170943129c025d3fe0493F2A", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 534352, "name": "Scroll", "group": "legacy", "bridge": "Lido gateway \u00b7 Scroll", "token": "0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32", "escrow": "0x6625c6332c9f91f2d27c304e729b86db87a3f504", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 5000, "name": "Mantle", "group": "legacy", "bridge": "Lido bridge \u00b7 Mantle", "token": "0x458ed78EB972a369799fb278c0243b25e5242A83", "escrow": "0x2D001d79E5aF5F65a939781FE228B267a8Ed468B", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 1923, "name": "Swellchain", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x7c98E0779EB5924b3ba8cE3B17648539ed5b0Ecc", "escrow": "0xecf3376512EDAcA4FBB63d2c67d12a0397d24121", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 48900, "name": "Zircuit", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xf0e673Bc224A8Ca3ff67a61605814666b1234833", "escrow": "0x912C7271a6A3622dfb8B218eb46a6122aB046C79", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 1868, "name": "Soneium", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xaA9BD8c957D803466FA92504BDd728cC140f8941", "escrow": "0x2F543A7C9cc80Cc2427c892B96263098d23ee55a", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 137, "name": "Polygon PoS", "group": "legacy", "bridge": "Polygon PoS canonical", "token": "0x03b54A6e9a984069379fae1a4fC4dBAE93B3bCCD", "escrow": "0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf", "escrowLabel": "ERC20Predicate", "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 1135, "name": "Lisk", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x76D8de471F54aAA87784119c60Df1bbFc852C415", "escrow": "0x9348AF23B01F2B517AFE8f29B3183d2Bb7d69Fcf", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}], "ldo": {"takenAt": "2026-10-01", "l1Token": "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32", "l1Source": "https://docs.lido.fi/lido-dao/", "networks": [{"chainId": 42161, "name": "Arbitrum One", "token": "0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60", "decimals": 18, "bridge": "Arbitrum canonical", "source": "https://arbiscan.io/token/0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60#code"}, {"chainId": 10, "name": "Optimism", "token": "0xFdb794692724153d1488CcdBE0C56c252596735F", "decimals": 18, "bridge": "OP Stack canonical", "source": "https://github.com/ethereum-optimism/ethereum-optimism.github.io/blob/d2065d3c28ea4a3006d147bd16508a9bb1e016ad/data/LDO/data.json"}, {"chainId": 137, "name": "Polygon PoS", "token": "0xC3C7d422809852031b44ab29EEC9F1EfF2A58756", "decimals": 18, "bridge": "Polygon PoS canonical", "source": "https://github.com/maticnetwork/polygon-token-list/blob/ba9ffe887764cccdf5a0fc437011ec4eb8511dab/src/tokens/mappedTokens.json"}, {"chainId": 56, "name": "BNB Chain", "token": "0x986854779804799C1d68867F5E03e601E781e41b", "decimals": 18, "bridge": "Wormhole Portal", "source": "https://github.com/wormhole-foundation/wormhole-token-list/blob/31d6cbc6e072d03731d7cd43997d0363b5339809/content/by_source.csv"}, {"chainId": 130, "name": "Unichain", "token": "0x68A6dbc7214a0F2b0d875963663F1613814E8829", "decimals": 18, "bridge": "OP Stack canonical", "source": "https://github.com/ethereum-optimism/ethereum-optimism.github.io/blob/d2065d3c28ea4a3006d147bd16508a9bb1e016ad/data/LDO/data.json"}, {"chainId": 42220, "name": "Celo", "token": "0x6981f932c2ec5f9e15d44d7ef46859a133f544dd", "decimals": 18, "bridge": "OP Stack canonical", "source": "https://github.com/ethereum-optimism/ethereum-optimism.github.io/blob/d2065d3c28ea4a3006d147bd16508a9bb1e016ad/data/LDO/data.json"}], "priceFeeds": [{"pair": "LDO / ETH", "address": "0x4e844125952D32AcdF339BE976c98E22F6F318dB", "decimals": 18, "maxAgeSeconds": 86400, "source": "https://data.chain.link/feeds/ethereum/mainnet/ldo-eth"}, {"pair": "ETH / USD", "address": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419", "decimals": 8, "maxAgeSeconds": 3600, "source": "https://data.chain.link/feeds/ethereum/mainnet/eth-usd"}]}, "steth": {"takenAt": "2026-10-01", "docsUrl": "https://docs.lido.fi/deployed-contracts/", "rateSource": "https://github.com/lidofinance/lido-l2-with-steth/blob/8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c/contracts/optimism/TokenRateOracle.sol", "priceFeed": {"pair": "stETH / USD", "address": "0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8", "decimals": 8, "maxAgeSeconds": 3600, "source": "https://data.chain.link/feeds/ethereum/mainnet/steth-usd"}, "l1Token": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", "networks": [{"chainId": 10, "name": "Optimism", "bridge": "Lido / OP Stack", "token": "0x76A50b8c7349cCDDb7578c6627e79b5d99D24138", "decimals": 18, "oracle": "0x294ED1f214F4e0ecAE31C3Eae4F04EBB3b36C9d0", "rateDecimals": 27, "pusher": "0xd54c1c6413caac3477AC14b2a80D5398E3c32FfE", "source": "https://docs.lido.fi/deployed-contracts/#optimism-part", "oracleSource": "ledger"}, {"chainId": 130, "name": "Unichain", "bridge": "Lido / OP Stack", "token": "0x81f2508AAC59757EF7425DDc9717AB5c2AA0A84F", "decimals": 18, "oracle": "0xD835fAC9080396CCE95bDf9EcC7cc27Bab12c9f8", "rateDecimals": 27, "pusher": "0x3F9600439Ad97fC6f55C2AC7C118f8Fd0595eB74", "source": "https://docs.lido.fi/deployed-contracts/#unichain", "oracleSource": "ledger"}, {"chainId": 1868, "name": "Soneium", "bridge": "Lido / OP Stack \u00b7 legacy", "token": "0x0Ce031AEd457C870D74914eCAA7971dd3176cDAF", "decimals": 18, "oracle": "0xDff6f372e8c16b2b9e95c55bDfe74C0bA3F90265", "rateDecimals": 27, "pusher": "0x927C99fC46226bd5131420B16aF0b0371165C3FC", "source": "https://docs.lido.fi/deployed-contracts/#legacy-contracts", "oracleSource": "docs"}]}, "l1Token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0", "provenance": {"takenAt": "2026-08-27", "docsUrl": "https://docs.lido.fi/deployed-contracts/", "ledgerUpdatedAt": "2026-09-17", "ledgerUrl": "https://github.com/lidofinance/multichain/blob/1429b8866810394d050d640870a1a1f8389f515d/ledger.json"}, "sources": {"upstreamRepository": "https://github.com/lidofinance/wsteth-ccip", "upstreamCommit": null, "upstreamMode": "reused-build", "upstreamFiles": {"docs/CURRENT-DEPLOYMENT.md": "27b8680582f6d3403568e1b1120faeecb6bb7ee2ae902ee39126bfa940da74c0", "docs/deployment-2026-09-15.md": "af91dad2dd610e96065e7b318fb3f69496536a7b9eae433f66ae1463acc53e76", "config/chains.live-mantle-2026-09-15/mantle_sepolia.json": "285ef3ecbd92e6d4de8932d0576a300cb39c71321451ac6cb59925a189d7d111", "config/chains.live-mantle-2026-09-15/sepolia.json": "081c53bf7a884eb6d2a4a0c7bec4a3b9cd2fdac2ee2072e038e5f401a0fc1978"}, "ledgerCommit": "1429b8866810394d050d640870a1a1f8389f515d", "ledgerSha256": "1e294ff4cf2620c71be68d1fcab85fcdbf96ac8ffdebbf09dd61002308156edf", "metadataSha256": "170205bc9114098667804bec2401d6e67fdd2d156e1437e107575bde04ac6153", "ldoMetadataSha256": "44839d38ef45e42003f547009dcc6581b538cd7d001e3236ab6df300dc39e49b", "stethMetadataSha256": "4a0ea96ff75bbf0c70e6a152654f9743adf90eb69b118dad7c281ea19b005bd7", "upstreamBuildSha256": "c62cb8488e7aa73864b974939ae8ff0b8d991ad6a1504afbd89d114366052966", "upstreamBuildFile": "upstream/dashboard-build.json"}, "identity": "a9a8d774b66e1d462b7550114c0565ee1ad622cf6cf908a23e65b651403054df"}</script>
 <script type="application/json" id="snapshot"></script>
 
 <script>
@@ -296,10 +296,13 @@ const SEL = {
   // unsiloed part per network.
   getAvailableTokens:           "0xf1e73399",
   stEthPerToken:                "0x035faf82", // wstETH → stETH rate, for the USD column
-  latestAnswer:                 "0x50d25bcd", // Chainlink aggregator
+  latestRoundData:              "0xfeaf968c", // answer and oracle update timestamp
+  tokenRateOracle:              "0x45a8306f", // stETH's rate oracle
+  tokenRateOutdatedDelay:        "0x882bd77d",
+  tokenRateUpdatesPaused:       "0x842170f7",
 };
 
-// Public RPCs with open CORS (all verified). User overrides live in localStorage.
+// Public RPC defaults. User overrides live in localStorage.
 const DEFAULT_RPC = {
   // mainnet
   1:       "https://ethereum-rpc.publicnode.com",
@@ -315,6 +318,7 @@ const DEFAULT_RPC = {
   10:      "https://optimism-rpc.publicnode.com",
   8453:    "https://base-rpc.publicnode.com",
   42161:   "https://arbitrum-one-rpc.publicnode.com",
+  42220:   "https://forno.celo.org",
   59144:   "https://linea-rpc.publicnode.com",
   5000:    "https://mantle-rpc.publicnode.com",
   // mainnet — Lido's own wstETH networks, needed by the overview tab. Every one of these was
@@ -345,6 +349,7 @@ const DEFAULT_RPC = {
 const EXPLORER = {
   1:"https://etherscan.io/address/", 10:"https://optimistic.etherscan.io/address/",
   8453:"https://basescan.org/address/", 42161:"https://arbiscan.io/address/",
+  42220:"https://celoscan.io/address/",
   59144:"https://lineascan.build/address/", 5000:"https://mantlescan.xyz/address/",
   143:"https://monadexplorer.com/address/", 2741:"https://abscan.org/address/",
   9745:"https://plasmascan.to/address/", 16661:"https://chainscan.0g.ai/address/",
@@ -363,12 +368,13 @@ const EXPLORER = {
 const BUILD = JSON.parse(document.getElementById("dashboard-data").textContent);
 if (!BUILD.live) {
   document.getElementById("views").textContent = "Build the dashboard first: run just dashboard from the repository root.";
-  throw new Error("Missing dashboard build data; run python3 scripts/build_dashboard.py");
+  throw new Error("Missing dashboard build data; run python3 components/dashboard/scripts/build_dashboard.py");
 }
 const LIDO_SNAPSHOT = BUILD.provenance;
 const LIDO_NETWORKS = BUILD.networks;
 const L1_WSTETH = BUILD.l1Token;
-const STETH_USD_FEED = "0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8";
+const LDO = BUILD.ldo;
+const STETH = BUILD.steth;
 const LIVE = BUILD.live;
 const GROUPS = {
   unclassified: { label: "Ledger deployments · support unclassified", eyebrow: "unclassified", tone: "c-mute", note: "Present in the ledger; support status and bridge metadata have not been classified." },
@@ -554,6 +560,32 @@ async function rpc(url, calls, opts = {}) {
   }
   if (pending.length === calls.length && lastErr) throw lastErr;   // answered nothing at all
   return out;
+}
+
+// Independent reads started in the same turn share one endpoint batch. Identical
+// calls (notably eth_chainId) are sent once; a failed subcall stays null locally.
+const rpcReadQueue = new Map();
+function rpcRead(url, calls) {
+  return new Promise((resolve, reject) => {
+    let queue = rpcReadQueue.get(url);
+    if (!queue) {
+      queue = []; rpcReadQueue.set(url, queue);
+      Promise.resolve().then(async () => {
+        rpcReadQueue.delete(url);
+        const unique = [], indices = new Map();
+        for (const job of queue) job.positions = job.calls.map((c) => {
+          const key = JSON.stringify(c);
+          if (!indices.has(key)) { indices.set(key, unique.length); unique.push(c); }
+          return indices.get(key);
+        });
+        try {
+          const results = await rpc(url, unique);
+          for (const job of queue) job.resolve(job.positions.map((i) => results[i]));
+        } catch (e) { for (const job of queue) job.reject(e); }
+      });
+    }
+    queue.push({ calls, resolve, reject });
+  });
 }
 
 const words = (hex) => {
@@ -1028,6 +1060,332 @@ async function viewLane(a, b, force) {
   views.innerHTML = laneSummary(state.env, a, b, ra, rb) + `<div class="grid2">${sidePanel(ra)}${sidePanel(rb)}</div>`;
 }
 
+// ── LDO overview ─────────────────────────────────────────────────────────────
+// Bridge metadata identifies a representation; totalSupply measures outstanding
+// destination tokens. Neither a missing catalogue entry nor an RPC failure means zero.
+const ldo = { rows: [], supply: new Map(), quote: null, quoteError: null };
+const strictUint = (hex) => /^0x[0-9a-fA-F]{64}$/.test(hex || "") ? decUint(hex) : null;
+const chainMatches = (hex, chain) => /^0x[0-9a-fA-F]+$/.test(hex || "") && BigInt(hex) === BigInt(chain);
+const scaleAmount = (v, decimals) => v * 10n ** 18n / 10n ** BigInt(decimals);
+const formatAmount = (v) => v > 0n && v < 10n ** 16n ? "&lt;0.01" : fmtUnits(v, 18, 2);
+const formatUsd = (v) => "$" + fmtUnits(v + 5n * 10n ** 17n, 18, 0);
+
+function ldoRows(networks) {
+  const rows = LDO.networks.map((r) => ({ ...r, chainId: String(r.chainId), key: rowKey(r.chainId, r.token) }));
+  const known = new Set(rows.map((r) => r.chainId));
+  for (const r of networks) {
+    const id = String(r.chainId);
+    if (id === "1" || known.has(id)) continue;
+    known.add(id);
+    rows.push({ chainId: id, name: r.name, token: null, key: `${id}:unknown` });
+  }
+  return rows; // One destination token is counted once even if wstETH has several rows.
+}
+
+async function destinationSupply(row, force, namespace) {
+  const url = rpcFor(row.chainId);
+  if (!url) return { v: null, at: null, err: "no RPC configured" };
+  const key = `${namespace}-supply|${row.key}`;
+  const cached = force ? null : metaCache.get(key);
+  if (cached?.url === url) return { v: ovBig(cached.supply), at: cached.at, err: null };
+  try {
+    const r = await rpcRead(url, [{ method: "eth_chainId", params: [] },
+      call(row.token, SEL.decimals), call(row.token, SEL.totalSupply)]);
+    if (!chainMatches(r[0], row.chainId)) throw Error("RPC chain does not match this network");
+    if (strictUint(r[1]) !== BigInt(row.decimals)) throw Error("token decimals unavailable or mismatched");
+    const raw = strictUint(r[2]);
+    if (raw === null) throw Error("supply unavailable");
+    const v = scaleAmount(raw, row.decimals), at = Date.now();
+    metaCache.set(key, { url, at, supply: v.toString() });
+    saveCache();
+    return { v, at, err: null };
+  } catch (e) { return { v: null, at: null, err: e.message }; }
+}
+
+const ldoSupply = (row, force) => destinationSupply(row, force, 'ldo');
+const stethSupply = (row, force) => destinationSupply(row, force, 'steth');
+
+function oracleRound(hex, decimals, scale, label, rate = false) {
+  if (strictUint(decimals) !== BigInt(scale)) throw Error(`${label}: decimals unavailable or mismatched`);
+  if (!/^0x[0-9a-fA-F]{320}$/.test(hex || "")) throw Error(`${label}: ${rate ? 'Rate' : 'price'} unavailable`);
+  const w = words(hex).map((v) => BigInt("0x" + v));
+  const answer = BigInt.asIntN(256, w[1]);
+  if (answer <= 0n || w[0] === 0n || w[4] < w[0] || w[3] === 0n || w[3] > 8640000000000n ||
+      rate && (w[2] === 0n || w[2] > 8640000000000n))
+    throw Error(`${label}: ${rate ? 'Invalid rate round' : 'invalid oracle round'}`);
+  return { answer: answer.toString(), startedAt: Number(w[2]) * 1000, updatedAt: Number(w[3]) * 1000 };
+}
+const feedRound = (hex, decimals, feed) => oracleRound(hex, decimals, feed.decimals, feed.pair);
+
+// A two-minute allowance handles small device/block-clock differences. It does
+// not extend the heartbeat. Temporal validity is derived afresh, never cached as err.
+const PRICE_CLOCK_SKEW_MS = 120000;
+function feedPriceError(quote, feeds) {
+  if (!quote) return "Loading USD price";
+  if (quote.err) return quote.err;
+  const now = Date.now();
+  for (let i = 0; i < feeds.length; i++) {
+    const round = quote.rounds[i], feed = feeds[i];
+    if (!round || !Number.isFinite(round.updatedAt) || round.updatedAt <= 0 || round.updatedAt > now + PRICE_CLOCK_SKEW_MS)
+      return `${feed.pair}: invalid oracle timestamp`;
+    if (now - round.updatedAt > feed.maxAgeSeconds * 1000) return `${feed.pair}: stale price`;
+  }
+  return null;
+}
+
+const ldoPriceError = (quote) => feedPriceError(quote, LDO.priceFeeds);
+const priceReads = new Map();
+async function feedQuote(namespace, feeds, force) {
+  const url = rpcFor(1), key = `${namespace}-price|ethereum|v2`;
+  if (!url) return { err: "USD unavailable: no Ethereum RPC", at: null };
+  const cached = force ? null : metaCache.get(key);
+  if (cached?.url === url && !feedPriceError(cached, feeds)) return cached;
+  const pendingKey = `${key}|${url}|${Boolean(force)}`;
+  if (priceReads.has(pendingKey)) return priceReads.get(pendingKey);
+  const read = (async () => {
+    try {
+      const r = await rpcRead(url, [{ method: "eth_chainId", params: [] }, ...feeds.flatMap((f) =>
+        [call(f.address, SEL.decimals), call(f.address, SEL.latestRoundData)])]);
+      if (!chainMatches(r[0], 1)) throw Error("USD unavailable: RPC is not Ethereum mainnet");
+      const quote = { url, at: Date.now(), rounds: feeds.map((f, i) => feedRound(r[2 + i * 2], r[1 + i * 2], f)), err: null };
+      metaCache.set(key, quote); saveCache();
+      return quote;
+    } catch (e) { return { err: e.message, at: null }; }
+  })();
+  priceReads.set(pendingKey, read);
+  try { return await read; } finally { priceReads.delete(pendingKey); }
+}
+const ldoPrice = (force) => feedQuote('ldo', LDO.priceFeeds, force);
+
+function ldoUsd(amount) {
+  if (amount === null || ldoPriceError(ldo.quote)) return null;
+  const [a, b] = ldo.quote.rounds.map((r) => BigInt(r.answer));
+  const decimals = LDO.priceFeeds.reduce((n, f) => n + f.decimals, 0);
+  return amount * a * b / 10n ** BigInt(decimals); // USD, retaining 18 fractional places.
+}
+
+function bridgeSupplyStatus(row, observation) {
+  if (!row.token) return '<span class="chip c-mute">Not identified</span>';
+  if (!observation) return '<span class="chip c-mute">Reading supply</span>';
+  if (observation.v === null) return '<span class="chip c-warn">Supply unread</span>';
+  return observation.v > 0n ? '<span class="chip c-ok">Bridged</span>'
+    : '<span class="chip c-mute">No outstanding supply</span>';
+}
+
+function bridgedAmount(observation, symbol, usd, loading = false) {
+  if (!observation) return '<span class="skel"></span>';
+  if (observation.v === null) return `<span class="chip c-warn" title="${esc(observation.err)}">Unavailable</span>`;
+  const raw = `${formatAmount(observation.v)} ${symbol}`;
+  return `<b>${raw}</b><div class="muted" style="font-size:var(--fs-xs)">${
+    usd === null ? loading ? '<span class="skel" aria-label="Loading USD price"></span>' : '<span class="chip c-warn">USD unavailable</span>' : `≈ ${formatUsd(usd)}`}</div>`;
+}
+
+const ldoAmount = (observation) => bridgedAmount(observation, 'LDO', ldoUsd(observation?.v ?? null), !ldo.quote);
+
+function sortedSupplyRows(rows, supply) {
+  return rows.filter((r) => r.token).sort((a, b) => {
+    const av = supply.get(a.key)?.v, bv = supply.get(b.key)?.v;
+    if (av == null) return bv == null ? 0 : 1;
+    if (bv == null) return -1;
+    return av > bv ? -1 : av < bv ? 1 : 0;
+  });
+}
+
+function paintBridgedSupply(namespace, model, symbol, usdValue) {
+  let sum = 0n, read = 0;
+  const rows = sortedSupplyRows(model.rows, model.supply);
+  const body = document.querySelector(`[data-${namespace}-rows]`);
+  for (const [i, row] of rows.entries()) {
+    const observation = model.supply.get(row.key);
+    if (observation?.v != null) { sum += observation.v; read++; }
+    const status = document.querySelector(`[data-${namespace}-status="${row.key}"]`);
+    if (status) status.innerHTML = bridgeSupplyStatus(row, observation);
+    const amount = document.querySelector(`[data-${namespace}-amount="${row.key}"]`);
+    if (amount) amount.innerHTML = bridgedAmount(observation, symbol, usdValue(observation?.v ?? null), !model.quote)
+      + (observation?.at ? readTime(observation.at) : "");
+    // Keep unchanged rows in place, including focused links in those rows.
+    if (body && amount && body.children[i] !== amount.closest('tr')) body.insertBefore(amount.closest('tr'), body.children[i] || null);
+  }
+  const total = document.querySelector(`[data-${namespace}-total]`), usd = usdValue(sum);
+  if (total) total.innerHTML = `${read ? `<span class="chip c-cl">${read === rows.length ? `Supply on listed ${symbol} networks` : `Partial ${symbol} supply`}:
+    <b>${formatAmount(sum)} ${symbol}</b></span>` : `<span class="chip ${model.supply.size < rows.length ? 'c-mute' : 'c-warn'}">${symbol} supply ${model.supply.size < rows.length ? 'loading' : 'unavailable'}</span>`}
+    <span class="chip c-mute">${read}/${rows.length} deployments read</span>${
+    read && usd !== null ? `<span class="chip c-cl">≈ ${formatUsd(usd)}</span>` : ""}`;
+}
+function paintPriceDetails(namespace, model, error, details) {
+  model.quoteError = error;
+  const price = document.querySelector(`[data-${namespace}-price]`);
+  if (price) price.innerHTML = !model.quote ? '<span class="skel" aria-label="Loading USD price"></span>'
+    : error ? `<span class="chip c-warn">${esc(error)}</span>` : details();
+}
+function ldoPaintNumbers() {
+  paintBridgedSupply('ldo', ldo, 'LDO', ldoUsd);
+  paintPriceDetails('ldo', ldo, ldoPriceError(ldo.quote), () =>
+    `USD estimate: LDO/ETH × ETH/USD · $${fmtUnits(ldoUsd(10n ** 18n), 18, 4)} per LDO · oracle updates ${
+      ldo.quote.rounds.map((r, i) => `${esc(LDO.priceFeeds[i].pair)} ${esc(minuteTime(r.updatedAt))}`).join(" · ")}`);
+  ovUpdateStatus();
+}
+
+function ldoCard() {
+  const known = sortedSupplyRows(ldo.rows, ldo.supply);
+  const unidentified = ldo.rows.filter((r) => !r.token);
+  return `<section class="card">
+    <div class="card-head"><span class="eyebrow">LDO</span><h2>LDO across mainnets</h2></div>
+    <div class="card-body"><div class="strip" data-ldo-total></div>
+      <details style="margin-top:var(--sp-3)">
+        <summary class="muted" style="cursor:pointer; font-size:var(--fs-sm)">Details</summary>
+      <p class="muted" style="font-size:var(--fs-sm)">Outstanding bridged token supply on each listed network.
+        Coverage is not exhaustive; networks without a sourced LDO deployment are listed below the table.</p>
+      <p class="muted" style="font-size:var(--fs-sm)">Token sources checked ${esc(LDO.takenAt)};
+        LDO bridge coverage is independent of the wstETH endorsement groups.
+        <a href="${esc(LDO.l1Source)}" target="_blank" rel="noopener">Ethereum LDO</a>: ${addrCell("1", LDO.l1Token, short(LDO.l1Token))}.</p>
+      <p class="muted" style="font-size:var(--fs-xs)" data-ldo-price></p>
+      <p class="muted" style="font-size:var(--fs-xs)">USD uses ${LDO.priceFeeds.map((f) =>
+        `<a href="${esc(f.source)}" target="_blank" rel="noopener">Chainlink ${esc(f.pair)}</a>`).join(" × ")}.
+        Prices older than their configured heartbeats are unavailable; future timestamps allow up to two minutes of device clock skew. Network supply and prices may be from different blocks;
+        estimates assume each bridged token is worth one Ethereum LDO.</p>
+      </details>
+    </div>
+    <div class="card-body flush"><div class="tw"><table>
+      <thead><tr><th>network</th><th>LDO bridged?</th><th>bridge / source</th><th>LDO token</th><th style="text-align:right">amount on network</th></tr></thead>
+      <tbody data-ldo-rows>${known.map((r) => `<tr>
+        <td class="t-name">${esc(r.name)}<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(r.chainId)}</span></td>
+        <td data-ldo-status="${esc(r.key)}">${bridgeSupplyStatus(r)}</td>
+        <td>${esc(r.bridge)}<br><a href="${esc(r.source)}" target="_blank" rel="noopener">Token source</a></td>
+        <td>${addrCell(r.chainId, r.token, short(r.token))}</td>
+        <td class="ovnum" data-ldo-amount="${esc(r.key)}"><span class="skel"></span></td>
+      </tr>`).join("")}</tbody>
+    </table></div></div>
+    ${unidentified.length ? `<div class="card-body"><p class="muted" style="margin:0; font-size:var(--fs-sm)">LDO bridging is not identified for networks: ${unidentified.map((r) => esc(r.name)).join(", ")}.</p></div>` : ""}
+  </section>`;
+}
+
+// ── stETH overview ───────────────────────────────────────────────────────────
+// totalSupply already converts shares using the destination oracle's rate.
+// L1 measurement time and L2 receipt time are independent of this browser's read time.
+const steth = { rows: [], supply: new Map(), rates: new Map(), quote: null, quoteError: null };
+const stethRows = () => STETH.networks.map((r) => ({ ...r, chainId: String(r.chainId), key: rowKey(r.chainId, r.token) }));
+const stethPriceError = (quote) => feedPriceError(quote, [STETH.priceFeed]);
+
+const stethPrice = (force) => feedQuote('steth', [STETH.priceFeed], force);
+
+function stethUsd(amount) {
+  if (amount === null || stethPriceError(steth.quote)) return null;
+  return amount * BigInt(steth.quote.rounds[0].answer) / 10n ** BigInt(STETH.priceFeed.decimals);
+}
+
+const stethRateRound = (hex, decimals, row) => oracleRound(hex, decimals, row.rateDecimals, 'Rate', true);
+
+async function stethRate(row, force) {
+  const url = rpcFor(row.chainId), key = `steth-rate|${row.key}`;
+  if (!url || !row.oracle) return { err: !url ? 'No RPC configured' : 'Rate oracle not identified', at: null };
+  const cached = force ? null : metaCache.get(key);
+  if (cached?.url === url) return cached;
+  try {
+    const r = await rpcRead(url, [{ method: 'eth_chainId', params: [] },
+      call(row.token, SEL.tokenRateOracle), call(row.oracle, SEL.decimals),
+      call(row.oracle, SEL.latestRoundData), call(row.oracle, SEL.tokenRateOutdatedDelay),
+      call(row.oracle, SEL.tokenRateUpdatesPaused)]);
+    if (!chainMatches(r[0], row.chainId)) throw Error('RPC chain does not match this network');
+    if (strictUint(r[1]) === null || decAddr(r[1])?.toLowerCase() !== row.oracle.toLowerCase())
+      throw Error('Token rate oracle unavailable or mismatched');
+    const delay = strictUint(r[4]), paused = strictUint(r[5]);
+    const observation = { ...stethRateRound(r[3], r[2], row), url, at: Date.now(), err: null,
+      outdatedDelay: delay !== null && delay <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(delay) : null,
+      paused: paused === 0n ? false : paused === 1n ? true : null };
+    metaCache.set(key, observation); saveCache();
+    return observation;
+  } catch (e) { return { err: e.message, at: null }; }
+}
+
+function stethRateStatus(observation) {
+  if (observation.paused) return '<span class="chip c-warn">Updates paused</span>';
+  if (observation.outdatedDelay != null && Date.now() > observation.updatedAt + observation.outdatedDelay * 1000)
+    return '<span class="chip c-warn">Rate outdated</span>';
+  if (observation.paused === null || observation.outdatedDelay === null)
+    return '<span class="chip c-warn">Rate status unavailable</span>';
+  return '';
+}
+
+function stethRateTime(at) {
+  const seconds = Math.floor(Math.abs(Date.now() - at) / 1000);
+  const age = seconds >= 86400 ? `${Math.floor(seconds / 86400)}d ${Math.floor(seconds % 86400 / 3600)}h`
+    : seconds >= 3600 ? `${Math.floor(seconds / 3600)}h ${Math.floor(seconds % 3600 / 60)}m`
+    : seconds >= 60 ? `${Math.floor(seconds / 60)}m` : `${seconds}s`;
+  return `<b>${at > Date.now() ? `in ${age}` : `${age} ago`}</b><div class="muted mono" style="font-size:var(--fs-xs)">
+    <time datetime="${new Date(at).toISOString()}">${new Date(at).toISOString().slice(0, 19).replace('T', ' ')} UTC</time></div>`;
+}
+
+function paintStethRates(agesOnly = false) {
+  for (const row of steth.rows) {
+    const rate = steth.rates.get(row.key);
+    if (agesOnly) {
+      if (!rate || rate.err) continue;
+      const status = document.querySelector(`[data-steth-rate-status="${row.key}"]`);
+      if (status) status.innerHTML = stethRateStatus(rate);
+    }
+    for (const field of agesOnly ? ['measured', 'updated'] : ['rate', 'measured', 'updated']) {
+      const cell = document.querySelector(`[data-steth-${field}="${row.key}"]`);
+      if (!cell) continue;
+      cell.innerHTML = !rate ? '<span class="skel"></span>' : rate.err
+        ? `<span class="chip c-warn" title="${esc(rate.err)}">Unavailable</span>`
+        : field === 'rate' ? `<b>${fmtUnits(BigInt(rate.answer), row.rateDecimals, 6)}</b>
+          <div style="font-size:var(--fs-xs)"><span data-steth-rate-status="${row.key}">${stethRateStatus(rate)}</span> ${addrCell(row.chainId, row.oracle, 'Oracle')}</div>${readTime(rate.at)}`
+        : stethRateTime(field === 'measured' ? rate.startedAt : rate.updatedAt);
+    }
+  }
+}
+function stethPaintPrice() {
+  paintBridgedSupply('steth', steth, 'stETH', stethUsd);
+  paintPriceDetails('steth', steth, stethPriceError(steth.quote), () =>
+    `USD estimate: ${formatUsd(stethUsd(10n ** 18n))} per stETH · oracle updated ${esc(minuteTime(steth.quote.rounds[0].updatedAt))}`);
+}
+function stethPaintNumbers() {
+  stethPaintPrice(); paintStethRates(); ovUpdateStatus();
+}
+
+function stethCard() {
+  const rows = sortedSupplyRows(steth.rows, steth.supply), known = new Set(rows.map((r) => r.chainId));
+  const unidentified = [...new Map([...ov.rows, ...ldo.rows].filter((r) => !known.has(r.chainId))
+    .map((r) => [r.chainId, r.name])).values()];
+  return `<section class="card">
+    <div class="card-head"><span class="eyebrow">stETH</span><h2>stETH across mainnets</h2></div>
+    <div class="card-body"><div class="strip" data-steth-total></div>
+      <details style="margin-top:var(--sp-3)"><summary class="muted" style="cursor:pointer; font-size:var(--fs-sm)">Details</summary>
+        <p class="muted" style="font-size:var(--fs-sm)">Outstanding stETH supply from the ledger's listed mainnet deployments.
+          Coverage is not exhaustive. Ethereum's native supply is excluded. These amounts are shown separately from wstETH totals.</p>
+        <p class="muted" style="font-size:var(--fs-sm)">Rate = stETH per wstETH, as stored by the destination
+          <a href="${esc(STETH.rateSource)}" target="_blank" rel="noopener">rate oracle</a>.
+          “Rate measured on L1” is latestRoundData.startedAt; “Rate updated on L2” is latestRoundData.updatedAt.
+          Ages use your device clock. “Rate outdated” uses the oracle's configured age limit; “Updates paused” reflects its pause flag.</p>
+        <p class="muted" style="font-size:var(--fs-sm)">Token addresses are from the ledger. Rate oracle addresses are from the ledger or
+          <a href="${esc(STETH.docsUrl)}" target="_blank" rel="noopener">Lido deployment docs</a>, checked ${esc(STETH.takenAt)}.
+          Ethereum stETH: ${addrCell('1', STETH.l1Token, short(STETH.l1Token))}.
+          L1 rate pushers: ${rows.filter((r) => r.pusher).map((r) => addrCell('1', r.pusher, r.name)).join(' · ')}.</p>
+        <p class="muted" style="font-size:var(--fs-xs)" data-steth-price></p>
+        <p class="muted" style="font-size:var(--fs-xs)">USD uses <a href="${esc(STETH.priceFeed.source)}" target="_blank" rel="noopener">Chainlink stETH / USD</a>;
+          prices older than the configured heartbeat are unavailable; future timestamps allow up to two minutes of device clock skew. Supply and price may be read from different blocks.
+          Estimates assume each destination stETH is worth one Ethereum stETH. Rate timestamps describe the stored rate, not a pending L1 push.</p>
+      </details>
+    </div>
+    <div class="card-body flush"><div class="tw"><table>
+      <thead><tr><th>network</th><th>stETH bridged?</th><th>bridge / source</th><th>stETH token</th>
+        <th>stETH per wstETH</th><th>rate measured on L1</th><th>rate updated on L2</th><th style="text-align:right">amount on network</th></tr></thead>
+      <tbody data-steth-rows>${rows.map((r) => `<tr>
+        <td class="t-name">${esc(r.name)}<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(r.chainId)}</span></td>
+        <td data-steth-status="${esc(r.key)}">${bridgeSupplyStatus(r)}</td>
+        <td>${esc(r.bridge)}<br><a href="${esc(r.source)}" target="_blank" rel="noopener">Token source</a></td>
+        <td>${addrCell(r.chainId, r.token, short(r.token))}</td>
+        <td data-steth-rate="${esc(r.key)}"><span class="skel"></span></td>
+        <td data-steth-measured="${esc(r.key)}"><span class="skel"></span></td>
+        <td data-steth-updated="${esc(r.key)}"><span class="skel"></span></td>
+        <td class="ovnum" data-steth-amount="${esc(r.key)}"><span class="skel"></span></td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>
+    ${unidentified.length ? `<div class="card-body"><p class="muted" style="margin:0; font-size:var(--fs-sm)">stETH bridging is not identified for networks: ${unidentified.map(esc).join(', ')}.</p></div>` : ''}
+  </section>`;
+}
+
 // ── overview tab ─────────────────────────────────────────────────────────────
 // Where wstETH actually lives, grouped by who stands behind the deployment.
 //
@@ -1037,7 +1395,7 @@ async function viewLane(a, b, force) {
 // CCIP pool, its per-destination silos and the price — enough to paint the whole table at once.
 // The per-network supplies then stream in from up to 24 other chains, each row filling itself
 // as its chain answers. A row whose chain never answers says so; it never quietly reads zero.
-const OV_KEY = "ov-l1|mainnet|v2";
+const OV_KEY = "ov-l1|mainnet|v3";
 const ovStr = (v) => (v === null || v === undefined ? null : v.toString());
 const ovBig = (v) => (v === null || v === undefined ? null : BigInt(v));
 
@@ -1076,17 +1434,20 @@ function overviewRows() {
 async function overviewL1(rows, force) {
   const url = rpcFor(1);
   const hub = (((registry.mainnet || {}).tokens || {}).wstETH || {})["1"] || null;
-  const out = { url, at: null, err: null, price: null, rate: null, supply: null,
-                escrow: {}, silo: {}, pool: { addr: hub ? hub.poolAddress : null, held: null, unsiloed: null } };
+  const out = { url, at: null, err: null, rate: null, supply: null,
+                stethQuote: null, ldoQuote: null, escrow: {}, silo: {}, pool: { addr: hub ? hub.poolAddress : null, held: null, unsiloed: null } };
   if (!url) { out.err = "no RPC configured for Ethereum"; return out; }
 
+  const quotes = Promise.all([stethPrice(force), ldoPrice(force)]);
+  const applyQuotes = async () => { [out.stethQuote, out.ldoQuote] = await quotes; };
   let c = force ? null : metaCache.get(OV_KEY);
   if (c && c.url !== url) c = null;
   if (c) {
-    out.at = c.at; out.price = ovBig(c.price); out.rate = ovBig(c.rate); out.supply = ovBig(c.supply);
+    out.at = c.at; out.rate = ovBig(c.rate); out.supply = ovBig(c.supply);
     for (const [k, v] of Object.entries(c.escrow)) out.escrow[k] = ovBig(v);
     for (const [k, v] of Object.entries(c.silo)) out.silo[k] = { siloed: v.siloed, available: ovBig(v.available) };
     out.pool.held = ovBig(c.pool.held); out.pool.unsiloed = ovBig(c.pool.unsiloed);
+    await applyQuotes();
     return out;
   }
 
@@ -1095,7 +1456,6 @@ async function overviewL1(rows, force) {
   const calls = [
     call(L1_WSTETH, SEL.totalSupply),
     call(L1_WSTETH, SEL.stEthPerToken),
-    call(STETH_USD_FEED, SEL.latestAnswer),
     ...escrows.map((r) => call(L1_WSTETH, SEL.balanceOf + addrArg(r.escrow))),
   ];
   if (out.pool.addr) {
@@ -1108,11 +1468,10 @@ async function overviewL1(rows, force) {
   }
 
   try {
-    const r = await rpc(url, calls);
+    const r = await rpcRead(url, calls);
     let k = 0;
     out.supply = decUint(r[k++]);
     out.rate = decUint(r[k++]);
-    out.price = decUint(r[k++]);
     for (const e of escrows) out.escrow[e.key] = decUint(r[k++]);
     if (out.pool.addr) {
       out.pool.held = decUint(r[k++]);
@@ -1124,13 +1483,14 @@ async function overviewL1(rows, force) {
     }
     out.at = Date.now();
     metaCache.set(OV_KEY, {
-      url, at: out.at, price: ovStr(out.price), rate: ovStr(out.rate), supply: ovStr(out.supply),
+      url, at: out.at, rate: ovStr(out.rate), supply: ovStr(out.supply),
       escrow: Object.fromEntries(Object.entries(out.escrow).map(([a, b]) => [a, ovStr(b)])),
       silo: Object.fromEntries(Object.entries(out.silo).map(([a, b]) => [a, { siloed: b.siloed, available: ovStr(b.available) }])),
       pool: { held: ovStr(out.pool.held), unsiloed: ovStr(out.pool.unsiloed) },
     });
     saveCache();
   } catch (e) { out.err = e.message; }
+  await applyQuotes();
   return out;
 }
 
@@ -1144,7 +1504,7 @@ async function overviewSupply(row, force) {
   if (c && c.url !== url) c = null;
   if (c) return { v: ovBig(c.supply), at: c.at, err: null };
   try {
-    const r = await rpc(url, [call(row.token, SEL.totalSupply)]);
+    const r = await rpcRead(url, [call(row.token, SEL.totalSupply)]);
     const v = decUint(r[0]);
     if (v === null) return { v: null, at: null, err: "no answer" };
     const at = Date.now();
@@ -1157,11 +1517,11 @@ async function overviewSupply(row, force) {
 // ── overview: numbers ────────────────────────────────────────────────────────
 // Live view state. `epoch` guards against a fill from a previous render landing in a table
 // that is no longer on screen.
-const ov = { epoch: 0, rows: [], l1: null, supply: new Map() };
+const ov = { epoch: 0, rows: [], l1: null, registryError: null, supply: new Map() };
 
 const ovUsd = (amount) => {
-  if (amount === null || !ov.l1 || ov.l1.rate === null || ov.l1.price === null) return null;
-  return (amount * ov.l1.rate / 10n ** 18n) * ov.l1.price / 10n ** 8n;
+  if (amount === null || !ov.l1 || ov.l1.rate === null) return null;
+  return stethUsd(amount * ov.l1.rate / 10n ** 18n);
 };
 // 0.01% resolution, which is as fine as the share column is ever read.
 const ovPct = (part, whole) => (whole && whole > 0n ? Number(part * 10000n / whole) / 100 : null);
@@ -1245,11 +1605,21 @@ function readTime(at) {
   return `<div class="muted" style="font-size:var(--fs-xs)">read <time datetime="${esc(new Date(at).toISOString())}">${esc(minuteTime(at))}</time></div>`;
 }
 
+function ovUpdateStatus() {
+  const t = ovTotals();
+  tabStatus.set("overview", t.read === ov.rows.length && !ov.registryError && registry.mainnet && ov.l1 && !ov.l1.err
+    && ov.rows.every((r) => { const b = ovBacking(r); return b.kind === "pooled" || b.v !== null; })
+    && ldo.rows.every((r) => !r.token || ldo.supply.get(r.key)?.v != null)
+    && !ldoPriceError(ldo.quote)
+    && steth.rows.every((r) => steth.supply.get(r.key)?.v != null
+      && steth.rates.get(r.key) && !steth.rates.get(r.key).err && !stethRateStatus(steth.rates.get(r.key)))
+    && !stethPriceError(steth.quote) ? "ok" : "warn");
+}
+
 function ovPaintNumbers() {
   const t = ovTotals();
   const dec = 18;
-  tabStatus.set("overview", t.read === ov.rows.length && ov.l1 && !ov.l1.err
-    && ov.rows.every((r) => { const b = ovBacking(r); return b.kind === "pooled" || b.v !== null; }) ? "ok" : "warn");
+  ovUpdateStatus();
   for (const r of ov.rows) {
     const s = ov.supply.get(r.key);
     const amt = document.querySelector(`[data-ov-amt="${r.key}"]`);
@@ -1353,13 +1723,26 @@ function ovGroupCard(group, rows) {
 }
 
 async function viewOverview(force) {
-  await loadRegistry("mainnet", force);
+  let registryError = null;
+  try { await loadRegistry("mainnet", force); }
+  catch (e) { registryError = e.message; } // Sourced token and ledger reads can proceed independently.
   const epoch = ++ov.epoch;
+  ov.registryError = registryError;
+  ov.l1 = null;
   ov.rows = overviewRows();
+  ldo.rows = ldoRows(ov.rows);
+  ldo.supply = new Map();
+  ldo.quote = null;
+  steth.rows = stethRows();
+  steth.supply = new Map();
+  steth.rates = new Map();
+  steth.quote = null;
   ov.supply = new Map();
   ov.l1 = await overviewL1(ov.rows, force);
+  steth.quote = ov.l1.stethQuote || {err: ov.l1.err || "USD price unavailable", at: null};
+  ldo.quote = ov.l1.ldoQuote || {err: ov.l1.err || "USD price unavailable", at: null};
   noteDataAge(ov.l1.at);
-  tabStatus.set("overview", ov.l1.err ? "bad" : "ok");
+  ovUpdateStatus();
 
   const pool = ov.l1.pool;
   const ccipRows = ov.rows.filter((r) => r.group === "ccip");
@@ -1383,6 +1766,7 @@ async function viewOverview(force) {
         <span class="stamp">mainnet</span>
       </div>
       <div class="card-body">
+        ${registryError ? `<div class="banner">CCIP registry unavailable; showing configured networks and any cached registry entries. ${esc(registryError)}</div>` : ""}
         ${ov.l1.err ? `<div class="banner">${esc(ov.l1.err)}</div>` : ""}
         <div class="strip" data-ov-total></div>
         <p class="muted" style="margin:var(--sp-3) 0 0; font-size:var(--fs-sm)">
@@ -1437,9 +1821,38 @@ async function viewOverview(force) {
           <li><span class="m">·</span><span>Missing RPC? Add an endpoint in settings ⚙.</span></li>
         </ul>
       </div>
-    </section>`;
+    </section>
+
+    ${stethCard()}
+    ${ldoCard()}`;
 
   ovPaintNumbers();
+  ldoPaintNumbers();
+  stethPaintNumbers();
+  const paintSteth = (at) => {
+    if (ov.epoch !== epoch || currentView() !== 'overview') return;
+    noteDataAge(at); stethPaintNumbers(); renderTabs(); tickStamp();
+  };
+  for (const row of steth.rows) {
+    stethSupply(row, force).then((s) => {
+      if (ov.epoch !== epoch || currentView() !== 'overview') return;
+      steth.supply.set(row.key, s); paintSteth(s.at);
+    });
+    stethRate(row, force).then((rate) => {
+      if (ov.epoch !== epoch || currentView() !== 'overview') return;
+      steth.rates.set(row.key, rate); paintSteth(rate.at);
+    });
+  }
+  const paintLdo = (at) => {
+    if (ov.epoch !== epoch || currentView() !== "overview") return;
+    noteDataAge(at); ldoPaintNumbers(); renderTabs(); tickStamp();
+  };
+  for (const row of ldo.rows.filter((r) => r.token)) {
+    ldoSupply(row, force).then((s) => {
+      if (ov.epoch !== epoch || currentView() !== "overview") return;
+      ldo.supply.set(row.key, s); paintLdo(s.at);
+    });
+  }
 
   // Phase two. Deliberately not awaited: the table is already usable, and one hung endpoint
   // must not hold the other 23 hostage.
@@ -1460,7 +1873,9 @@ function viewSettings() {
   // Lido's own networks are not in Chainlink's registry, so their names come from the snapshot.
   // "1" is spelled out because on testnet the registry has no mainnet chains to name it from,
   // and the overview reads Ethereum regardless of the selector.
-  const lidoName = Object.fromEntries([["1", "Ethereum"], ...LIDO_NETWORKS.map((n) => [String(n.chainId), n.name])]);
+  const lidoName = Object.fromEntries([["1", "Ethereum"], ...LIDO_NETWORKS.map((n) => [String(n.chainId), n.name]),
+    ...LDO.networks.map((n) => [String(n.chainId), n.name]),
+    ...STETH.networks.map((n) => [String(n.chainId), n.name])]);
   const nameOf = (id) => reg.chains[id]?.displayName ||
     ({ 11155111: "Sepolia", 5003: "Mantle Sepolia" })[id] || lidoName[id] || `chain ${id}`;
   const used = new Set(LIVE.lane.map(String));
@@ -1534,15 +1949,22 @@ function liveViews() {
   }
   return t;
 }
+let renderedTabMarkup = null;
 function renderTabs() {
   el("settings").classList.toggle("active", state.view === "settings");
   el("settings").setAttribute("aria-pressed", String(state.view === "settings"));
-  el("tabs").innerHTML = tabsModel().map((t) => {
+  const markup = tabsModel().map((t) => {
     const active = t.id === state.view || (t.id === "overview" && liveViews().some((v) => v.id === state.view));
     const s = busy && active ? "busy" : tabStatus.get(active ? state.view : t.id);
     return `<button class="tab${active ? " active" : ""}" data-tab="${esc(t.id)}">
       ${esc(t.label)}${s ? `<span class="tab-dot" data-s="${s}" role="img" aria-label="${s === "ok" ? "displayed checks passed" : s === "busy" ? "reading" : "incomplete reads or check issues"}" title="${s === "ok" ? "Displayed checks passed; not a bridge safety assessment" : s === "busy" ? "Reading" : "Incomplete reads or check issues"}"></span>` : ""}</button>`;
   }).join("");
+  const tabs = el("tabs");
+  if (renderedTabMarkup === markup) return;
+  renderedTabMarkup = markup;
+  const focused = document.activeElement?.dataset?.tab;
+  tabs.innerHTML = markup;
+  if (focused) [...tabs.querySelectorAll('[data-tab]')].find((button) => button.dataset.tab === focused)?.focus();
 }
 function currentView() {
   const h = location.hash.replace(/^#/, "");
@@ -1571,7 +1993,7 @@ async function run() {
   try {
     state.view = currentView();
     state.env = state.view === `lane-${LIVE.lane[0]}-${LIVE.lane[1]}` ? LIVE.env : "mainnet";
-    await loadRegistry(state.env, force);
+    if (state.view !== "overview") await loadRegistry(state.env, force);
     renderTabs();
     if (state.view === "overview") {
       await viewOverview(force);
@@ -1640,8 +2062,19 @@ views.addEventListener("change", (e) => {
 el("refresh").addEventListener("click", () => { forceNext = true; run(); });   // only the button re-crawls
 window.addEventListener("hashchange", () => run());
 
-// no auto-refresh: the ticker only ages the stamp
-setInterval(tickStamp, 1000);
+// No RPC polling: age cells and price validity use the stored observations.
+let stethAgeMinute = null;
+function tickOverview() {
+  if (busy || currentView() !== 'overview') return;
+  if (ldo.quote && ldo.quoteError !== ldoPriceError(ldo.quote)) ldoPaintNumbers();
+  if (steth.quote && steth.quoteError !== stethPriceError(steth.quote)) {
+    stethPaintPrice(); ovPaintNumbers();
+  }
+  const minute = Math.floor(Date.now() / 60000);
+  if (stethAgeMinute !== minute) { stethAgeMinute = minute; paintStethRates(true); }
+  ovUpdateStatus(); renderTabs();
+}
+setInterval(() => { tickStamp(); tickOverview(); }, 1000);
 
 // start
 if (!location.hash) location.hash = "overview";

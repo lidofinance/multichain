@@ -72,7 +72,7 @@ const ctx = vm.createContext({
 ctx.globalThis = ctx;
 ctx.window.addEventListener = () => {};
 
-vm.runInContext(`${src}\nglobalThis.__page = { loadRegistry, crawl, overviewRows, overviewL1, overviewSupply, LIVE, state, BUILD, CACHE_KEY };`,
+vm.runInContext(`${src}\nglobalThis.__page = { loadRegistry, crawl, overviewRows, overviewL1, overviewSupply, ldoRows, ldoSupply, ldoPrice, ldoPriceError, stethRows, stethSupply, stethRate, stethPrice, stethPriceError, LIVE, state, BUILD, CACHE_KEY };`,
   ctx, { filename: "index.html#script" });
 
 const P = ctx.__page;
@@ -97,11 +97,26 @@ async function main() {
 
   say("overview: L1");
   const rows = P.overviewRows();
-  try { await P.overviewL1(rows, true); } catch (e) { say("  failed:", e.message); }
+  let l1;
+  try { l1 = await P.overviewL1(rows, true); } catch (e) { say("  failed:", e.message); }
   // One chain at a time: these are 25 different public endpoints and a burst gets throttled.
   for (const r of rows) {
     const res = await P.overviewSupply(r, true).catch((e) => ({ err: e.message }));
     say(`overview: ${r.name}${res.err ? ` — ${res.err}` : ""}`);
+  }
+  say("LDO: USD price");
+  const quote = l1?.ldoQuote || await P.ldoPrice(true);
+  if (P.ldoPriceError(quote)) say("  failed:", P.ldoPriceError(quote));
+  for (const row of P.ldoRows(rows).filter((r) => r.token)) {
+    const res = await P.ldoSupply(row, true);
+    say(`LDO: ${row.name}${res.err ? ` — ${res.err}` : ""}`);
+  }
+  say('stETH: USD price');
+  const stethQuote = l1?.stethQuote || await P.stethPrice(true);
+  if (P.stethPriceError(stethQuote)) say('  failed:', P.stethPriceError(stethQuote));
+  for (const row of P.stethRows()) {
+    const [supply, rate] = await Promise.all([P.stethSupply(row, true), P.stethRate(row, true)]);
+    say(`stETH: ${row.name}${supply.err ? ` — supply: ${supply.err}` : ''}${rate.err ? ` — rate: ${rate.err}` : ''}`);
   }
 
   const snapshot = {
