@@ -2,7 +2,7 @@
 """Turn a Diffyscan sweep into per-deployment source-provenance outcomes.
 
 `just diffyscan-sources` leaves one stdout log per cohort under
-diffyscan/logs/. Those logs answer "did this cohort pass", but a report has to
+components/ledger/diffyscan/logs/. Those logs answer "did this cohort pass", but a report has to
 answer "what is established about this one deployed address", and the two are
 not the same question: a cohort log can end in a GitHub 404, an explorer error,
 or a real file diff, and only the last of those says anything about the ledger's
@@ -142,11 +142,11 @@ OUTSIDE_SWEEP_OUTCOMES = {
     "invalid_source": ("not-projected", "source.repositoryUrl is unusable"),
     "missing_network_meta": (
         "not-projected",
-        "networkId missing from diffyscan/networks.json",
+        "networkId missing from components/ledger/diffyscan/networks.json",
     ),
     "missing_profile": (
         "not-projected",
-        "no diffyscan/profiles entry for the repository",
+        "no components/ledger/diffyscan/profiles entry for the repository",
     ),
     "unpinned_commit": (
         "not-projected",
@@ -183,7 +183,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def load_renderer(repo_root: Path) -> Any:
     """Import the repo's renderer so cohort naming has one definition."""
-    scripts_dir = repo_root / "scripts"
+    scripts_dir = repo_root / "components" / "ledger" / "scripts"
     renderer = scripts_dir / "render_diffyscan_config.py"
     if not renderer.is_file():
         raise SystemExit(f"Renderer not found: {renderer}")
@@ -203,15 +203,15 @@ def project_cohorts(rdc: Any, repo_root: Path, ledger_path: Path) -> tuple[
 
     Returns (cohorts_by_id, blockers, deployments_by_id).
     """
-    networks_schema = rdc.load_json(repo_root / "diffyscan" / "networks.schema.json")
-    profile_schema = rdc.load_json(repo_root / "diffyscan" / "profile.schema.json")
+    networks_schema = rdc.load_json(repo_root / "components" / "ledger" / "diffyscan" / "networks.schema.json")
+    profile_schema = rdc.load_json(repo_root / "components" / "ledger" / "diffyscan" / "profile.schema.json")
     networks_map = rdc.validate_json_schema(
-        rdc.load_json(repo_root / "diffyscan" / "networks.json"),
+        rdc.load_json(repo_root / "components" / "ledger" / "diffyscan" / "networks.json"),
         networks_schema,
         label="networks map",
     )
     profiles_by_url = rdc.load_profiles(
-        repo_root / "diffyscan" / "profiles", profile_schema
+        repo_root / "components" / "ledger" / "diffyscan" / "profiles", profile_schema
     )
 
     ledger = rdc.load_json(ledger_path)
@@ -558,7 +558,7 @@ def load_explorer_hosts(repo_root: Path) -> dict[str, str]:
     Read from the repo's own networks.json rather than restated here, so a
     crash can be attributed to the explorer this cohort was actually pointed at.
     """
-    path = repo_root / "diffyscan" / "networks.json"
+    path = repo_root / "components" / "ledger" / "diffyscan" / "networks.json"
     if not path.is_file():
         return {}
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -914,9 +914,9 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     repo_root = args.repo_root.resolve()
     ledger_path = (args.ledger or repo_root / "ledger.json").resolve()
-    logs_dir = (args.logs_dir or repo_root / "diffyscan" / "logs").resolve()
+    logs_dir = (args.logs_dir or repo_root / "components" / "ledger" / "diffyscan" / "logs").resolve()
     generated_dir = (
-        args.generated_dir or repo_root / "diffyscan" / "generated"
+        args.generated_dir or repo_root / "components" / "ledger" / "diffyscan" / "generated"
     ).resolve()
 
     if not ledger_path.is_file():

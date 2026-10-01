@@ -1,4 +1,4 @@
-/temp
+/.workspace
 .DS_Store
 .venv/
 __pycache__/
@@ -6,11 +6,12 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+/.obsidian/
 
-/diffyscan/generated/
-/diffyscan/logs/
-/state-mate/generated/
-/state-mate/logs/
+/components/ledger/diffyscan/generated/
+/components/ledger/diffyscan/logs/
+/components/ledger/state-mate/generated/
+/components/ledger/state-mate/logs/
 /.diffyscan_cache/
 /digest/
 .env

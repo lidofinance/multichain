@@ -67,8 +67,8 @@ reports of one snapshot by different editions do not diff meaningfully, and this
 template exists to be diffed. The JSON artifacts carry their own `method` block;
 the report carries the skill's.
 
-Then make the run directories: `mkdir -p reports temp/<stamp>`. Artifacts go in
-`temp/` (gitignored); only the report lands in `reports/`.
+Then make the run directories: `mkdir -p reports .workspace/<stamp>`. Artifacts go in
+`.workspace/` (gitignored); only the report lands in `reports/`.
 
 Two preflight facts belong in the report:
 
@@ -104,7 +104,7 @@ finish the rest of the report.
 
 ## Step 0.1 — Write the call plan before burning a call
 
-Write `temp/<stamp>/call-plan.md` and carry its budget and stop conditions into
+Write `.workspace/<stamp>/call-plan.md` and carry its budget and stop conditions into
 the report's run section. If it cannot be written honestly, the run has not
 started:
 
@@ -118,7 +118,7 @@ started:
 | Next planned action | one line |
 
 For the sweep ceiling, use twice the duration the previous run recorded — the
-collector writes `durationSeconds` per cohort, so `temp/*/diffyscan.json` from a
+collector writes `durationSeconds` per cohort, so `.workspace/*/diffyscan.json` from a
 prior run is the source — and 45 minutes when there is no prior run. Do not
 carry a number from this file; it was written against one snapshot and the
 cohort count moves with the ledger.
@@ -148,7 +148,7 @@ The sweep dominates the run — tens of minutes, scaling with the cohort count �
 so start it before anything else and do the fast work while it runs:
 
 ```sh
-just diffyscan-sources 2>&1 | tee temp/<stamp>/diffyscan-sweep.log
+just diffyscan-sources 2>&1 | tee .workspace/<stamp>/diffyscan-sweep.log
 ```
 
 Run this **in the background** (`run_in_background: true`) — it exceeds the
@@ -172,9 +172,9 @@ the first failure, and a validation report wants every result — a formatting d
 must not hide a schema error:
 
 ```sh
-uv run --locked python scripts/format_ledger.py check
-uv run --locked python scripts/validate_ledger.py
-uv run --locked python scripts/render_diffyscan_config.py --coverage
+uv run --locked python components/ledger/scripts/format_ledger.py check
+uv run --locked python components/ledger/scripts/validate_ledger.py
+uv run --locked python components/ledger/scripts/render_diffyscan_config.py --coverage
 uv run --locked python -m pytest -q
 ```
 
@@ -186,8 +186,8 @@ Then check the public reference claims — independent of the sweep, ~30 seconds
 
 ```sh
 uv run --locked python3 .claude/skills/validate-ledger/scripts/check_public_refs.py \
-  --out temp/<stamp>/public-refs.json \
-  --carrier-dir temp/<stamp>/carriers
+  --out .workspace/<stamp>/public-refs.json \
+  --carrier-dir .workspace/<stamp>/carriers
 ```
 
 It fetches each cited document once — many `publicRefs` are fragments of one
@@ -211,7 +211,7 @@ say so and let the uncollected cohorts land as `not-run`:
 
 ```sh
 uv run --locked python3 .claude/skills/validate-ledger/scripts/collect_diffyscan.py \
-  --out temp/<stamp>/diffyscan.json
+  --out .workspace/<stamp>/diffyscan.json
 ```
 
 This rebuilds cohort membership by importing the repo's own renderer, so it
@@ -306,7 +306,7 @@ not add `reports/` to `.gitignore` without asking.
 Re-hash the ledger and put both hashes in the report:
 
 ```sh
-shasum -a 256 ledger.json                  # must equal the Step 0 hash
+shasum -a 256 ledger.json           # must equal the Step 0 hash
 ```
 
 "Never edit `ledger.json`" is a promise this skill makes; a promise nobody checks

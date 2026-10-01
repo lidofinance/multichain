@@ -1,0 +1,53 @@
+# Inputs for the wiring-only config/state-mate/wsteth.yaml (state-mate `.inputs` feature).
+# The input dual of wsteth.deployed.yaml: that file holds the addresses THIS REPO DEPLOYED
+# (steps 01–04); this file holds the authored INPUTS, split by authorship into two sections.
+# Auto-loaded as the <name>.inputs.<ext> sibling, and passed explicitly via --inputs in step 08.
+# This file is the default (mantle_sepolia) pair's inputs; other L2s carry per-pair copies named
+# wsteth.inputs.<L2_CHAIN>.yaml (the L2 selector + the L2 Chainlink addresses differ), selected by
+# step 08 via L2_CHAIN.
+#
+#   config:    project-chosen knobs — the POM governance-role holders (testnet placeholders, the
+#              same on both forks). No address-format check (authorship: we choose these).
+#              NOT the deploying EOA: that one is stamped per run from the signing key
+#              (04_ccip_deploy.sh:99-103), so it stays a generated address-book entry.
+#   externals: fixed external facts we only REFERENCE, never deploy — the Chainlink-owned CCIP
+#              infrastructure (router + TokenAdminRegistry + RMN proxy per chain) and the CCIP
+#              chain selectors (decimal integers, exempt from the address check).
+#
+# Kept in sync with the deploy record (config/chains/*.json) by the guard in
+# script/08_verify_state.sh, which fails loudly if the two ever disagree.
+config:
+  # Distinct governance actors, derived from ACTORS_MNEMONIC (.env, gitignored — NOT anvil's public
+  # dev mnemonic, so these addresses can carry roles on a live testnet without impersonation).
+  # Account 1 = the Emergency Multisig (PROPOSAL_QUEUE_HALT_ROLE / CROSS_CHAIN_TRANSFERS_PAUSE_ROLE). Emergency kills a bad MCMS queue with
+  # POM.haltProposalQueue() (epoch++). PoolOperationManager no longer defines GUARDIAN_ROLE;
+  # the legacy chain-record .guardian field is intentionally not an input to the deployment.
+  # Account 2 = Chainlink MCMS.
+  # The deployer keeps its own key and is distinct from both of them.
+  - &emergencyBrakes "0x608056b8d596da5816146014E88DFfDECAF59DcD"
+  - &chainlinkMcms "0x1D72FbCcfC86C88E23771d6D58a8F1Cb77186d1d"
+  # Expected getRoleMemberCount(PROPOSAL_QUEUE_HALT_ROLE / CROSS_CHAIN_TRANSFERS_PAUSE_ROLE) on both POMs: the number of DISTINCT addresses among
+  # {emergency_brakes, chainlink_mcms} (1_Deploy grants PROPOSAL_QUEUE_HALT_ROLE / CROSS_CHAIN_TRANSFERS_PAUSE_ROLE to exactly those two). It is 1
+  # while they are collapsed onto one key and 2 once rotated apart — which is now the case. Derived
+  # from the deploy record by step 08: a hand-typed count that drifted would let an EXTRA halter
+  # — which the per-address hasRole checks cannot see — verify green.
+  - &haltRoleMemberCount "2"
+externals:
+  - &l1ChainId 11155111
+  - &l2ChainId 5003
+  # Chainlink-owned CCIP 1.5/2.0 infrastructure. We reference these, we do NOT deploy them (see
+  # docs/LIVE_DEPLOY_CONCERNS.md §1) — hence externals, not the address book. Pinning them here
+  # is also a check: step 04 FFI-hydrates .ccip from the Chainlink API into the record, so if the
+  # published infra ever moves, the step-08 guard fails loudly instead of silently verifying
+  # against a different router/registry than the one reviewed.
+  - &l1CCIPRouter "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59"          # sepolia        — ccip.router
+  - &l1TokenAdminRegistry "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82"  # sepolia        — ccip.token_admin_registry
+  - &l2CCIPRouter "0xFd33fd627017fEf041445FC19a2B6521C9778f86"          # mantle_sepolia — ccip.router
+  - &l2TokenAdminRegistry "0x0F1eE88A582f31d92510E300fc1330AA5a525D51"  # mantle_sepolia — ccip.token_admin_registry
+  # RMNProxy (Risk Management Network): the curse/bless oracle each TokenPool is CONSTRUCTED with
+  # and consults on every lane operation. Immutable in the pool, so this is a build-time fact —
+  # pinned so a pool deployed against a different (or attacker-chosen) RMN fails verification.
+  - &l1RmnProxy "0xba3f6251de62dED61Ff98590cB2fDf6871FbB991"              # sepolia        — ccip.rmn_proxy
+  - &l2RmnProxy "0xcCB84Ec3F6AFdD2052134f74aaAc95Ae41A7B333"              # mantle_sepolia — ccip.rmn_proxy
+  - &l1ChainSelector "16015286601757825753"                             # sepolia        — ccip.chain_selector
+  - &l2ChainSelector "8236463271206331221"                              # mantle_sepolia — ccip.chain_selector

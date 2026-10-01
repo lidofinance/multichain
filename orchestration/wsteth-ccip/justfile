@@ -1,0 +1,519 @@
+# wsteth-2.0 orchestration. Use `just wsteth <recipe>` from the repository root.
+# RPC_SEPOLIA / RPC_<L2 SLUG> are expected in the environment (forks tray app). The L2 of the pair
+# is selected by L2_CHAIN (default mantle_sepolia) — the slug names
+# config/chains/<slug>.json and the RPC env var RPC_<UPPERCASED SLUG>.
+
+set working-directory := "."
+set dotenv-path := ".env"
+set dotenv-load := true
+set positional-arguments
+# Recipe lines use bash-isms (${VAR:0:6} in preflight); just's default `sh -cu` is dash on most
+# Linux distros, which dies on them with "Bad substitution".
+set shell := ["bash", "-cu"]
+
+# RPC endpoints come from the environment only (forks tray app / .env) — never committed.
+l1_rpc := env_var_or_default("RPC_SEPOLIA", "")
+l2_chain := env_var_or_default("L2_CHAIN", "mantle_sepolia")
+l2_rpc_var := "RPC_" + uppercase(l2_chain)
+l2_rpc := env_var_or_default(l2_rpc_var, "")
+# RECORD_DIR selects which deploy record the manual-ops recipes (addrs/bridge-*/…) read addresses
+# from (default config/chains; e.g. config/chains.live-mantle for the live Mantle deploy).
+record_dir := env_var_or_default("RECORD_DIR", "config/chains")
+
+default:
+    @just --justfile ../../orchestration/wsteth-ccip/justfile --list
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Setup
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Fetch lidofinance submodules only (allowed without asking). Third-party deps are gated
+# behind `init-thirdparty` — `just init` fetches lidofinance pieces and stops.
+init:
+    git submodule update --init ../../components/governance-crosschain-bridges ../../components/core
+    # core's own DG submodule is lidofinance too (supplies Dual Governance for step 01).
+    git -C ../../components/core submodule update --init foundry/lib/dual-governance
+    # submodules are pinned upstream; the deploy needs a few core files changed on top (patches/).
+    bash script/00_patch_submodules.sh
+    @echo ""
+    @echo "lidofinance submodules ready (governance-crosschain-bridges, core + its dual-governance), patches applied."
+    @echo "Third-party installs are GATED — run (with approval):"
+    @echo "    just init-thirdparty"
+    @echo "Fetches: forge-std (foundry-rs), OZ 4.8.3 + upgradeable 4.7.3, the ccip submodule"
+    @echo "(smartcontractkit) + its @chainlink/OpenZeppelin pnpm deps, and the state-mate /"
+    @echo "core yarn deps (both lidofinance, but their installs pull third-party npm)."
+
+# GATED: third-party (non-lidofinance) installs. Run only after explicit approval.
+# Note: ../../libs/state-mate and ../../components/core are lidofinance repos (free to clone, fetched by `just init`)
+# but their yarn installs pull third-party npm packages, so those installs live here with the
+# other third-party fetches.
+init-thirdparty:
+    git submodule update --init ../../libs/forge-std ../../components/openzeppelin-contracts-upgradeable-4x ../../components/openzeppelin-contracts-4x ../../components/ccip ../../libs/state-mate
+    # pnpm 9 matches the ccip repo's lockfileVersion 9.0 (pnpm 10+ blocks its @zksync git subdep)
+    cd ../../components/ccip/chains/evm && corepack pnpm@9 install
+    # state-mate (Claim A / step 08) — pins yarn@4.3.1 via packageManager
+    cd ../../libs/state-mate && corepack yarn install
+    # core's remaining nested submodules (forge-std is foundry-rs; recurse DG's own deps too)
+    git -C ../../components/core submodule update --init --recursive
+    # core's nested state-mate (used by dao-deploy.sh's final state check) — pins yarn@4.3.1
+    cd ../../components/core/foundry/lib/state-mate && corepack yarn install
+    # core (step 01 hardhat scratch deploy) — pins yarn@4.9.2 via packageManager
+    cd ../../components/core && corepack yarn install
+    # ../../components/ccip arrives here; re-run the patch driver idempotently (currently core-only).
+    bash script/00_patch_submodules.sh
+    @echo "third-party deps installed."
+
+# Kept as patch files rather than uncommitted submodule edits so the deploy is reproducible from a
+# fresh clone. core/0001 changes DEPLOYED wstETH BYTECODE. The former ccip guardian patch and the
+# lido-l2-with-steth bridge patch are retired because their properties are upstream now.
+# Apply patches/<name>/*.patch onto the pinned lib/<name> — idempotent; also run by init and by the
+# the step whose build bakes a patch into what it deploys: step 01 (core/0001 -> wstETH bytecode).
+# Step 03 and step 04 build their respective pristine upstream bases.
+patch-submodules:
+    bash script/00_patch_submodules.sh
+
+# Read-only: are the submodule patches present? Exits 1 if any is missing.
+patch-submodules-check:
+    bash script/00_patch_submodules.sh --check
+
+# Drops the testnet getCCIPAdmin hook (step 07 then needs its impersonation branch, which aborts on
+# a live RPC). The L2 token's legacy bridge removal and POM role model are not affected: both live
+# in their pinned upstream bases now, not in patches.
+# Reverse-apply the submodule patches, restoring pristine upstream submodules.
+patch-submodules-revert:
+    bash script/00_patch_submodules.sh --revert
+
+# 00 — preflight: read-only go/no-go before a deploy. RPC health + chain ids, deployer
+# key/nonce/balances (MIN_DEPLOYER_L1_ETH / MIN_DEPLOYER_L2_ETH thresholds on live; skipped on anvil), the external
+# on-chain dependencies from config/chains (router/TAR/RMN/registry-module/CCV, with versions),
+# router lane support + RMN curse, record pristineness, gov-role separation, tooling/submodules.
+preflight:
+    @echo "env:"
+    @echo "  L2_CHAIN             = {{l2_chain}}"
+    @echo "  RPC_SEPOLIA          = <environment>"
+    @echo "  {{l2_rpc_var}} = <environment>"
+    @[ -n "${DEPLOYER_PRIVATE_KEY:-}" ] && echo "  DEPLOYER_PRIVATE_KEY = <set>" || echo "  DEPLOYER_PRIVATE_KEY = <not set>"
+    @echo "  DEPLOYER_ADDRESS     = ${DEPLOYER_ADDRESS:-(derived from DEPLOYER_PRIVATE_KEY)}"
+    @echo "  MIN_DEPLOYER_L1_ETH  = ${MIN_DEPLOYER_L1_ETH:-2}"
+    @echo "  MIN_DEPLOYER_L2_ETH  = ${MIN_DEPLOYER_L2_ETH:-0.05}"
+    @echo "  RECORD_DIR           = ${RECORD_DIR:-config/chains}"
+    @echo ""
+    bash script/00_preflight.sh
+
+# Assert both forks are reachable with the expected chain ids.
+forks-check:
+    @echo "L1 (expect 11155111): $(cast chain-id --rpc-url {{l1_rpc}})"
+    @echo "L2 {{l2_chain}} (expect $(jq -r '.chain.chain_id' config/chains/{{l2_chain}}.json)): $(cast chain-id --rpc-url {{l2_rpc}})"
+
+build:
+    forge build
+
+# Upstream 0.8.10 artifacts consumed by the Solidity 0.8.34 deployment scripts.
+build-l2-artifacts:
+    FOUNDRY_PROFILE=token forge build ../../components/wsteth-token/contracts/token/ERC20BridgedPermit.sol ../../components/wsteth-token/contracts/proxy/OssifiableProxy.sol ../../components/governance-crosschain-bridges/contracts/bridges/OptimismBridgeExecutor.sol
+
+# Keep upstream compiler warnings gating; the newer forge post-build lint is a separate check.
+build-ccip:
+    cd ../../components/ccip/chains/evm && forge build --no-lint --skip '*.t.sol'
+
+# Apply forge fmt (writes; review the diff).
+fmt:
+    forge fmt
+
+# Check formatting, no RPC. Currently RED: a few test lines vs tab_width=4 (see FPF-REVIEW F6).
+fmt-check:
+    forge fmt --check
+
+# Static-analyse our custom Solidity (the L2 token) under the token profile, lib/ noise filtered — 0 findings. Needs slither.
+slither:
+    FOUNDRY_PROFILE=token slither ../../components/wsteth-token/contracts/token/ERC20BridgedPermit.sol --filter-paths lib
+
+# Validate pristine target templates (the selected run's snapshot when available).
+# Mutable deployment records live in each run's config/ and are not lint inputs.
+lint-config:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "${WSTETH_TARGET_DIR:-../../targets/wsteth-ccip-sepolia-mantle-dev}"
+    addr='^0x[0-9a-fA-F]{40}$'; tokenpat='^(0x[0-9a-fA-F]{40})?$'
+    zero='0x0000000000000000000000000000000000000000'; fail=0
+    err() { echo "  ✗ $1"; ferr=1; fail=1; }
+    for f in config/chains/*.json; do
+      if [ "$(basename "$f")" = chain.schema.json ]; then continue; fi
+      ferr=0
+      if ! jq -e . "$f" >/dev/null 2>&1; then echo "✗ $f (invalid JSON)"; fail=1; continue; fi
+      for k in addresses ccip chain governance_addresses remote_lanes; do
+        jq -e --arg k "$k" 'has($k)' "$f" >/dev/null || err "missing top-level .$k"
+      done
+      jq -e '.chain.chain_id|type=="number"' "$f" >/dev/null || err ".chain.chain_id not a number"
+      jq -e '.chain.pool_type|test("^(SiloedLockRelease|BurnMint)$")' "$f" >/dev/null || err ".chain.pool_type invalid"
+      jq -e '.ccip.chain_selector|test("^[0-9]+$")' "$f" >/dev/null || err ".ccip.chain_selector not a decimal string"
+      jq -e --arg re "$addr" '.ccip.router|test($re)' "$f" >/dev/null || err ".ccip.router malformed"
+      jq -e --arg re "$tokenpat" '.addresses.token|test($re)' "$f" >/dev/null || err ".addresses.token malformed"
+      for g in guardian emergency_brakes chainlink_mcms lido_dao_agent deployer; do
+        jq -e --arg re "$addr" --arg g "$g" '.governance_addresses[$g]|test($re)' "$f" >/dev/null || err ".governance_addresses.$g malformed"
+      done
+      jq -e 'has("deployed")|not' "$f" >/dev/null || err "carries a 'deployed' block — record, not template"
+      jq -e 'has("ccv")|not' "$f" >/dev/null || err "carries a 'ccv' block — record, not template"
+      jq -e '.addresses.token==""' "$f" >/dev/null || err ".addresses.token populated — record, not template"
+      jq -e --arg z "$zero" '.governance_addresses.lido_dao_agent==$z' "$f" >/dev/null || err ".lido_dao_agent populated — record, not template"
+      if [ "$ferr" -eq 0 ]; then echo "✓ $f"; fi
+    done
+    # The L1/non-L1 selector-config split. config/default_config.non_l1.json must be
+    # config/default_config.json MINUS the unpauseCrossChainTransfers() (0xa6cc6ef9) blocked_selectors row and
+    # NOTHING else (._note is documentation, not config). That one row is the whole grant:
+    # on a spoke, MCMS may queue hooks.unpauseCrossChainTransfers() at the 3-day global. Anything else diverging
+    # between hub and spoke — a delay override, the global mode, a rate limit — is drift.
+    l1=config/default_config.json; nl1=config/default_config.non_l1.json; dcerr=0
+    dcdiff="$(mktemp)"
+    if [ ! -f "$nl1" ]; then echo "  ✗ missing $nl1"; dcerr=1
+    elif ! diff <(jq -S 'del(._note) | .blocked_selectors |= map(select(.selector != "0xa6cc6ef9"))' "$l1") \
+                <(jq -S 'del(._note)' "$nl1") > "$dcdiff" 2>&1; then
+      echo "  ✗ $nl1 is not $l1 minus the 0xa6cc6ef9 row:"; sed 's/^/    /' "$dcdiff"; dcerr=1
+    else
+      jq -e '[.blocked_selectors[].selector] | index("0xa6cc6ef9")' "$l1" >/dev/null \
+        || { echo "  ✗ $l1 no longer Blocks 0xa6cc6ef9 — the hub/spoke split has collapsed"; dcerr=1; }
+      jq -e '[.blocked_selectors[].selector] | index("0xa6cc6ef9") | not' "$nl1" >/dev/null \
+        || { echo "  ✗ $nl1 Blocks 0xa6cc6ef9 — the spoke MCMS unpause path is closed"; dcerr=1; }
+    fi
+    rm -f "$dcdiff"
+    if [ "$dcerr" -ne 0 ]; then fail=1
+    else echo "✓ $nl1 = $l1 − 0xa6cc6ef9 (spoke MCMS unpause open at the 3-day global)"; fi
+    if [ "$fail" -ne 0 ]; then echo "lint-config: FAILED"; exit 1; fi
+    echo "lint-config: all config/chains templates valid & pristine"
+
+# Start a separately named run instead of destroying an existing run's evidence.
+clean:
+    @echo "Create a new run with: just wsteth-prepare wsteth-ccip-sepolia-mantle-dev <new-run-id> <fork|testnet>" >&2
+    @exit 1
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Live substrate — drpc behind the guarding proxy, and the record/template split
+# ─────────────────────────────────────────────────────────────────────────────
+
+# script/rpc-proxy.mjs is not a convenience. drpc's load balancer occasionally reconnects the
+# sticky socket to a LAGGING backend, which then answers eth_estimateGas for a just-deployed
+# contract at roughly intrinsic gas (22-24k); the tx goes out with that limit and dies OutOfGas
+# AFTER a successful deploy. The same lag serves stale "missing role" reverts to eth_call after a
+# grant has confirmed. The proxy retries low estimates and lag-reverts up to 12x with growing
+# backoff, destroys the keepAlive agent every 3rd retry to force a reconnect onto a synced
+# backend, and floors a persistently-low estimate (an oversized limit is free; an undersized one
+# bricks the tx). Pointing RPC_* straight at RPC_*_REMOTE forfeits all of that — do not.
+# Start the local guarding RPC proxies for the live pair (L1 :8546, L2 :8547).
+rpc-proxy-up:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    : "${RPC_SEPOLIA_REMOTE:?set RPC_SEPOLIA_REMOTE (live L1 archive endpoint)}"
+    l2var="RPC_$(printf '%s' '{{l2_chain}}' | tr '[:lower:]' '[:upper:]')_REMOTE"
+    up2="${!l2var:-}"; [ -n "${up2}" ] || { echo "✗ set ${l2var} (live L2 archive endpoint)"; exit 1; }
+    mkdir -p state
+    if pgrep -f 'rpc-proxy.mjs' >/dev/null 2>&1; then
+      echo "▸ rpc-proxy already running (just rpc-proxy-down to restart)"
+    else
+      UPSTREAM="${RPC_SEPOLIA_REMOTE}" PORT=8546 nohup node script/rpc-proxy.mjs > state/proxy-l1.log 2>&1 &
+      UPSTREAM="${up2}"               PORT=8547 nohup node script/rpc-proxy.mjs > state/proxy-l2.log 2>&1 &
+      sleep 2
+    fi
+    for p in 8546 8547; do
+      cid="$(cast chain-id --rpc-url "http://127.0.0.1:${p}" 2>/dev/null || echo '—')"
+      echo "  :${p} chain-id ${cid}"
+    done
+    echo ""
+    echo "Point the pipeline at the proxies for this shell:"
+    echo "  export RPC_SEPOLIA=http://127.0.0.1:8546"
+    echo "  export RPC_$(printf '%s' '{{l2_chain}}' | tr '[:lower:]' '[:upper:]')=http://127.0.0.1:8547"
+
+# The DG committee holders for the next deploy, derived from ACTORS_MNEMONIC (.env). Accounts 1-3
+# are already allocated (emergency_brakes+guardian, chainlink_mcms, reserved); DG takes 4-10.
+# Read-only. script/01_l1_core_dg.sh writes these into the generated scratch params
+# (docs/plan-v3-dg-committees.md).
+dg-committees:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    : "${ACTORS_MNEMONIC:?set ACTORS_MNEMONIC in .env}"
+    a() { cast wallet address --private-key \
+        "$(cast wallet derive-private-key "${ACTORS_MNEMONIC}" "$1" | tr -d ' ' | grep -oE '0x[0-9a-fA-F]{64}' | tail -1)"; }
+    printf '  %-3s %-44s %s\n' '#' ADDRESS FIELD
+    printf '  %-3s %-44s %s\n' 4  "$(a 4)"  'resealCommittee'
+    printf '  %-3s %-44s %s\n' 5  "$(a 5)"  'emergencyGovernanceProposer'
+    printf '  %-3s %-44s %s\n' 6  "$(a 6)"  'emergencyActivationCommittee'
+    printf '  %-3s %-44s %s\n' 7  "$(a 7)"  'emergencyExecutionCommittee'
+    printf '  %-3s %-44s %s\n' 8  "$(a 8)"  'tiebreaker.committees[0].members'
+    printf '  %-3s %-44s %s\n' 9  "$(a 9)"  'tiebreaker.committees[1].members'
+    printf '  %-3s %-44s %s\n' 10 "$(a 10)" 'tiebreaker.committees[2].members'
+
+# Stop the guarding RPC proxies.
+rpc-proxy-down:
+    @pkill -f rpc-proxy.mjs 2>/dev/null && echo "✓ rpc-proxy stopped" || echo "· rpc-proxy was not running"
+
+# Are the guarding proxies up, and what do they answer?
+rpc-proxy-status:
+    @pgrep -lf rpc-proxy.mjs 2>/dev/null | sed 's/^/  /' || echo "  (not running)"
+    @for p in 8546 8547; do echo "  :$p chain-id $(cast chain-id --rpc-url http://127.0.0.1:$p 2>/dev/null || echo '—')"; done
+
+# Optional in-run copy of chain configs and state, followed by template restoration.
+# Runs already retain separate records; this is only for an additional named snapshot.
+# Verify it with RECORD_DIR=config/chains.live-<NAME>. Archive environment comes from run.json.
+snapshot-record name:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    dst="config/chains.live-{{name}}"
+    [ -e "${dst}" ] && { echo "✗ ${dst} already exists — pick another name or move it aside"; exit 1; }
+    src_l1="config/chains/sepolia.json"; src_l2="config/chains/{{l2_chain}}.json"
+    jq -e '.deployed.pool_operation_manager' "${src_l1}" >/dev/null 2>&1       || { echo "✗ ${src_l1} carries no .deployed — nothing to snapshot (is this a pristine template?)"; exit 1; }
+    mkdir -p "${dst}/state"
+    cp "${src_l1}" "${src_l2}" "${dst}/"
+    for f in l1.json l2.json l1.deployed.json; do
+      [ -f "state/${f}" ] && cp "state/${f}" "${dst}/state/" || echo "  ⚠ state/${f} missing — snapshot incomplete"
+    done
+    python3 ../../orchestration/wsteth-ccip/workspace.py restore-templates
+    echo "✓ record snapshotted to ${dst}/ ; config/chains/ restored from this run's target snapshot"
+    echo ""
+    echo "Verify against it (this also labels the archive correctly):"
+    echo "  RECORD_DIR=${dst} just verify-state"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pipeline (each step idempotent; see PLAN.md §3). Stubs filled in per-task.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# 01 — Lido core + Dual Governance on L1 (drives the ../../components/core hardhat scratch deploy).
+# Defaults PROTOCOL_ACTIVATION_ENABLED=1 so Lido ships resumed (core step 0155).
+l1-core-dg:
+    bash script/01_l1_core_dg.sh
+
+# 02 — OptimismBridgeExecutor on L2 (ethereumGovernanceExecutor = L1 Agent)
+l2-gov:
+    bash script/02_l2_gov.sh
+
+# 03 — L2 wstETH = ERC20BridgedPermit behind OssifiableProxy
+l2-token:
+    bash script/03_l2_token.sh
+
+# 04 — CCIP deploy (drives ccip submodule 1_Deploy on each chain)
+ccip-deploy:
+    bash script/04_ccip_deploy.sh
+
+# 05 — CCIP configure (ccip submodule 2_Configure on each chain)
+ccip-configure:
+    bash script/05_ccip_configure.sh
+
+# 07 — register pool in TAR + hand POM admin to Agent (L1) / OpExec (L2) + L2 token end-state
+set-pool-gov:
+    bash script/07_set_pool_gov.sh
+
+# Claim B (gating) — the real-DON (CCIP 1.5) transport rehearsal. Drives our 2.0 pools/hooks/
+# lockbox with the REAL, forked Chainlink 1.5 ramps (resolved from the deployed 1.2.0 Router via
+# TAR): a genuine ccipSend originates the send leg; the receive leg pranks the real 1.5 OffRamp ->
+# pool.releaseOrMint (the V1 call the real DON makes — no live DON on a fork). Asserts every
+# capability the live 1.5 DON keeps: rate limits (A-RL-01), pause, RMN curse, caller-auth, siloed
+# custody, conservation. The dual-CCV quorum (A-CCV-01) is exercised by RealCcvLane on pairs whose
+# lane carries REAL 2.0 ramps (e.g. mantle_sepolia, probed 2026-06-12) — genuine ccipSend through
+# the real OnRamp 2.0, quorum enforced by the real OffRamp 2.0's execute; it self-skips on
+# 1.5-only pairs, where A-CCV-01 stays covered by the optional
+# self-owned harness below (`test-ccv`) — see docs/LIVE_DEPLOY_CONCERNS.md §2/§6. Set CCV_LANE_REQUIRED=1
+# for a pair you DECLARE a real-2.0 lane (e.g. mantle_sepolia) so a silent regression to 1.5-only
+# fails the run loudly instead of self-skipping.
+# RealTokenPermit rides along in the same match (test/scenario/Real*) but is lane-independent: it
+# exercises the EIP-2612 surface the L2 token was moved onto the lido-l2-with-steth permit base for
+# (signature -> allowance, replay, expiry, EIP-712 domain coherence) and asserts the legacy `bridge`
+# mint authority is absent from the DEPLOYED bytecode. Nothing else here touches permit.
+# Output is tee'd to state/forge-scenarios.log — Claim B's A.10 evidence carrier (README.md §3):
+# a dated, commit-stamped run, so no document has to hard-code a test count. pipefail keeps a
+# failing forge run failing. Step 08 copies the log into the run archive when it is present.
+test-scenarios:
+    @mkdir -p state
+    set -o pipefail; \
+      { echo "# forge scenarios — $(date +%Y-%m-%dT%H:%M:%S%z)"; \
+        echo "# git:      $(git rev-parse --short HEAD 2>/dev/null || echo unknown)"; \
+        echo "# L2_CHAIN: {{l2_chain}}"; \
+        echo "# record:   {{record_dir}}"; \
+        echo; } > state/forge-scenarios.log; \
+      FOUNDRY_TEST="${WSTETH_TEST_DIR:-../../targets/wsteth-ccip-sepolia-mantle-dev/test}" L2_CHAIN={{l2_chain}} L2_RPC={{l2_rpc}} forge test --match-path '*/test/scenario/Real*' -vv \
+        2>&1 | tee -a state/forge-scenarios.log
+
+# OPTIONAL / non-gating — the 2.0 dual-CCV (2-of-2) quorum harness. Validates the §3 self-owned +
+# self-relayed 2.0 stack ALTERNATIVE (not the live path): deploys our own 2.0 OnRamp/OffRamp on the
+# fork, wires a 2-of-2 mock-CCV quorum via POM.directCall, and relays a round-trip both ways (gov
+# round-trip; bridge L1<->L2; negatives: 1-of-2 quorum, paused hook, over-cap rate-limit). Kept for
+# when Chainlink ships 2.0 CCV-aware ramps to the testnets. NOT part of `all`.
+test-ccv:
+    FOUNDRY_TEST="${WSTETH_TEST_DIR:-../../targets/wsteth-ccip-sepolia-mantle-dev/test}" L2_CHAIN={{l2_chain}} L2_RPC={{l2_rpc}} forge test --match-path '*/test/scenario/CcvBridge*' -vv
+
+# Claim A — post-deploy state diff (state-mate, feat/separate-deployed). The committed wiring
+# (config/state-mate/wsteth.yaml) carries no addresses; step 08 generates the address book
+# (wsteth.deployed.yaml) from the deploy record ($RECORD_DIR, default config/chains) and passes it
+# via --deployed — so it always checks the just-deployed addresses.
+verify-state:
+    bash script/08_verify_state.sh
+
+# 10 — Etherscan source verification of everything the pipeline deployed (live only; self-skips
+# when both RPCs are anvil forks, so it is safe inside `all`). Idempotent: already-verified
+# addresses are skipped, failures are collected and reported. Ends with a post-check asserting
+# EVERY deployed contract (core family, DG incl. Escrow master copy, OpExec, L2 token, CCIP
+# stacks) shows verified source — fails otherwise. Requires ETHERSCAN_API_KEY when a live chain
+# verifies via Etherscan (one v2 multichain key covers Sepolia + Mantle Sepolia). On live chains
+# RPC_*_REMOTE endpoints are preferred when set.
+# Re-runnable post-hoc against an existing live deployment — it reads the record (config/chains +
+# state/*.json), not the broadcast logs:
+#   RECORD_DIR=config/chains.live-mantle RPC_SEPOLIA=$RPC_SEPOLIA_REMOTE \
+#     RPC_MANTLE_SEPOLIA=$RPC_MANTLE_SEPOLIA_REMOTE just verify-contracts
+verify-contracts:
+    bash script/10_verify_contracts.sh
+
+# Post-deploy testing of the leaf, against a FORK of whatever the deployment lives on: both state
+# testing (Claim A) and integration testing (Claim B, which forks the networks in-process via
+# vm.createFork — all its mutations stay in-memory, so forking a live chain is read-only-safe).
+# Re-runnable independently of the deploy; both read the deploy record + the RPC_* endpoints.
+#
+# Two substrates, same recipe — switch by pointing RPC_* (and, if you keep a separate record per
+# substrate, RECORD_DIR) at the target:
+#   • persistent anvil fork (default): RPC_* -> the ../forks tray app; record = config/chains.
+#   • live testnet fork: RPC_* -> live ARCHIVE endpoints carrying the deployment, e.g.
+#       RECORD_DIR=config/chains.live-mantle \
+#       RPC_SEPOLIA=<archive> RPC_<L2 SLUG>=<archive> just test-leaf
+# Alternate records may live under config/ or deployments/ (Foundry grants the archive read-only access).
+test-leaf: verify-state test-scenarios
+
+# Full disposable run: forks-check -> deploy -> configure -> handover -> scenarios -> verify/archive
+all: patch-submodules preflight build-l2-artifacts build build-ccip forks-check l1-core-dg l2-gov l2-token ccip-deploy ccip-configure set-pool-gov test-scenarios verify-state verify-contracts
+
+# After resetting forks, prepare a new run ID, then invoke `just wsteth all`.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Manual ops against a live (or forked) deploy. Addresses are read from the deploy
+# record ($RECORD_DIR/<chain>.json, default config/chains) + state/l1.json — nothing
+# hardcoded. AMOUNT is a decimal WHOLE-TOKEN figure (e.g. 0.01), converted to wei via
+# `cast to-wei AMOUNT ether` (x1e18). ETH/stETH/wstETH are all 18-decimal so the maths is
+# identical; only WHICH token differs per recipe: stake-eth=ETH, wrap-steth=stETH,
+# stake-and-wrap=ETH (wraps the full resulting stETH balance), ccip-fee/bridge-*=wstETH.
+# Sends need DEPLOYER_PRIVATE_KEY (+ DEPLOYER_ADDRESS) in env/.env and RPC_* pointed
+# at the target (live: via script/rpc-proxy.mjs). Token-only CCIP message; override
+# extraArgs with EXTRA_ARGS=0x... if a lane rejects the empty default.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Open the dashboard's new home in the multichain repository.
+dashboard:
+    @open https://github.com/lidofinance/multichain/blob/main/docs/index.html 2>/dev/null || xdg-open https://github.com/lidofinance/multichain/blob/main/docs/index.html
+
+# SIDE = l1 | l2 (default l1). Extra flags pass through, e.g. `just ccip-inventory l2 --owners`,
+# `just ccip-inventory l1 --legacy`, `just ccip-inventory l2 --json`. Read-only, but it needs the
+# network (Chainlink registry API) and an RPC that can see the LIVE CCIP deployment — point RPC_*
+# at the real chain or a fork of it, not a scratch anvil.
+# CCIP system contracts + the version each reports on-chain, for one side of the pair.
+ccip-inventory side="l1" *args="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{side}}" in
+        l1) RPC="{{l1_rpc}}"; PEER="{{l2_chain}}" ;;
+        l2) RPC="{{l2_rpc}}"; PEER="sepolia" ;;
+        *)  echo "✗ side must be l1 or l2 (got '{{side}}')"; exit 1 ;;
+    esac
+    bash script/ccip-inventory.sh "$RPC" --peer "$PEER" {{args}}
+
+# Show the addresses these ops resolve from the record (sanity / read-only).
+addrs:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    L1={{record_dir}}/sepolia.json; L2={{record_dir}}/{{l2_chain}}.json
+    echo "record dir : {{record_dir}}"
+    echo "L1 wstETH  : $(jq -r '.addresses.token' "$L1")"
+    echo "L1 stETH   : $(jq -r '.stETH // "?"' state/l1.json)"
+    echo "L1 pool    : $(jq -r '.deployed.token_pool' "$L1")"
+    echo "L1 router  : $(jq -r '.ccip.router' "$L1")   selector $(jq -r '.ccip.chain_selector' "$L1")"
+    LB=$(jq -r '.deployed.lock_boxes[]?|select(.remote_chain_name=="{{l2_chain}}")|.lock_box' "$L1")
+    if [ -n "$LB" ]; then echo "L1 lockbox : $LB  (-> {{l2_chain}})"
+    else echo "L1 lockbox : (none for L2_CHAIN={{l2_chain}}; lanes in this record: $(jq -rc '[.deployed.lock_boxes[]?.remote_chain_name]' "$L1"))"; fi
+    echo "L2 wstETH  : $(jq -r '.addresses.token' "$L2")"
+    echo "L2 router  : $(jq -r '.ccip.router' "$L2")   selector $(jq -r '.ccip.chain_selector' "$L2")"
+
+# wstETH balances: WHO on L1 + L2 and L1 lockbox custody (read-only). WHO defaults to DEPLOYER_ADDRESS.
+wsteth-balances who="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    WHO="{{who}}"; [ -n "$WHO" ] || WHO="$DEPLOYER_ADDRESS"
+    L1W=$(jq -r '.addresses.token' {{record_dir}}/sepolia.json)
+    L2W=$(jq -r '.addresses.token' {{record_dir}}/{{l2_chain}}.json)
+    LB=$(jq -r '.deployed.lock_boxes[]|select(.remote_chain_name=="{{l2_chain}}")|.lock_box' {{record_dir}}/sepolia.json)
+    echo "L1 wstETH($WHO) : $(cast call "$L1W" 'balanceOf(address)(uint256)' "$WHO" --rpc-url {{l1_rpc}})"
+    echo "L2 wstETH($WHO) : $(cast call "$L2W" 'balanceOf(address)(uint256)' "$WHO" --rpc-url {{l2_rpc}})"
+    echo "L1 lockbox      : $(cast call "$L1W" 'balanceOf(address)(uint256)' "$LB" --rpc-url {{l1_rpc}})"
+
+# Stake ETH -> stETH on L1 (Lido submit). AMOUNT in ETH (whole units). e.g. `just stake-eth 0.01` = 0.01 ETH
+stake-eth amount:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    STETH=$(jq -r '.stETH // empty' state/l1.json 2>/dev/null || true)
+    [ -n "${STETH:-}" ] || STETH=$(jq -r '."app:lido".proxy.address // ."app:lido".proxy // empty' {{record_dir}}/state/l1.deployed.json 2>/dev/null || true)
+    [ -n "${STETH:-}" ] || { echo "✗ cannot resolve stETH (need state/l1.json .stETH)"; exit 1; }
+    echo "▸ submit {{amount}} ETH -> stETH $STETH"
+    cast send "$STETH" 'submit(address)' 0x0000000000000000000000000000000000000000 \
+      --value "$(cast to-wei {{amount}} ether)" --rpc-url {{l1_rpc}} --private-key "$DEPLOYER_PRIVATE_KEY"
+
+# Wrap stETH -> wstETH on L1. AMOUNT in stETH (whole units). e.g. `just wrap-steth 0.01` = 0.01 stETH
+wrap-steth amount:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    STETH=$(jq -r '.stETH' state/l1.json)
+    WSTETH=$(jq -r '.addresses.token' {{record_dir}}/sepolia.json)
+    WEI=$(cast to-wei {{amount}} ether)
+    echo "▸ approve + wrap $WEI wei stETH -> wstETH $WSTETH"
+    cast send "$STETH" 'approve(address,uint256)' "$WSTETH" "$WEI" --rpc-url {{l1_rpc}} --private-key "$DEPLOYER_PRIVATE_KEY"
+    cast send "$WSTETH" 'wrap(uint256)' "$WEI" --rpc-url {{l1_rpc}} --private-key "$DEPLOYER_PRIVATE_KEY"
+
+# Convenience: stake AMOUNT (in ETH) then wrap the FULL resulting stETH balance. e.g. `just stake-and-wrap 0.01`
+stake-and-wrap amount:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just --justfile ../../orchestration/wsteth-ccip/justfile stake-eth {{amount}}
+    STETH=$(jq -r '.stETH' state/l1.json)
+    WSTETH=$(jq -r '.addresses.token' {{record_dir}}/sepolia.json)
+    BAL=$(cast call "$STETH" 'balanceOf(address)(uint256)' "$DEPLOYER_ADDRESS" --rpc-url {{l1_rpc}} | awk '{print $1}')
+    echo "▸ wrap full stETH balance $BAL"
+    cast send "$STETH" 'approve(address,uint256)' "$WSTETH" "$BAL" --rpc-url {{l1_rpc}} --private-key "$DEPLOYER_PRIVATE_KEY"
+    cast send "$WSTETH" 'wrap(uint256)' "$BAL" --rpc-url {{l1_rpc}} --private-key "$DEPLOYER_PRIVATE_KEY"
+
+# Quote the native CCIP fee to bridge AMOUNT (in wstETH) L1 -> L2 (read-only). TO defaults to DEPLOYER_ADDRESS.
+ccip-fee amount to="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TO="{{to}}"; [ -n "$TO" ] || TO="$DEPLOYER_ADDRESS"
+    WSTETH=$(jq -r '.addresses.token' {{record_dir}}/sepolia.json)
+    ROUTER=$(jq -r '.ccip.router' {{record_dir}}/sepolia.json)
+    DEST=$(jq -r '.ccip.chain_selector' {{record_dir}}/{{l2_chain}}.json)
+    WEI=$(cast to-wei {{amount}} ether); RECEIVER=$(cast abi-encode 'f(address)' "$TO")
+    MSG="($RECEIVER,0x,[($WSTETH,$WEI)],0x0000000000000000000000000000000000000000,${EXTRA_ARGS:-0x})"
+    echo "fee (wei native): $(cast call "$ROUTER" 'getFee(uint64,(bytes,bytes,(address,uint256)[],address,bytes))(uint256)' "$DEST" "$MSG" --rpc-url {{l1_rpc}})"
+
+# Bridge AMOUNT wstETH L1 (sepolia) -> L2 ({{l2_chain}}) via the real CCIP router (approve + ccipSend, fee in native).
+# AMOUNT in wstETH (whole units); TO defaults to DEPLOYER_ADDRESS. e.g. `just bridge-wsteth 0.01` | `just bridge-wsteth 0.01 0xRecipient`
+bridge-wsteth amount to="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TO="{{to}}"; [ -n "$TO" ] || TO="$DEPLOYER_ADDRESS"
+    WSTETH=$(jq -r '.addresses.token' {{record_dir}}/sepolia.json)
+    ROUTER=$(jq -r '.ccip.router' {{record_dir}}/sepolia.json)
+    DEST=$(jq -r '.ccip.chain_selector' {{record_dir}}/{{l2_chain}}.json)
+    WEI=$(cast to-wei {{amount}} ether); RECEIVER=$(cast abi-encode 'f(address)' "$TO")
+    MSG="($RECEIVER,0x,[($WSTETH,$WEI)],0x0000000000000000000000000000000000000000,${EXTRA_ARGS:-0x})"
+    SIG='ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))'
+    FEE=$(cast call "$ROUTER" 'getFee(uint64,(bytes,bytes,(address,uint256)[],address,bytes))(uint256)' "$DEST" "$MSG" --rpc-url {{l1_rpc}} | awk '{print $1}')
+    echo "▸ bridge $WEI wei wstETH -> $TO on {{l2_chain}} (sel $DEST); fee $FEE wei native"
+    cast send "$WSTETH" 'approve(address,uint256)' "$ROUTER" "$WEI" --rpc-url {{l1_rpc}} --private-key "$DEPLOYER_PRIVATE_KEY"
+    cast send "$ROUTER" "$SIG" "$DEST" "$MSG" --value "$FEE" --rpc-url {{l1_rpc}} --private-key "$DEPLOYER_PRIVATE_KEY"
+    echo "✓ sent — track on https://ccip.chain.link"
+
+# Bridge back: AMOUNT wstETH L2 ({{l2_chain}}) -> L1 (sepolia). e.g. `just bridge-back-wsteth 0.01`
+bridge-back-wsteth amount to="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    TO="{{to}}"; [ -n "$TO" ] || TO="$DEPLOYER_ADDRESS"
+    WSTETH=$(jq -r '.addresses.token' {{record_dir}}/{{l2_chain}}.json)
+    ROUTER=$(jq -r '.ccip.router' {{record_dir}}/{{l2_chain}}.json)
+    DEST=$(jq -r '.ccip.chain_selector' {{record_dir}}/sepolia.json)
+    WEI=$(cast to-wei {{amount}} ether); RECEIVER=$(cast abi-encode 'f(address)' "$TO")
+    MSG="($RECEIVER,0x,[($WSTETH,$WEI)],0x0000000000000000000000000000000000000000,${EXTRA_ARGS:-0x})"
+    SIG='ccipSend(uint64,(bytes,bytes,(address,uint256)[],address,bytes))'
+    FEE=$(cast call "$ROUTER" 'getFee(uint64,(bytes,bytes,(address,uint256)[],address,bytes))(uint256)' "$DEST" "$MSG" --rpc-url {{l2_rpc}} | awk '{print $1}')
+    echo "▸ bridge back $WEI wei wstETH {{l2_chain}} -> sepolia -> $TO; fee $FEE wei native"
+    cast send "$WSTETH" 'approve(address,uint256)' "$ROUTER" "$WEI" --rpc-url {{l2_rpc}} --private-key "$DEPLOYER_PRIVATE_KEY"
+    cast send "$ROUTER" "$SIG" "$DEST" "$MSG" --value "$FEE" --rpc-url {{l2_rpc}} --private-key "$DEPLOYER_PRIVATE_KEY"
+    echo "✓ sent — track on https://ccip.chain.link"

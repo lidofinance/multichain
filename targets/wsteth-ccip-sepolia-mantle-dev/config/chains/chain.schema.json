@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lido.fi/wsteth-2.0/config/chains/chain.schema.json",
+  "title": "wsteth-2.0 chain config",
+  "description": "Per-chain config for the vendored CCIP deploy. Each field is L (external/definitional fact), D (authored governance commitment), or E (generated work-effect). A committed template carries only L+D; the deploy writes E (addresses.token, governance_addresses.lido_dao_agent, deployed, ccv) in place. Used by `just lint-config`. See config/README.md.",
+  "type": "object",
+  "required": ["addresses", "ccip", "chain", "governance_addresses", "remote_lanes"],
+  "$defs": {
+    "address": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+    "addressOrEmpty": { "type": "string", "pattern": "^(0x[0-9a-fA-F]{40})?$" }
+  },
+  "properties": {
+    "addresses": {
+      "type": "object",
+      "required": ["token"],
+      "properties": {
+        "token": {
+          "$ref": "#/$defs/addressOrEmpty",
+          "description": "E — deployed token (L1 Lido wstETH / L2 BurnMintERC20Bridged). Empty in a template; written by step 01/03."
+        }
+      }
+    },
+    "ccip": {
+      "type": "object",
+      "description": "L — external CCIP facts for this chain (Chainlink-fixed). Committed; FFI-refreshable by 1_Deploy.",
+      "required": ["chain_selector", "router", "rmn_proxy", "token_admin_registry", "registry_module_owner"],
+      "properties": {
+        "chain_selector": { "type": "string", "pattern": "^[0-9]+$", "description": "L — CCIP chain selector (decimal string)." },
+        "router": { "$ref": "#/$defs/address" },
+        "rmn_proxy": { "$ref": "#/$defs/address" },
+        "token_admin_registry": { "$ref": "#/$defs/address" },
+        "registry_module_owner": { "$ref": "#/$defs/address" }
+      }
+    },
+    "chain": {
+      "type": "object",
+      "description": "L — chain identity & pool kind.",
+      "required": ["chain_id", "chain_name", "pool_type"],
+      "properties": {
+        "chain_id": { "type": "integer" },
+        "chain_name": { "type": "string" },
+        "pool_type": { "enum": ["SiloedLockRelease", "BurnMint"], "description": "L — L1 hub = SiloedLockRelease; L2 spoke = BurnMint." }
+      }
+    },
+    "governance_addresses": {
+      "type": "object",
+      "description": "Mixed quadrant: emergency_brakes/chainlink_mcms = D (authored role intent); guardian is a legacy vendor-schema field unused by the current POM; lido_dao_agent/deployer = E (observed deploy outputs). Splitting the E fields into the record is a recommended follow-up (review R3).",
+      "required": ["guardian", "emergency_brakes", "chainlink_mcms", "lido_dao_agent", "deployer"],
+      "properties": {
+        "guardian": { "$ref": "#/$defs/address", "description": "Legacy compatibility field — current PoolOperationManager has no GUARDIAN_ROLE and 1_Deploy does not consume this value." },
+        "emergency_brakes": { "$ref": "#/$defs/address", "description": "D — POM pauser role-holder." },
+        "chainlink_mcms": { "$ref": "#/$defs/address", "description": "D — POM proposer/pauser role-holder." },
+        "lido_dao_agent": { "$ref": "#/$defs/address", "description": "E — deployed L1 Agent / L2 OpExec (gets POM DEFAULT_ADMIN_ROLE). Zero in a template; written by step 01/02." },
+        "deployer": { "$ref": "#/$defs/address", "description": "D->E — authored placeholder; step 04 stamps the observed signing key (whose admin role step 07 revokes)." },
+        "chainlink_executors": { "type": "array", "items": { "$ref": "#/$defs/address" } }
+      }
+    },
+    "remote_lanes": {
+      "type": "array",
+      "description": "D — authored lane topology. step 04 re-points the L1 hub's lane to the active L2_CHAIN.",
+      "items": {
+        "type": "object",
+        "required": ["is_siloed", "remote_chain_name"],
+        "properties": {
+          "is_siloed": { "type": "boolean" },
+          "remote_chain_name": { "type": "string" }
+        }
+      }
+    },
+    "deployed": {
+      "type": "object",
+      "description": "E — written by 1_Deploy; absent in a pristine template.",
+      "properties": {
+        "token_pool": { "$ref": "#/$defs/address" },
+        "pool_operation_manager": { "$ref": "#/$defs/address" },
+        "advanced_pool_hooks": { "$ref": "#/$defs/address" },
+        "lock_boxes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "lock_box": { "$ref": "#/$defs/address" },
+              "remote_chain_name": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "ccv": {
+      "type": "object",
+      "description": "E — written by 1_Deploy; absent in a pristine template.",
+      "properties": {
+        "message_id_verifier": { "$ref": "#/$defs/address" },
+        "verifier_resolver": { "$ref": "#/$defs/address" }
+      }
+    }
+  }
+}

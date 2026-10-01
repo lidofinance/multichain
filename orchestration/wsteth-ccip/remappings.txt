@@ -1,0 +1,9 @@
+forge-std/=../../libs/forge-std/src/
+@chainlink/contracts/=../../components/ccip/chains/evm/node_modules/@chainlink/contracts/
+@chainlink/contracts-ccip/=../../components/ccip/chains/evm/node_modules/@chainlink/contracts-ccip/contracts/
+governance-crosschain-bridges/=../../components/governance-crosschain-bridges/
+@wsteth-token/contracts/=../../components/wsteth-token/contracts/
+@ccip-lido/=../../components/ccip/chains/evm/contracts/lido-hvmv/
+@chainlink/policy-management/=../../components/ccip/chains/evm/contracts/vendor/policy-management/
+@openzeppelin/contracts@4.8.3/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-4.8.3/
+@openzeppelin/contracts@5.0.2/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.0.2/

@@ -1,0 +1,23 @@
+[submodule "components/ccip"]
+	path = components/ccip
+	url = git@github.com:smartcontractkit/ccip-contract-examples-internal.git
+[submodule "components/core"]
+	path = components/core
+	branch = feat/scratch-dg
+	url = git@github.com:lidofinance/core.git
+[submodule "libs/forge-std"]
+	path = libs/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "components/governance-crosschain-bridges"]
+	path = components/governance-crosschain-bridges
+	url = https://github.com/lidofinance/governance-crosschain-bridges
+[submodule "components/openzeppelin-contracts-upgradeable-4x"]
+	path = components/openzeppelin-contracts-upgradeable-4x
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
+[submodule "libs/state-mate"]
+	path = libs/state-mate
+	branch = feat/separate-deployed
+	url = git@github.com:lidofinance/state-mate.git
+[submodule "components/openzeppelin-contracts-4x"]
+	path = components/openzeppelin-contracts-4x
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

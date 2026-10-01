@@ -1,0 +1,31 @@
+{
+  "addresses": {
+    "token": ""
+  },
+  "ccip": {
+    "chain_selector": "8236463271206331221",
+    "registry_module_owner": "0xf76cE612250eeEb8889F49FBCB11f1c2705305F6",
+    "rmn_proxy": "0xcCB84Ec3F6AFdD2052134f74aaAc95Ae41A7B333",
+    "router": "0xFd33fd627017fEf041445FC19a2B6521C9778f86",
+    "token_admin_registry": "0x0F1eE88A582f31d92510E300fc1330AA5a525D51"
+  },
+  "chain": {
+    "chain_id": 5003,
+    "chain_name": "mantle_sepolia",
+    "pool_type": "BurnMint"
+  },
+  "governance_addresses": {
+    "chainlink_executors": [],
+    "chainlink_mcms": "0x1D72FbCcfC86C88E23771d6D58a8F1Cb77186d1d",
+    "emergency_brakes": "0x608056b8d596da5816146014E88DFfDECAF59DcD",
+    "guardian": "0x608056b8d596da5816146014E88DFfDECAF59DcD",
+    "lido_dao_agent": "0x0000000000000000000000000000000000000000",
+    "deployer": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "sepolia"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "takenAt": "2026-10-01",
+  "docsUrl": "https://docs.lido.fi/deployed-contracts/",
+  "rateSource": "https://github.com/lidofinance/lido-l2-with-steth/blob/8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c/contracts/optimism/TokenRateOracle.sol",
+  "priceFeed": {
+    "pair": "stETH / USD",
+    "address": "0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8",
+    "decimals": 8,
+    "maxAgeSeconds": 3600,
+    "source": "https://data.chain.link/feeds/ethereum/mainnet/steth-usd"
+  },
+  "networks": {
+    "optimism-optimism-steth-token": {
+      "name": "Optimism",
+      "bridge": "Lido / OP Stack",
+      "decimals": 18,
+      "rateDecimals": 27,
+      "oracleContractId": "optimism-optimism-token-rate-oracle",
+      "pusherContractId": "optimism-ethereum-token-rate-pusher",
+      "source": "https://docs.lido.fi/deployed-contracts/#optimism-part"
+    },
+    "unichain-unichain-steth-token": {
+      "name": "Unichain",
+      "bridge": "Lido / OP Stack",
+      "decimals": 18,
+      "rateDecimals": 27,
+      "oracleContractId": "unichain-unichain-token-rate-oracle",
+      "pusherContractId": "unichain-ethereum-token-rate-pusher",
+      "source": "https://docs.lido.fi/deployed-contracts/#unichain"
+    },
+    "soneium-soneium-steth-token": {
+      "name": "Soneium",
+      "bridge": "Lido / OP Stack · legacy",
+      "decimals": 18,
+      "rateDecimals": 27,
+      "oracleFromDocs": "0xDff6f372e8c16b2b9e95c55bDfe74C0bA3F90265",
+      "pusherFromDocs": "0x927C99fC46226bd5131420B16aF0b0371165C3FC",
+      "source": "https://docs.lido.fi/deployed-contracts/#legacy-contracts"
+    }
+  }
+}

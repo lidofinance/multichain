@@ -1,0 +1,72 @@
+{
+  "governance": {
+    "proposal_mode": "Veto",
+    "min_delay_seconds": 259200,
+    "validity_period_seconds": 2592000
+  },
+  "blocked_selectors": [
+    {
+      "function": "transferOwnership(address)",
+      "selector": "0xf2fde38b",
+      "reason": "Ownership changes only via DAO directCall"
+    },
+    {
+      "function": "unpause()",
+      "selector": "0x3f4ba83a",
+      "reason": "Hooks unpause only via DAO directCall or POM.unpauseTokenPool; closes the MCMS queue path around empty UNPAUSER_ROLE"
+    }
+  ],
+  "custom_delay_selectors": [
+    {
+      "function": "transferAdminRole(address,address)",
+      "selector": "0xddadfa8e",
+      "delay_seconds": 1209600,
+      "reason": "TokenAdminRegistry: nominates a new per-token administrator. Same 14-day binding as lido-proposals; kept here because this file is the injected source of truth."
+    },
+    {
+      "function": "setPool(address,address)",
+      "selector": "0x4e847fc7",
+      "delay_seconds": 1209600,
+      "reason": "TokenAdminRegistry: single-step redirect of all CCIP traffic for this token to a new pool; address(0) delists the token entirely. Same 14-day binding as lido-proposals."
+    },
+    {
+      "function": "setDynamicConfig(address,address,address)",
+      "selector": "0xae39a257",
+      "delay_seconds": 1209600,
+      "reason": "TokenPool: replaces router, rateLimitAdmin, and feeAdmin in one call; compromising any of these has systemic impact"
+    },
+    {
+      "function": "setDynamicConfig((address,address))",
+      "selector": "0x869b7f62",
+      "delay_seconds": 1209600,
+      "reason": "CCV verifier: replaces feeAggregator and allowlistAdmin. A distinct selector from the pool's setDynamicConfig purely because the argument list differs, so the upstream 0xae39a257 override never reached it."
+    },
+    {
+      "function": "updateAdvancedPoolHooks(address)",
+      "selector": "0xbfeffd3f",
+      "delay_seconds": 1209600,
+      "reason": "Replaces the entire hooks contract which controls all transfer pre/post-flight logic"
+    },
+    {
+      "function": "configureLockBoxes((uint64,address)[])",
+      "selector": "0xefd07eec",
+      "delay_seconds": 1209600,
+      "reason": "Redirects per-chain lockbox addresses; a malicious lockbox could steal locked tokens. SiloedLockReleaseTokenPool (mainnet) only"
+    }
+  ],
+  "rate_limiter_defaults": {
+    "outbound": {
+      "enabled": true,
+      "capacity": "500000000000000000000",
+      "rate": "5787037037037037"
+    },
+    "inbound": {
+      "enabled": true,
+      "capacity": "330000000000000000000",
+      "rate": "3819444444444444"
+    }
+  },
+  "token_transfer_fee_defaults": {
+    "dest_gas_overhead": 150000
+  }
+}

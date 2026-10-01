@@ -1,0 +1,127 @@
+{
+  "sourceCommit": "9e9b60aaa7b39de08b64f05c1bf9bc9ab11fffd3",
+  "dependencies": [
+    {
+      "path": "../../components/ccip",
+      "commit": "3c1a088b990ea867c5e69aad820218a82b9521fc",
+      "url": "git@github.com:smartcontractkit/ccip-contract-examples-internal.git",
+      "status": "M chains/evm/contracts/lido-hvmv/config/chains/sepolia.json\n?? chains/evm/broadcast/1_Deploy.s.sol/11155111/run-1789484118070.json\n?? chains/evm/broadcast/1_Deploy.s.sol/11155111/run-1789490617383.json\n?? chains/evm/broadcast/1_Deploy.s.sol/11155111/run-latest.json\n?? chains/evm/broadcast/1_Deploy.s.sol/5003/run-1789484135420.json\n?? chains/evm/broadcast/1_Deploy.s.sol/5003/run-1789490687219.json\n?? chains/evm/broadcast/1_Deploy.s.sol/5003/run-latest.json\n?? chains/evm/broadcast/2_Configure.s.sol/11155111/run-1789484140533.json\n?? chains/evm/broadcast/2_Configure.s.sol/11155111/run-1789490751198.json\n?? chains/evm/broadcast/2_Configure.s.sol/11155111/run-latest.json\n?? chains/evm/broadcast/2_Configure.s.sol/5003/run-1789484165662.json\n?? chains/evm/broadcast/2_Configure.s.sol/5003/run-1789491103088.json\n?? chains/evm/broadcast/2_Configure.s.sol/5003/run-latest.json\n?? chains/evm/broadcast/3_SetPoolAndTransferOwnership.s.sol/11155111/run-1789484178559.json\n?? chains/evm/broadcast/3_SetPoolAndTransferOwnership.s.sol/11155111/run-1789491205500.json\n?? chains/evm/broadcast/3_SetPoolAndTransferOwnership.s.sol/11155111/run-latest.json\n?? chains/evm/broadcast/3_SetPoolAndTransferOwnership.s.sol/5003/run-1789484184902.json\n?? chains/evm/broadcast/3_SetPoolAndTransferOwnership.s.sol/5003/run-1789491337118.json\n?? chains/evm/broadcast/3_SetPoolAndTransferOwnership.s.sol/5003/run-latest.json\n?? chains/evm/contracts/lido-hvmv/config/chains/mantle_sepolia.json\n?? chains/evm/contracts/lido-hvmv/config/lido_default_config.json",
+      "sourcePath": "lib/ccip"
+    },
+    {
+      "path": "../../components/core",
+      "commit": "fe5aa49564cb37c72b33694a0a4e314cd08bbb96",
+      "url": "git@github.com:lidofinance/core.git",
+      "status": "M contracts/0.6.12/WstETH.sol\n ? foundry/lib/dual-governance\n M hardhat.config.ts",
+      "sourcePath": "lib/core"
+    },
+    {
+      "path": "../../components/core/foundry/lib/dual-governance",
+      "commit": "ba9dfc9213ec888993937a699e2a587a0082720f",
+      "url": "https://github.com/lidofinance/dual-governance.git",
+      "status": "?? deploy-artifacts/deploy-artifact-11155111-1788528284.toml\n?? deploy-artifacts/deploy-artifact-11155111-1789483909.toml\n?? deploy-artifacts/deploy-artifact-11155111-1789489932.toml",
+      "sourcePath": "lib/core/foundry/lib/dual-governance"
+    },
+    {
+      "path": "../../components/core/foundry/lib/dual-governance/lib/forge-std",
+      "commit": "8f24d6b04c92975e0795b5868aa0d783251cdeaa",
+      "url": "https://github.com/foundry-rs/forge-std",
+      "status": "",
+      "sourcePath": "lib/core/foundry/lib/dual-governance/lib/forge-std"
+    },
+    {
+      "path": "../../components/core/foundry/lib/dual-governance/lib/kontrol-cheatcodes",
+      "commit": "187b89ad863226afe494caa9f58320997a543bff",
+      "url": "https://github.com/runtimeverification/kontrol-cheatcodes",
+      "status": "",
+      "sourcePath": "lib/core/foundry/lib/dual-governance/lib/kontrol-cheatcodes"
+    },
+    {
+      "path": "../../components/core/foundry/lib/dual-governance/lib/openzeppelin-contracts",
+      "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
+      "url": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+      "status": "",
+      "sourcePath": "lib/core/foundry/lib/dual-governance/lib/openzeppelin-contracts"
+    },
+    {
+      "path": "../../components/core/foundry/lib/dual-governance/lib/openzeppelin-contracts/lib/erc4626-tests",
+      "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+      "url": "https://github.com/a16z/erc4626-tests.git",
+      "status": "",
+      "sourcePath": "lib/core/foundry/lib/dual-governance/lib/openzeppelin-contracts/lib/erc4626-tests"
+    },
+    {
+      "path": "../../components/core/foundry/lib/dual-governance/lib/openzeppelin-contracts/lib/forge-std",
+      "commit": "eb980e1d4f0e8173ec27da77297ae411840c8ccb",
+      "url": "https://github.com/foundry-rs/forge-std",
+      "status": "",
+      "sourcePath": "lib/core/foundry/lib/dual-governance/lib/openzeppelin-contracts/lib/forge-std"
+    },
+    {
+      "path": "../../components/core/foundry/lib/dual-governance/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test",
+      "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+      "url": "https://github.com/dapphub/ds-test",
+      "status": "",
+      "sourcePath": "lib/core/foundry/lib/dual-governance/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+    },
+    {
+      "path": "../../components/core/foundry/lib/forge-std",
+      "commit": "8f24d6b04c92975e0795b5868aa0d783251cdeaa",
+      "url": "https://github.com/foundry-rs/forge-std",
+      "status": "",
+      "sourcePath": "lib/core/foundry/lib/forge-std"
+    },
+    {
+      "path": "../../components/core/foundry/lib/state-mate",
+      "commit": "7d96c5aa2a6537a25d157e7db6a5f206f9d28953",
+      "url": "https://github.com/lidofinance/state-mate.git",
+      "status": "",
+      "sourcePath": "lib/core/foundry/lib/state-mate"
+    },
+    {
+      "path": "../../libs/forge-std",
+      "commit": "7fdf81f9ceb2f6ebbb8f9f1c6c5274d5bcc9a1f5",
+      "url": "https://github.com/foundry-rs/forge-std",
+      "status": "",
+      "sourcePath": "lib/forge-std"
+    },
+    {
+      "path": "../../components/governance-crosschain-bridges",
+      "commit": "659e236b6592da11943c531fe6947f4858803f96",
+      "url": "https://github.com/lidofinance/governance-crosschain-bridges",
+      "status": "",
+      "sourcePath": "lib/governance-crosschain-bridges"
+    },
+    {
+      "path": "../../components/openzeppelin-contracts-upgradeable-4x",
+      "commit": "0a2cb9a445c365870ed7a8ab461b12acf3e27d63",
+      "url": "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable",
+      "status": "",
+      "sourcePath": "lib/openzeppelin-contracts-upgradeable-4x"
+    },
+    {
+      "path": "../../libs/state-mate",
+      "commit": "be0d924c0a03c8901ca707475d121835d70b4096",
+      "url": "git@github.com:lidofinance/state-mate.git",
+      "status": "",
+      "sourcePath": "lib/state-mate"
+    }
+  ],
+  "layout": {
+    "script/": "orchestration/wsteth-ccip/script/",
+    "justfile": "orchestration/wsteth-ccip/justfile",
+    "src/": "orchestration/wsteth-ccip/src/",
+    "patches/": "orchestration/wsteth-ccip/patches/",
+    "test/": "targets/wsteth-ccip-sepolia-mantle-dev/test/",
+    "authoredConfigAndStateChecks": "targets/wsteth-ccip-sepolia-mantle-dev/config/",
+    "trackedHistoricalRecords": "runs/wsteth-2.0/history/",
+    "localSnapshot": "runs/wsteth-2.0/imported/",
+    "lib/forge-std": "libs/forge-std",
+    "lib/state-mate": "libs/state-mate",
+    "lib/ccip": "components/ccip",
+    "lib/core": "components/core",
+    "lib/governance-crosschain-bridges": "components/governance-crosschain-bridges",
+    "lib/lido-l2-with-steth": "components/wsteth-token",
+    "lib/openzeppelin-contracts-upgradeable-4x": "components/openzeppelin-contracts-upgradeable-4x"
+  }
+}

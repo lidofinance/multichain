@@ -1,0 +1,36 @@
+Subject: [core] local-devnet network — fixed gas limit for public RPC endpoints
+
+Base: lib/core @ fe5aa4956 (lidofinance/core, feat/scratch-dg)
+Applies to: hardhat.config.ts
+
+WHY
+  Step 01 drives core's hardhat scratch deploy over the `local-devnet` network. Against a public
+  endpoint (drpc et al.) eth_estimateGas under-estimates CALLs that CREATE contracts internally
+  (Aragon ENSFactory.newENS): the tx goes out with a too-low limit and reverts OutOfGas. A fixed
+  limit above any single scratch-deploy tx bypasses the bad estimate.
+
+  Deploy-mechanics only: no bytecode or state consequence.
+
+HISTORY
+  Also carried `timeout: 600_000` until 3388091cc, where upstream added a 20-minute timeout to
+  local-devnet itself — that half is now redundant and was dropped.
+
+  Upstream also pins local-devnet's chainId to LOCAL_DEVNET_CHAIN_ID (default 32382). Step 01
+  exports LOCAL_DEVNET_CHAIN_ID=11155111 for the Sepolia fork rather than patching the default.
+
+diff --git a/hardhat.config.ts b/hardhat.config.ts
+index 8af283e16..492985837 100644
+--- a/hardhat.config.ts
++++ b/hardhat.config.ts
+@@ -81,6 +81,11 @@ const config: HardhatUserConfig = {
+       timeout: 20 * 60 * 1000, // 20 minutes
+       accounts: [process.env.LOCAL_DEVNET_PK || ZERO_PK],
+       chainId: parseInt(process.env.LOCAL_DEVNET_CHAIN_ID || "32382", 10),
++      // Fixed gas limit (bypass eth_estimateGas). Some public endpoints (drpc) under-estimate
++      // CALLs that CREATE contracts internally (e.g. Aragon ENSFactory.newENS) → the tx is sent
++      // with a too-low limit and reverts OutOfGas. A fixed high limit (well above any single Lido
++      // scratch-deploy tx, comfortably under Sepolia's block gas limit) avoids the bad estimate.
++      gas: 20_000_000,
+     },
+     // testnets — long RPC timeout to survive occasional Infura/Alchemy
+     // headers stalls during long scratch deploys.

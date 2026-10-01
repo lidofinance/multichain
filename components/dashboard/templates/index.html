@@ -1,0 +1,2084 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCIP Lane Watch</title>
+<!--
+  Deployment records and script/ccip-inventory.sh belong to
+  https://github.com/lidofinance/wsteth-ccip (the original source repository).
+
+  CCIP Lane Watch — a live inventory of the CCIP system contracts on both sides of a lane.
+
+  No backend. The page reads the Chainlink registry (docs.chain.link/api/ccip/v1, CORS is open)
+  for entry points, then crawls the contract graph over each chain's public JSON-RPC using the
+  same logic as script/ccip-inventory.sh: it follows the address fields of every config getter and
+  asks each contract it reaches for its own typeAndVersion(). Selectors are hardcoded, so no
+  keccak is needed in the browser; calls go out batched, one POST per crawl round.
+
+  The registry publishes five addresses per chain and NO versions; /lanes adds a version, but only
+  for the ramps; RMNRemote / FeeQuoter / NonceManager and the whole 2.0 CCV stack are absent from
+  the API altogether — the crawl is what finds them.
+
+  The build reads ledger.json and the active public record from wsteth-ccip main.
+  LIVE overlays the testnet contracts that are absent from the Chainlink registry.
+
+  Build with components/dashboard/scripts/build_dashboard.py; serve the generated site from any static host.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Same tokens as ccv.html and roles.html next door, so the pages read as one set. */
+:root{
+  --bg:#EEF0EE; --surface:#FFFFFF; --surface-2:#E7EAE8;
+  --ink:#14201D; --ink-2:#4A5754; --ink-3:#6E7B77;
+  --rule:#CFD6D3; --rule-strong:#9AA6A2;
+  --cl:#2F49B8; --cl-soft:#E4E8F8;
+  --ours:#A32770; --ours-soft:#F7E3EF;
+  --ok:#14724A; --ok-soft:#DFEFE6;
+  --bad:#A82217; --bad-soft:#F6E2DF;
+  --warn:#8A6100; --warn-soft:#F4EBD6;
+  --sans:"Golos Text","PT Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono","SF Mono",ui-monospace,"Cascadia Mono",Menlo,monospace;
+  --fs-xs:.6875rem; --fs-sm:.8125rem; --fs-md:.9375rem; --fs-lg:1.0625rem;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:18px; --sp-5:28px; --sp-6:44px;
+  --maxw:1460px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1513; --surface:#161F1C; --surface-2:#1D2724;
+    --ink:#E2E9E6; --ink-2:#96A39F; --ink-3:#7C8985;
+    --rule:#28352F; --rule-strong:#43554F;
+    --cl:#93A6FF; --cl-soft:#1A2340;
+    --ours:#F284C2; --ours-soft:#331127;
+    --ok:#5CCB93; --ok-soft:#10281E;
+    --bad:#FF8F7F; --bad-soft:#301715;
+    --warn:#E2B856; --warn-soft:#2B2312;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1513; --surface:#161F1C; --surface-2:#1D2724;
+  --ink:#E2E9E6; --ink-2:#96A39F; --ink-3:#7C8985;
+  --rule:#28352F; --rule-strong:#43554F;
+  --cl:#93A6FF; --cl-soft:#1A2340;
+  --ours:#F284C2; --ours-soft:#331127;
+  --ok:#5CCB93; --ok-soft:#10281E;
+  --bad:#FF8F7F; --bad-soft:#301715;
+  --warn:#E2B856; --warn-soft:#2B2312;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--sans); font-size:var(--fs-md); line-height:1.5;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 var(--sp-4)}
+a{color:inherit; text-decoration:underline; text-underline-offset:2px; text-decoration-color:var(--rule-strong)}
+a:hover{text-decoration-color:var(--ink)}
+button{font:inherit; color:inherit}
+
+/* ── app bar ────────────────────────────────────────────────────── */
+.appbar{
+  position:sticky; top:0; z-index:20; background:var(--surface);
+  border-bottom:2px solid var(--ink);
+}
+.appbar-in{
+  max-width:var(--maxw); margin:0 auto; padding:var(--sp-3) var(--sp-4);
+  display:flex; align-items:center; gap:var(--sp-4); flex-wrap:wrap;
+}
+.brand{display:flex; align-items:center; gap:var(--sp-3); flex:none}
+.mark{
+  width:30px; height:30px; flex:none; display:grid; place-items:center;
+  background:var(--ink); color:var(--surface); font-family:var(--mono);
+  font-size:12px; font-weight:700; letter-spacing:.02em;
+}
+.brand h1{margin:0; font-size:var(--fs-md); font-weight:700; letter-spacing:-.01em; white-space:nowrap}
+.brand .sub{margin:0; font-size:var(--fs-xs); color:var(--ink-3); font-family:var(--mono)}
+.brand .sub a{color:var(--cl); text-decoration-color:var(--cl)}
+.brand .sub a:hover{text-decoration-color:var(--cl); background:var(--cl-soft)}
+.foot a{color:var(--cl); text-decoration-color:var(--cl)}
+.spacer{flex:1 1 auto}
+.tabs{display:flex; gap:var(--sp-2); flex-wrap:wrap; min-width:0}
+.tab{
+  display:inline-flex; align-items:center; gap:var(--sp-2);
+  padding:6px 12px; border:1px solid var(--rule); background:var(--surface);
+  cursor:pointer; font-size:var(--fs-sm); font-weight:500; white-space:nowrap;
+}
+.tab:hover{border-color:var(--rule-strong)}
+.tab.active{background:var(--ink); border-color:var(--ink); color:var(--bg)}
+.tab-dot{width:7px; height:7px; border-radius:50%; flex:none; background:var(--rule-strong)}
+.tab-dot[data-s="ok"]{background:var(--ok)}
+.tab-dot[data-s="warn"]{background:var(--warn)}
+.tab-dot[data-s="bad"]{background:var(--bad)}
+.tab-dot[data-s="busy"]{background:var(--cl); animation:pulse 1.1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+.ctl{display:flex; align-items:center; gap:var(--sp-2); flex:none}
+select,input[type=text],input[type=url]{
+  font:inherit; font-size:var(--fs-sm); padding:5px 8px; background:var(--surface);
+  color:var(--ink); border:1px solid var(--rule);
+}
+select:focus,input:focus{outline:2px solid var(--cl); outline-offset:-1px}
+.btn{
+  padding:6px 12px; border:1px solid var(--rule); background:var(--surface);
+  cursor:pointer; font-size:var(--fs-sm); font-weight:500;
+}
+.btn:hover{border-color:var(--rule-strong)}
+.btn:disabled{opacity:.5; cursor:wait}
+.btn-primary{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.stamp{font-family:var(--mono); font-size:var(--fs-xs); color:var(--ink-3); white-space:nowrap}
+.stamp b{color:var(--ink); font-weight:500}
+
+/* ── primitives ─────────────────────────────────────────────────── */
+.chip{
+  display:inline-flex; align-items:center; gap:5px; padding:2px 7px;
+  font-family:var(--mono); font-size:var(--fs-xs); font-weight:500;
+  border:1px solid transparent; white-space:nowrap;
+}
+.c-ok{color:var(--ok); background:var(--ok-soft); border-color:var(--ok-soft)}
+.c-bad{color:var(--bad); background:var(--bad-soft); border-color:var(--bad-soft)}
+.c-warn{color:var(--warn); background:var(--warn-soft); border-color:var(--warn-soft)}
+.c-cl{color:var(--cl); background:var(--cl-soft); border-color:var(--cl-soft)}
+.c-ours{color:var(--ours); background:var(--ours-soft); border-color:var(--ours-soft)}
+.c-mute{color:var(--ink-3); background:var(--surface-2); border-color:var(--surface-2)}
+.dot{width:6px; height:6px; border-radius:50%; background:currentColor; flex:none}
+.live .dot{animation:pulse 1.6s ease-in-out infinite}
+.mono{font-family:var(--mono)}
+.addr{font-family:var(--mono); font-size:var(--fs-xs); color:var(--ink-2); word-break:break-all}
+.copy{
+  border:none; background:none; padding:0 2px; cursor:pointer; color:var(--ink-3);
+  font-family:var(--mono); font-size:var(--fs-xs);
+}
+.copy:hover{color:var(--ink)}
+.muted{color:var(--ink-3)}
+.eyebrow{
+  font-family:var(--mono); font-size:var(--fs-xs); text-transform:uppercase;
+  letter-spacing:.08em; color:var(--ink-3); font-weight:500;
+}
+
+/* ── cards / grid ───────────────────────────────────────────────── */
+main{padding:var(--sp-5) 0 var(--sp-6)}
+.card{background:var(--surface); border:1px solid var(--rule); margin:0 0 var(--sp-4)}
+.card-head{
+  display:flex; align-items:baseline; gap:var(--sp-3); flex-wrap:wrap;
+  padding:var(--sp-3) var(--sp-4); border-bottom:1px solid var(--rule);
+}
+.card-head h2{margin:0; font-size:var(--fs-md); font-weight:700; letter-spacing:-.01em}
+.card-head .eyebrow{margin-right:auto}
+.card-body{padding:var(--sp-4)}
+.card-body.flush{padding:0}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4); align-items:start}
+@media (max-width:980px){ .grid2{grid-template-columns:1fr} }
+.kv{display:grid; grid-template-columns:auto 1fr; gap:3px var(--sp-3); font-size:var(--fs-sm)}
+.kv dt{font-family:var(--mono); font-size:var(--fs-xs); color:var(--ink-3); text-transform:uppercase; letter-spacing:.06em; padding-top:3px}
+.kv dd{margin:0; min-width:0}
+.strip{display:flex; flex-wrap:wrap; gap:var(--sp-2) var(--sp-3); align-items:center}
+
+/* ── tables ─────────────────────────────────────────────────────── */
+.tw{overflow-x:auto}
+table{border-collapse:collapse; width:100%; min-width:560px; font-size:var(--fs-sm)}
+th,td{text-align:left; padding:7px var(--sp-3); border-bottom:1px solid var(--rule); vertical-align:top}
+thead th{
+  font-family:var(--mono); font-size:var(--fs-xs); text-transform:uppercase;
+  letter-spacing:.07em; color:var(--ink-3); font-weight:500;
+  border-bottom:1px solid var(--rule-strong); white-space:nowrap;
+  position:sticky; top:0; background:var(--surface);
+}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--surface-2)}
+td.t-name{font-weight:500; white-space:nowrap}
+td.t-ver{font-family:var(--mono); font-size:var(--fs-xs); white-space:nowrap}
+td.t-via{color:var(--ink-3); font-size:var(--fs-xs); font-family:var(--mono)}
+.rowmark{display:inline-block; width:3px; align-self:stretch}
+/* overview: amounts right-aligned, share as a bar the eye can scan down the column */
+td.ovnum{font-family:var(--mono); text-align:right; white-space:nowrap}
+td.ovshare{white-space:nowrap; min-width:132px}
+.ovbar{
+  display:inline-block; width:74px; height:7px; background:var(--surface-2);
+  vertical-align:middle; margin-right:var(--sp-2);
+}
+.ovbar i{display:block; height:100%; background:var(--cl); min-width:1px}
+.ovpct{font-family:var(--mono); font-size:var(--fs-xs); color:var(--ink-2)}
+
+/* ── misc ───────────────────────────────────────────────────────── */
+.banner{
+  border-left:3px solid var(--bad); background:var(--bad-soft); color:var(--bad);
+  padding:var(--sp-2) var(--sp-3); font-size:var(--fs-sm); margin:0 0 var(--sp-3);
+}
+.banner.warn{border-left-color:var(--warn); background:var(--warn-soft); color:var(--warn)}
+.checks{list-style:none; margin:0; padding:0; font-size:var(--fs-sm)}
+.checks li{display:flex; gap:var(--sp-2); padding:4px 0; align-items:flex-start}
+.checks .m{font-family:var(--mono); font-size:var(--fs-xs); padding-top:3px; flex:none; width:1.1em}
+.skel{
+  display:inline-block; height:.85em; min-width:5em; background:var(--surface-2);
+  animation:sk 1.2s ease-in-out infinite;
+}
+@keyframes sk{0%,100%{opacity:.45}50%{opacity:.9}}
+.empty{padding:var(--sp-5); text-align:center; color:var(--ink-3); font-size:var(--fs-sm)}
+.rpcrow{display:grid; grid-template-columns:minmax(160px,auto) 1fr auto; gap:var(--sp-2); align-items:center; margin:0 0 var(--sp-2)}
+.rpcrow .nm{font-size:var(--fs-sm)}
+.rpcrow .nm small{display:block; font-family:var(--mono); font-size:var(--fs-xs); color:var(--ink-3)}
+.foot{border-top:2px solid var(--ink); padding:var(--sp-4) 0 var(--sp-6); color:var(--ink-3); font-size:var(--fs-xs); font-family:var(--mono); line-height:1.8}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-in">
+    <div class="brand">
+      <div class="mark">CCIP</div>
+      <div>
+        <h1>CCIP Lane Watch</h1>
+        <p class="sub">wstETH, stETH and LDO across networks</p>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs"></nav>
+    <div class="spacer"></div>
+    <div class="ctl">
+      <span class="stamp" id="stamp">—</span>
+      <button class="btn btn-primary" id="refresh">refresh</button>
+      <button class="tab" id="settings" title="Settings" aria-label="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 3-.7 2.2-1.6.9-2.2-.5-3 5.2 1.5 1.7v1.8l-1.5 1.7 3 5.2 2.2-.5 1.6.9L9 24h6l.7-2.4 1.6-.9 2.2.5 3-5.2-1.5-1.7v-1.8l1.5-1.7-3-5.2-2.2.5-1.6-.9L15 3Z" transform="translate(2 0) scale(.83)"/><circle cx="12" cy="11.2" r="3.2"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="views"></main>
+
+<footer class="wrap foot">Read-only dashboard · Live: mainnet · Dev: testnet · Refresh to update<br><!-- BUILD_PROVENANCE --></footer>
+
+<!-- Baked snapshot. Empty in the repository; components/dashboard/scripts/build-lane-watch-snapshot.mjs fills it in a
+     copy meant to be published somewhere that cannot reach the registry or any RPC. -->
+<script type="application/json" id="dashboard-data">{}</script>
+<script type="application/json" id="snapshot"></script>
+
+<script>
+"use strict";
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. Constants: selectors, default RPCs, explorers
+// ─────────────────────────────────────────────────────────────────────────────
+const API = "https://docs.chain.link/api/ccip/v1";
+
+// Selectors precomputed with `cast sig`, so no keccak is needed in the browser.
+const SEL = {
+  typeAndVersion:               "0x181f5a77",
+  symbol:                       "0x95d89b41",
+  decimals:                     "0x313ce567",
+  totalSupply:                  "0x18160ddd",
+  balanceOf:                    "0x70a08231",
+  owner:                        "0x8da5cb5b",
+  getArmProxy:                  "0x5246492f",
+  getWrappedNative:             "0xe861e907",
+  getARM:                       "0x2e90aa21",
+  isCursed:                     "0x397796f7",
+  getStaticConfig:              "0x06285c69",
+  getDynamicConfig:             "0x7437ff9f",
+  getAllDestChainConfigs:       "0x89933a51",
+  getAllSourceChainConfigs:     "0x5215505b",
+  getAllInboundImplementations: "0xc3eba222",
+  getAllOutboundImplementations:"0xb5cbfb68",
+  getAllowedCCVs:               "0xa68c61a6",
+  getDestChains:                "0x240b96e9",
+  getTarget:                    "0xf00e6a2a",
+  getFeeAggregator:             "0x9cb406c9",
+  getExpectedNextMessageNumber: "0xe8d80861", // OnRamp 2.0
+  getExpectedNextSequenceNumber:"0x9041be3d", // OnRamp 1.6
+  getPool:                      "0xbbe4f6db", // TokenAdminRegistry.getPool(address)
+  getUnsiloedLiquidity:         "0xaf0e58b9",
+  isSiloed:                     "0x31238ffc", // isSiloed(uint64)
+  // The deployed SiloedLockReleaseTokenPool answers getAvailableTokens(uint64), NOT the
+  // getSiloedTokenBalance(uint64) of the vendored source — that one reverts on chain.
+  // For a siloed destination it returns that destination's own balance; for an unsiloed one
+  // it returns the shared unsiloed liquidity, which is why the overview cannot split the
+  // unsiloed part per network.
+  getAvailableTokens:           "0xf1e73399",
+  stEthPerToken:                "0x035faf82", // wstETH → stETH rate, for the USD column
+  latestRoundData:              "0xfeaf968c", // answer and oracle update timestamp
+  tokenRateOracle:              "0x45a8306f", // stETH's rate oracle
+  tokenRateOutdatedDelay:        "0x882bd77d",
+  tokenRateUpdatesPaused:       "0x842170f7",
+};
+
+// Public RPC defaults. User overrides live in localStorage.
+const DEFAULT_RPC = {
+  // mainnet
+  1:       "https://ethereum-rpc.publicnode.com",
+  143:     "https://rpc.monad.xyz",
+  2741:    "https://api.mainnet.abs.xyz",
+  4326:    "https://mainnet.megaeth.com/rpc",
+  4663:    "https://robinhood-rpc.publicnode.com",
+  9745:    "https://rpc.plasma.to",
+  16661:   "https://evmrpc.0g.ai",
+  57073:   "https://rpc-gel.inkonchain.com",
+  200901:  "https://rpc.bitlayer.org",
+  5734951: "https://rpc.jovay.io",
+  10:      "https://optimism-rpc.publicnode.com",
+  8453:    "https://base-rpc.publicnode.com",
+  42161:   "https://arbitrum-one-rpc.publicnode.com",
+  42220:   "https://forno.celo.org",
+  59144:   "https://linea-rpc.publicnode.com",
+  5000:    "https://mantle-rpc.publicnode.com",
+  // mainnet — Lido's own wstETH networks, needed by the overview tab. Every one of these was
+  // checked from a browser's point of view, without which the page cannot read it at all: the
+  // CORS preflight must pass AND the endpoint must answer a BATCHED eth_call, which several
+  // otherwise-open public endpoints refuse. drpc (1923) answers the preflight by echoing the
+  // caller's Origin rather than sending `*`; that is still valid CORS, and it was checked for
+  // `Origin: null` too, so the page also works opened straight off disk.
+  56:      "https://bsc-rpc.publicnode.com",
+  130:     "https://unichain-rpc.publicnode.com",
+  137:     "https://polygon-bor-rpc.publicnode.com",
+  324:     "https://mainnet.era.zksync.io",
+  1135:    "https://rpc.api.lisk.com",
+  1868:    "https://rpc.soneium.org",
+  1923:    "https://swell.drpc.org",
+  34443:   "https://mainnet.mode.network",
+  48900:   "https://mainnet.zircuit.com",
+  534352:  "https://rpc.scroll.io",
+  // testnet
+  11155111:  "https://ethereum-sepolia-rpc.publicnode.com",
+  5003:      "https://rpc.sepolia.mantle.xyz",
+  84532:     "https://base-sepolia-rpc.publicnode.com",
+  421614:    "https://arbitrum-sepolia-rpc.publicnode.com",
+  11155420:  "https://optimism-sepolia-rpc.publicnode.com",
+  59141:     "https://linea-sepolia-rpc.publicnode.com",
+  17000:     "https://ethereum-holesky-rpc.publicnode.com",
+};
+const EXPLORER = {
+  1:"https://etherscan.io/address/", 10:"https://optimistic.etherscan.io/address/",
+  8453:"https://basescan.org/address/", 42161:"https://arbiscan.io/address/",
+  42220:"https://celoscan.io/address/",
+  59144:"https://lineascan.build/address/", 5000:"https://mantlescan.xyz/address/",
+  143:"https://monadexplorer.com/address/", 2741:"https://abscan.org/address/",
+  9745:"https://plasmascan.to/address/", 16661:"https://chainscan.0g.ai/address/",
+  57073:"https://explorer.inkonchain.com/address/", 200901:"https://www.btrscan.com/address/",
+  4326:"https://www.megaexplorer.xyz/address/",
+  56:"https://bscscan.com/address/", 130:"https://uniscan.xyz/address/",
+  137:"https://polygonscan.com/address/", 324:"https://explorer.zksync.io/address/",
+  1135:"https://blockscout.lisk.com/address/", 1868:"https://soneium.blockscout.com/address/",
+  1923:"https://explorer.swellnetwork.io/address/", 34443:"https://explorer.mode.network/address/",
+  48900:"https://explorer.zircuit.com/address/", 534352:"https://scrollscan.com/address/",
+  11155111:"https://sepolia.etherscan.io/address/", 5003:"https://sepolia.mantlescan.xyz/address/",
+  84532:"https://sepolia.basescan.org/address/", 421614:"https://sepolia.arbiscan.io/address/",
+};
+
+// Build inputs: this checkout's ledger and a single upstream main revision.
+const BUILD = JSON.parse(document.getElementById("dashboard-data").textContent);
+if (!BUILD.live) {
+  document.getElementById("views").textContent = "Build the dashboard first: run just dashboard from the repository root.";
+  throw new Error("Missing dashboard build data; run python3 components/dashboard/scripts/build_dashboard.py");
+}
+const LIDO_SNAPSHOT = BUILD.provenance;
+const LIDO_NETWORKS = BUILD.networks;
+const L1_WSTETH = BUILD.l1Token;
+const LDO = BUILD.ldo;
+const STETH = BUILD.steth;
+const LIVE = BUILD.live;
+const GROUPS = {
+  unclassified: { label: "Ledger deployments · support unclassified", eyebrow: "unclassified", tone: "c-mute", note: "Present in the ledger; support status and bridge metadata have not been classified." },
+  supported: {
+    label: "Endorsed by Lido",
+    eyebrow: "supported",
+    tone: "c-ok",
+    note: `Listed in Lido Multichain in the dated docs snapshot.`,
+  },
+  legacy: {
+    label: "No longer endorsed",
+    eyebrow: "legacy",
+    tone: "c-warn",
+    note: `Legacy in the docs snapshot; outside Lido support and bug bounty.`,
+  },
+  ccip: {
+    label: "Not endorsed — deployed over CCIP",
+    eyebrow: "ccip",
+    tone: "c-cl",
+    note: `CCIP registry deployments; absent from the dated Lido docs snapshot.`,
+  },
+};
+
+const isLiveLane = (a, b) => {
+  const [x, y] = LIVE.lane.map(String);
+  a = String(a); b = String(b);
+  return (a === x && b === y) || (a === y && b === x);
+};
+const oursOn = (chainId) => new Set((LIVE.seeds[String(chainId)] || []).map(([a]) => a.toLowerCase()));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. State
+// ─────────────────────────────────────────────────────────────────────────────
+const LS = "ccip-lane-watch/v2";
+const state = Object.assign({
+  env: "mainnet",
+  rpc: {},                                   // chainId -> url (overrides)
+  lanes: { testnet: [LIVE.lane], mainnet: [[1, 143]] },
+  view: null,
+}, JSON.parse(localStorage.getItem(LS) || "{}"));
+// The active tab chooses its network; saved environment selections are obsolete.
+state.env = "mainnet";
+const save = () => localStorage.setItem(LS, JSON.stringify({
+  env: state.env, rpc: state.rpc, lanes: state.lanes,
+}));
+
+const registry = {};      // env -> {chains, lanes, tokens}
+let busy = false, forceNext = false, runPending = false;
+
+// ── cache ────────────────────────────────────────────────────────────────────
+// Nothing here talks to an RPC on its own. Opening a tab renders whatever the cache holds; the
+// network is touched only when a view has no cached entry at all, or when the refresh button is
+// pressed. Everything a view shows — the crawled contract graph AND the live figures on top of it
+// (block, curse, message counters, balances) — is stored together with the moment it was read, and
+// that moment is what the page displays, so cached numbers can never pass themselves off as
+// current. Entries live in memory and in localStorage, so they survive a reload. An entry is
+// dropped when its chain's RPC changes: a different endpoint may be a different deployment.
+const CACHE_KEY = `ccip-lane-watch/cache/${BUILD.identity}`;
+const CACHE_MAX = 140;   // the overview alone reads 25 chains; 60 evicted the lane tabs' entries
+const structCache = new Map();   // `${env}|${chainId}|${peer}`     -> crawled structure
+const metaCache = new Map();     // `${env}|${chainId}|${token}`    -> pool/token metadata
+(function loadCache() {
+  try {
+    const o = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
+    for (const [k, v] of Object.entries(o.struct || {})) structCache.set(k, v);
+    for (const [k, v] of Object.entries(o.meta || {})) metaCache.set(k, v);
+  } catch {}
+})();
+// ── baked snapshot ───────────────────────────────────────────────────────────
+// This page is only ever as good as its network access, and a published copy has none: an
+// artifact host serves it under a CSP that blocks the registry and every RPC in DEFAULT_RPC.
+// So a build step can bake the very caches this file fills at runtime into the #snapshot block
+// above, and the page then renders from them exactly as it renders from a warm localStorage.
+// It seeds only what is missing — a real session's own reads always win — and it hides nothing:
+// each entry keeps the timestamp of the read that produced it, so the header stamp still reports
+// how old the figures are, and pressing refresh still tries the network and still says when it
+// could not be reached.
+const SNAPSHOT = (() => {
+  try {
+    const raw = (document.getElementById("snapshot") || {}).textContent || "";
+    const s = raw.trim() ? JSON.parse(raw) : null;
+    return s && s.registry && s.identity === BUILD.identity ? s : null;
+  } catch { return null; }
+})();
+let offline = null;   // last network failure, once a snapshot has covered for it
+
+(function seedFromSnapshot() {
+  if (!SNAPSHOT) return;
+  const c = SNAPSHOT.cache || {};
+  for (const [k, v] of Object.entries(c.struct || {})) if (!structCache.has(k)) structCache.set(k, v);
+  for (const [k, v] of Object.entries(c.meta || {}))   if (!metaCache.has(k))   metaCache.set(k, v);
+})();
+
+// Persistence is a bonus, never a precondition: if the quota is blown (or storage is unavailable
+// at all, as in a private window) keep fewer entries, and failing that keep the in-memory cache and
+// give up on persisting. Wiping memory here would make every tab switch re-crawl.
+function saveCache() {
+  const trim = (m, n) => Object.fromEntries([...m.entries()].sort((a, b) => b[1].at - a[1].at).slice(0, n));
+  for (const n of [CACHE_MAX, 20, 5, 0]) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ struct: trim(structCache, n), meta: trim(metaCache, n) }));
+      return;
+    } catch {}
+  }
+}
+function clearCache() {
+  structCache.clear(); metaCache.clear();
+  for (const env of Object.keys(registry)) delete registry[env];
+  localStorage.removeItem(CACHE_KEY); localStorage.removeItem(REG_KEY);
+}
+function cacheAge() {
+  const all = [...structCache.values(), ...metaCache.values()].map((v) => v.at).filter(Boolean);
+  return all.length ? Date.now() - Math.min(...all) : null;
+}
+// The age of the OLDEST thing the current view is showing — that is what the header reports, so a
+// cached number can never look current.
+let dataAt = null;
+const noteDataAge = (t) => { if (t && (dataAt === null || t < dataAt)) dataAt = t; };
+const ago = (ms) => {
+  const s = Math.round(ms / 1000);
+  if (s < 5) return "just now";
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+};
+
+const rpcFor = (id) => state.rpc[id] || DEFAULT_RPC[id] || null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. JSON-RPC (batched) + ABI decoders
+// ─────────────────────────────────────────────────────────────────────────────
+const call = (to, data) => ({ method: "eth_call", params: [{ to, data }, "latest"] });
+const code = (a) => ({ method: "eth_getCode", params: [a, "latest"] });
+const u64arg = (v) => BigInt(v).toString(16).padStart(64, "0");
+const addrArg = (a) => a.replace(/^0x/, "").toLowerCase().padStart(64, "0");
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Public RPCs like to rate-limit eth_call MID-BATCH (rpc.sepolia.mantle.xyz does), answering with
+// an error on only some of the entries. So: ids are local to the batch, responses are placed by
+// them, and throttled or missing calls are retried in smaller slices. A genuine revert (no such
+// getter) stays null and is never retried.
+const rateHint = new Map();   // host -> batch size it actually digests
+async function rpc(url, calls, opts = {}) {
+  const host = new URL(url).host;
+  const chunk0 = opts.chunk || rateHint.get(host) || 15;
+  const out = new Array(calls.length).fill(null);
+  let pending = calls.map((_, i) => i);
+  let lastErr = null;
+  for (let attempt = 0; attempt < 4 && pending.length; attempt++) {
+    if (attempt) await sleep(250 * attempt);
+    const size = attempt ? Math.max(3, chunk0 >> attempt) : chunk0;
+    const next = [];
+    for (let i = 0; i < pending.length; i += size) {
+      const idx = pending.slice(i, i + size);
+      if (i && rateHint.has(host)) await sleep(120);
+      const body = idx.map((n, k) => ({ jsonrpc: "2.0", id: k, method: calls[n].method, params: calls[n].params }));
+      let res;
+      try {
+        const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        res = await r.json();
+      } catch (e) {
+        lastErr = new Error(`RPC ${new URL(url).host}: ${e.message}`);
+        next.push(...idx); continue;
+      }
+      const got = new Set();
+      for (const it of (Array.isArray(res) ? res : [res])) {
+        if (!it || typeof it.id !== "number" || it.id < 0 || it.id >= idx.length) continue;
+        got.add(it.id);
+        const n = idx[it.id];
+        if (it.error) {
+          if (/rate limit|too many|429|timeout|busy/i.test(it.error.message || "")) {
+            next.push(n);
+            rateHint.set(host, Math.max(3, Math.floor(idx.length / 2)));   // remember the host's ceiling
+          }
+        } else out[n] = it.result ?? null;
+      }
+      idx.forEach((n, k) => { if (!got.has(k)) next.push(n); });
+    }
+    pending = next;
+  }
+  if (pending.length === calls.length && lastErr) throw lastErr;   // answered nothing at all
+  return out;
+}
+
+// Independent reads started in the same turn share one endpoint batch. Identical
+// calls (notably eth_chainId) are sent once; a failed subcall stays null locally.
+const rpcReadQueue = new Map();
+function rpcRead(url, calls) {
+  return new Promise((resolve, reject) => {
+    let queue = rpcReadQueue.get(url);
+    if (!queue) {
+      queue = []; rpcReadQueue.set(url, queue);
+      Promise.resolve().then(async () => {
+        rpcReadQueue.delete(url);
+        const unique = [], indices = new Map();
+        for (const job of queue) job.positions = job.calls.map((c) => {
+          const key = JSON.stringify(c);
+          if (!indices.has(key)) { indices.set(key, unique.length); unique.push(c); }
+          return indices.get(key);
+        });
+        try {
+          const results = await rpc(url, unique);
+          for (const job of queue) job.resolve(job.positions.map((i) => results[i]));
+        } catch (e) { for (const job of queue) job.reject(e); }
+      });
+    }
+    queue.push({ calls, resolve, reject });
+  });
+}
+
+const words = (hex) => {
+  const h = (hex || "").replace(/^0x/, "");
+  const out = [];
+  for (let i = 0; i + 64 <= h.length; i += 64) out.push(h.slice(i, i + 64));
+  return out;
+};
+// Address-shaped words: 12 zero high bytes, but not a "small number" (offset / length / selector).
+const addrWords = (hex) => [...new Set(
+  words(hex).filter((w) => /^0{24}[0-9a-f]{40}$/.test(w) && !/^0{48}/.test(w)).map((w) => "0x" + w.slice(24))
+)];
+const decAddr = (hex) => { const w = words(hex)[0]; return w ? "0x" + w.slice(24) : null; };
+const decUint = (hex) => { const w = words(hex)[0]; return w ? BigInt("0x" + w) : null; };
+const decBool = (hex) => { const v = decUint(hex); return v === null ? null : v !== 0n; };
+function decStr(hex) {
+  const h = (hex || "").replace(/^0x/, "");
+  if (h.length < 128) return null;
+  try {
+    const off = Number(BigInt("0x" + h.slice(0, 64))) * 2;
+    const len = Number(BigInt("0x" + h.slice(off, off + 64)));
+    if (!len || len > 256) return null;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = parseInt(h.slice(off + 64 + i * 2, off + 64 + i * 2 + 2), 16);
+    const s = new TextDecoder().decode(bytes).trim();
+    return /^[\x20-\x7e]+$/.test(s) ? s : null;
+  } catch { return null; }
+}
+function fmtUnits(v, dec = 18, prec = 4) {
+  if (v === null || v === undefined) return "—";
+  const neg = v < 0n; if (neg) v = -v;
+  const base = 10n ** BigInt(dec);
+  const int = v / base, frac = v % base;
+  const fs = frac.toString().padStart(dec, "0").slice(0, prec).replace(/0+$/, "");
+  return (neg ? "-" : "") + int.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (fs ? "." + fs : "");
+}
+const short = (a) => a ? a.slice(0, 6) + "…" + a.slice(-4) : "—";
+const eq = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. Chainlink registry
+// ─────────────────────────────────────────────────────────────────────────────
+// The registry is kept like everything else: fetched once, then served from storage until the
+// refresh button asks for it again. It is ~0.7 MB for mainnet, so a failure to persist it is
+// shrugged off — the session still has it in memory.
+const REG_KEY = "ccip-lane-watch/registry/v1";
+const regDisk = () => { try { return JSON.parse(localStorage.getItem(REG_KEY) || "{}"); } catch { return {}; } };
+function regAge(env) { const d = regDisk()[env]; return d && d.at ? Date.now() - d.at : null; }
+function overlayOurs(env, data) {
+  if (env !== LIVE.env || !data) return data;
+  const wst = { ...((data.tokens || {}).wstETH || {}) };
+  for (const [id, row] of Object.entries(LIVE.tokens)) wst[id] = { ...row };
+  data.tokens = { ...(data.tokens || {}), wstETH: wst };
+  return data;
+}
+async function loadRegistry(env, force) {
+  if (!force && registry[env]) return registry[env];
+  const baked = () => (SNAPSHOT && SNAPSHOT.registry && SNAPSHOT.registry[env]) || null;
+  if (!force) {
+    const disk = regDisk()[env];
+    if (disk && disk.chains) { registry[env] = overlayOurs(env, disk); return registry[env]; }
+    const snap = baked();
+    if (snap && snap.chains) { registry[env] = overlayOurs(env, snap); return registry[env]; }
+  }
+  const get = (p) => fetch(`${API}/${p}`).then((r) => {
+    if (!r.ok) throw new Error(`registry API ${p}: HTTP ${r.status}`);
+    return r.json();
+  });
+  let chains, lanes, tokens;
+  try {
+    [chains, lanes, tokens] = await Promise.all([
+      get(`chains?environment=${env}&outputKey=chainId`),
+      get(`lanes?environment=${env}&outputKey=chainId`),
+      get(`tokens?environment=${env}`),
+    ]);
+  } catch (e) {
+    // Unreachable registry with a snapshot to fall back on is a degraded page, not a broken one.
+    const snap = baked();
+    if (!snap || !snap.chains) throw e;
+    offline = e.message || String(e);
+    registry[env] = overlayOurs(env, snap);
+    return registry[env];
+  }
+  const raw = { chains: chains.data.evm, lanes: lanes.data, tokens: tokens.data, at: Date.now() };
+  const disk = regDisk(); disk[env] = raw;
+  try { localStorage.setItem(REG_KEY, JSON.stringify(disk)); }
+  catch { try { localStorage.setItem(REG_KEY, JSON.stringify({ [env]: raw })); } catch {} }
+  registry[env] = overlayOurs(env, raw);
+  return registry[env];
+}
+
+// In a lane keyed "A_to_B" BOTH ramps live on A: onRamp is A's outbound ramp, offRamp is A's
+// inbound ramp for the reverse direction. Verified on-chain: the offRamp of 11155111_to_5003 has
+// bytecode on Sepolia and none on Mantle Sepolia.
+function laneRamps(env, chainId, peerId /* optional */) {
+  const out = [];
+  for (const l of Object.values(registry[env].lanes)) {
+    if (String(l.sourceChain.chainId) !== String(chainId)) continue;
+    const peer = String(l.destinationChain.chainId);
+    if (peerId && peer !== String(peerId)) continue;
+    for (const [kind, r] of [["onRamp", l.onRamp], ["offRamp", l.offRamp]]) {
+      if (r && r.address) out.push({ kind, addr: r.address.toLowerCase(), ver: r.version, peer, peerName: l.destinationChain.displayName, tokens: l.supportedTokens || [] });
+    }
+  }
+  return out;
+}
+const isLegacyRamp = (v) => /^1\.[0-5](\.|$)/.test(v || "");
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. Crawling the contract graph (same logic as script/ccip-inventory.sh)
+// ─────────────────────────────────────────────────────────────────────────────
+function probesFor(type) {
+  if (/^Router/.test(type))                       return ["getArmProxy", "getWrappedNative"];
+  if (/^(ARMProxy|RMNProxy)/.test(type))          return ["getARM"];
+  if (/^(OnRamp|EVM2EVMOnRamp)/.test(type))       return ["getStaticConfig", "getDynamicConfig", "getAllDestChainConfigs"];
+  if (/^(OffRamp|EVM2EVMOffRamp|CCVAggregator)/.test(type)) return ["getStaticConfig", "getDynamicConfig", "getAllSourceChainConfigs"];
+  if (/^(FeeQuoter|PriceRegistry)/.test(type))    return ["getStaticConfig"];
+  if (/^VersionedVerifierResolver/.test(type))    return ["getAllInboundImplementations", "getAllOutboundImplementations", "getFeeAggregator"];
+  if (/^Proxy/.test(type))                        return ["getTarget", "getFeeAggregator"];
+  if (/^Executor/.test(type))                     return ["getAllowedCCVs", "getDestChains", "getDynamicConfig"];
+  if (/Verifier|Validator/.test(type))            return ["getDynamicConfig", "getStaticConfig"];
+  if (/^(TokenAdminRegistry|TokenPoolFactory|RegistryModuleOwnerCustom|NonceManager|CommitStore|ERC20|LinkToken|unknown)/.test(type)) return [];
+  return ["getStaticConfig", "getDynamicConfig", "getTarget"];
+}
+// Token pools are not system infrastructure; they are also the shape a PEER chain's ramp address
+// takes when read out of a lane config (in 1.6 it is stored as a 32-byte padded address).
+const isSystemType = (t) => /^TokenPoolFactory/.test(t) || !/TokenPool|Pool$/.test(t);
+function rank(t) {
+  const r = [[/^Router/, 10], [/^(ARMProxy|RMNProxy)/, 20], [/^RMNRemote/, 21], [/^RMNHome/, 22], [/^RMN/, 23],
+    [/^(FeeQuoter|PriceRegistry)/, 30], [/^WrappedNative/, 31], [/^(FeeToken|LinkToken)/, 32], [/^NonceManager/, 35],
+    [/^TokenAdminRegistry/, 40], [/^RegistryModuleOwnerCustom/, 41], [/^TokenPoolFactory/, 42],
+    [/^PoolOperationManager/, 43], [/AdvancedPoolHooks/, 44], [/LockBox/, 45],
+    [/^(OnRamp|EVM2EVMOnRamp)/, 50], [/^(OffRamp|EVM2EVMOffRamp|CCVAggregator)/, 51], [/^CommitStore/, 52],
+    [/^VersionedVerifierResolver/, 60], [/^Proxy/, 61], [/Verifier|Validator/, 62], [/^Executor/, 63],
+    [/Pool/, 75], [/^ERC20/, 80], [/^unknown/, 90]];
+  for (const [re, n] of r) if (re.test(t)) return n;
+  return 70;
+}
+
+// The cacheable half: which contracts exist and at what versions. One multi-round crawl.
+async function crawlStructure(env, chainId, peerId) {
+  const entry = registry[env].chains[String(chainId)];
+  const url = rpcFor(chainId);
+  const res = { chainId: String(chainId), url, at: Date.now(), contracts: [], nocode: [], hidden: 0,
+                error: null, ms: 0, rows: [], ramps: [] };
+  if (!entry) { res.error = `chain ${chainId} is not in the ${env} registry`; return res; }
+  if (!url)   { res.error = "no RPC configured — see the settings tab"; return res; }
+
+  const via = new Map();                      // addr -> Set(provenance)
+  const seen = new Set();
+  let queue = [];
+  const add = (a, src) => {
+    if (!a) return;
+    a = a.toLowerCase();
+    if (a === "0x0000000000000000000000000000000000000000") return;
+    (via.get(a) || via.set(a, new Set()).get(a)).add(src);
+    if (!seen.has(a)) queue.push(a);
+  };
+  const apiSeeded = new Set();
+  for (const [k, src] of [["router", "registry:router"], ["rmn", "registry:rmn"],
+       ["registryModule", "registry:registryModule"], ["tokenAdminRegistry", "registry:tokenAdminRegistry"],
+       ["tokenPoolFactory", "registry:tokenPoolFactory"]]) {
+    if (entry[k]) { add(entry[k], src); apiSeeded.add(entry[k].toLowerCase()); }
+  }
+  res.ramps = laneRamps(env, chainId, peerId);
+  for (const r of res.ramps) {
+    if (isLegacyRamp(r.ver)) continue;
+    add(r.addr, `lanes:${r.kind}`); apiSeeded.add(r.addr);
+  }
+  const oursAddrs = oursOn(chainId);
+  if (env === LIVE.env) {
+    for (const [addr, src] of (LIVE.seeds[String(chainId)] || [])) {
+      add(addr, src); apiSeeded.add(addr.toLowerCase());
+    }
+  }
+
+  const t0 = performance.now();
+  try {
+    for (let round = 0; round < 8 && queue.length; round++) {
+      const batch = [...new Set(queue)].filter((a) => !seen.has(a));
+      queue = [];
+      if (!batch.length) break;
+      batch.forEach((a) => seen.add(a));
+
+      // Round 1: typeAndVersion / symbol. eth_getCode is asked ONLY for API-seeded addresses —
+      // an OnRamp's bytecode is 48 KB per call, and for everything else typeAndVersion itself
+      // answers "is this a contract": unnamed addresses are hidden from the table anyway.
+      const needCode = batch.filter((a) => apiSeeded.has(a));
+      const ident = await rpc(url, [
+        ...batch.flatMap((a) => [call(a, SEL.typeAndVersion), call(a, SEL.symbol)]),
+        ...needCode.map((a) => code(a)),
+      ]);
+      const found = [];
+      batch.forEach((a, i) => {
+        const tv = ident[i * 2], sym = ident[i * 2 + 1];
+        const ci = needCode.indexOf(a);
+        const c = ci < 0 ? null : ident[batch.length * 2 + ci];
+        const s = decStr(tv);
+        let type, ver = null;
+        if (s) { const m = s.match(/^(.*?)\s+([\d.]+)$/); type = m ? m[1] : s; ver = m ? m[2] : null; }
+        else { const sy = decStr(sym); type = sy ? `ERC20 ${sy}` : "unknown"; }
+        if (type === "unknown" && ci >= 0 && (!c || c === "0x")) { res.nocode.push(a); return; }
+        found.push({ addr: a, type, ver });
+      });
+      res.contracts.push(...found);
+
+      // Round 2: config getters of whatever was found
+      const probes = [];
+      for (const c of found) {
+        if (!isSystemType(c.type)) continue;
+        for (const p of probesFor(c.type)) probes.push({ c, p });
+      }
+      if (!probes.length) continue;
+      const outs = await rpc(url, probes.map(({ c, p }) => call(c.addr, SEL[p])));
+      probes.forEach(({ c, p }, i) => {
+        for (const w of addrWords(outs[i])) add(w, `${c.type}${c.ver ? " " + c.ver : ""} · ${p}`);
+      });
+      if (res.contracts.length > 400) break;
+    }
+  } catch (e) { res.error = e.message; }
+  res.ms = Math.round(performance.now() - t0);
+
+  // Table rows: the type comes from typeAndVersion, the provenance from what it was read out of.
+  const rows = [];
+  for (const c of res.contracts) {
+    const src = [...(via.get(c.addr) || [])].sort();
+    let type = c.type;
+    if (/^ERC20 /.test(type)) {
+      if (src.some((s) => /getWrappedNative/.test(s)))            type = `WrappedNative (${type.slice(6)})`;
+      else if (src.some((s) => /(FeeQuoter|PriceRegistry).*getStaticConfig/.test(s))) type = `FeeToken (${type.slice(6)})`;
+      else if (!apiSeeded.has(c.addr)) { res.hidden++; continue; }
+    }
+    if (type === "unknown" && !apiSeeded.has(c.addr)) { res.hidden++; continue; }
+    if (!isSystemType(type) && !oursAddrs.has(c.addr)) { res.hidden++; continue; }
+    const lanesFor = res.ramps.filter((r) => r.addr === c.addr);
+    rows.push({ addr: c.addr, type, ver: c.ver, src, rank: rank(type), ours: oursAddrs.has(c.addr),
+                lanes: lanesFor.length ? `${new Set(lanesFor.map((r) => r.peer)).size} ${lanesFor[0].kind === "onRamp" ? "out" : "in"}` : null });
+  }
+  rows.sort((a, b) => a.rank - b.rank || (b.ver || "").localeCompare(a.ver || "") || a.type.localeCompare(b.type));
+  // one address can show up twice (say, as both onRamp and offRamp) — collapse it
+  res.rows = rows.filter((r, i) => rows.findIndex((x) => x.addr === r.addr) === i);
+  delete res.contracts;                       // raw crawl leftovers do not need to be cached
+  return res;
+}
+
+// The live half: one batched round-trip. Block height, RMN curse, per-lane message counters.
+async function probeLive(url, st, peerSel) {
+  const out = { block: null, cursed: null, counters: {}, ms: 0, liveError: null };
+  if (!url || !st.rows.length) return out;
+  const armProxy = st.rows.find((r) => /^(ARMProxy|RMNProxy)/.test(r.type));
+  const onRamps = st.rows.filter((r) => /^(OnRamp|EVM2EVMOnRamp)/.test(r.type));
+  const calls = [{ method: "eth_blockNumber", params: [] }];
+  if (armProxy) calls.push(call(armProxy.addr, SEL.isCursed));
+  const counterOf = [];
+  if (peerSel) for (const o of onRamps) {
+    counterOf.push(o);
+    calls.push(call(o.addr, SEL.getExpectedNextMessageNumber + u64arg(peerSel)));
+    calls.push(call(o.addr, SEL.getExpectedNextSequenceNumber + u64arg(peerSel)));
+  }
+  const t0 = performance.now();
+  try {
+    const lr = await rpc(url, calls);
+    out.block = lr[0] ? Number(BigInt(lr[0])) : null;
+    let k = 1;
+    if (armProxy) out.cursed = decBool(lr[k++]);
+    for (const o of counterOf) {
+      const a = decUint(lr[k++]), b = decUint(lr[k++]);
+      const v = a !== null ? a : b;
+      // string, not BigInt: this object gets JSON.stringify'd into the cache
+      if (v !== null) out.counters[o.addr] = { type: o.type, ver: o.ver, next: v.toString() };
+    }
+  } catch (e) { out.liveError = e.message; }
+  out.ms = Math.round(performance.now() - t0);
+  return out;
+}
+
+// An address that answered nothing is indistinguishable from one whose typeAndVersion() simply
+// reverted, and a throttled RPC produces exactly that: rows typed "unknown". Caching such a run
+// would freeze a half-read chain in place until someone hits refresh, so it is refused.
+const cacheable = (st) => !st.error && st.rows.length && !st.rows.some((r) => r.type === "unknown");
+
+// Serves the cache when there is one. Reads from the chain only when there is nothing cached for
+// this chain+peer, or when `force` (the refresh button) says to.
+async function crawl(env, chainId, peerId, force) {
+  const entry = registry[env].chains[String(chainId)];
+  const url = rpcFor(chainId);
+  const key = `${env}|${chainId}|${peerId || ""}`;
+  let st = force ? null : structCache.get(key);
+  if (st && st.url !== url) st = null;        // another endpoint may be another deployment
+  let live = st ? st.live : null;
+  let ms = 0;
+
+  if (!st) {
+    st = await crawlStructure(env, chainId, peerId);
+    ms += st.ms;
+    live = null;                              // a new structure needs its own live reading
+  }
+  if (!live) {
+    const peerSel = peerId && registry[env].chains[String(peerId)]
+      ? registry[env].chains[String(peerId)].selector : null;
+    live = await probeLive(url, st, peerSel);
+    live.at = Date.now();
+    ms += live.ms;
+    if (cacheable(st)) { st.live = live; structCache.set(key, st); saveCache(); }
+  }
+
+  const res = { ...live, entry, chainId: String(chainId), url, rows: st.rows, ramps: st.ramps,
+                hidden: st.hidden, nocode: st.nocode,
+                structAt: st.at, liveAt: live.at || null, latency: ms || null,
+                error: st.error || live.liveError };
+  res.checks = buildChecks(res, entry);
+  noteDataAge(res.liveAt);
+  return res;
+}
+
+function buildChecks(res, entry) {
+  const out = [];
+  entry = entry || {};   // chain absent from the registry: keep the checks empty, do not throw
+  const find = (a) => res.rows.find((r) => eq(r.addr, a));
+  const arm = res.rows.find((r) => /^(ARMProxy|RMNProxy)/.test(r.type));
+  if (arm && entry.rmn) out.push(eq(arm.addr, entry.rmn)
+    ? { s: "ok", t: "router.getArmProxy() matches registry.rmn" }
+    : { s: "bad", t: `ARMProxy on chain is ${short(arm.addr)}, registry says ${short(entry.rmn)}` });
+  for (const k of ["router", "rmn", "registryModule", "tokenAdminRegistry", "tokenPoolFactory"]) {
+    if (entry[k] && res.nocode.includes(entry[k].toLowerCase()))
+      out.push({ s: "bad", t: `registry.${k} = ${short(entry[k])} has no bytecode on this RPC` });
+  }
+  const seenRamp = new Set();
+  for (const r of res.ramps) {
+    if (isLegacyRamp(r.ver) || seenRamp.has(r.addr + r.kind)) continue;
+    seenRamp.add(r.addr + r.kind);
+    const row = find(r.addr);
+    if (!row) out.push({ s: "bad", t: `${r.kind} ${short(r.addr)} from the API was not found on chain` });
+    else if (row.ver !== r.ver) out.push({ s: "warn", t: `${r.kind} ${short(r.addr)}: API says ${r.ver}, the chain says ${row.type} ${row.ver}` });
+    else out.push({ s: "ok", t: `${r.kind} ${short(r.addr)} = ${row.type} ${row.ver}` });
+  }
+  if (res.cursed === true) out.unshift({ s: "bad", t: "RMN: chain is cursed (isCursed = true) — lanes are frozen" });
+  else if (res.cursed === false) out.push({ s: "ok", t: "RMN: not cursed (isCursed = false)" });
+  if (res.hidden) out.push({ s: "mute", t: `${res.hidden} address(es) hidden: token pools, plus everything that did not answer typeAndVersion — fee aggregators, admins, peer-chain ramps read out of lane configs` });
+  const oursN = (res.rows || []).filter((r) => r.ours).length;
+  if (oursN) out.push({ s: "mute", t: `${oursN} testnet ${LIVE.deployedAt} contract(s) overlaid from ${LIVE.record} — not in Chainlink's registry` });
+  return out;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. Render
+// ─────────────────────────────────────────────────────────────────────────────
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const el = (id) => document.getElementById(id);
+const views = el("views");
+const tabStatus = new Map();
+
+function addrCell(chainId, a, label) {
+  if (!a) return '<span class="muted">—</span>';
+  const ex = EXPLORER[String(chainId)];
+  const txt = esc(label || a);
+  // Addresses on the token tab come from the registry API, not from our own decoding — escape them
+  // rather than trusting an external service to only ever hand back clean hex.
+  const link = ex ? `<a class="addr" href="${esc(ex + a)}" target="_blank" rel="noopener">${txt}</a>`
+                  : `<span class="addr">${txt}</span>`;
+  return `${link} <button class="copy" data-copy="${esc(a)}" title="copy">⧉</button>`;
+}
+const chipFor = (s) => ({ ok: "c-ok", bad: "c-bad", warn: "c-warn", mute: "c-mute" }[s] || "c-mute");
+const markFor = (s) => ({ ok: "✓", bad: "✗", warn: "⚠", mute: "·" }[s] || "·");
+
+function chainHeader(res) {
+  const e = res.entry || {};
+  const age = res.block ? `block <b>${res.block.toLocaleString("en-US")}</b>` : "";
+  const chips = [];
+  if (res.cursed === true)  chips.push('<span class="chip c-bad"><span class="dot"></span>RMN: cursed</span>');
+  if (res.cursed === false) chips.push('<span class="chip c-ok live"><span class="dot"></span>RMN: ok</span>');
+  if (res.latency) chips.push(`<span class="chip c-mute">read in ${res.latency} ms</span>`);
+  if (differsFromBoard(res.liveAt)) chips.push(`<span class="chip ${Date.now() - res.liveAt < 5000 ? "c-cl" : "c-mute"}"
+      title="press refresh to re-read this chain">read ${esc(minuteTime(res.liveAt))}</span>`);
+  return `
+    <div class="card-head">
+      <span class="eyebrow">${esc(e.displayName || res.chainId)}</span>
+      ${chips.join(" ")}
+    </div>
+    <div class="card-body">
+      <dl class="kv">
+        <dt>chain id</dt><dd class="mono">${esc(res.chainId)}</dd>
+        <dt>selector</dt><dd class="mono">${esc(e.selector || "—")}</dd>
+        <dt>fee tokens</dt><dd>${esc((e.feeTokens || []).join(", ") || "—")}</dd>
+        <dt>rpc</dt><dd class="addr">${esc(res.url || "not configured")} ${age ? "· " + age : ""}</dd>
+      </dl>
+    </div>`;
+}
+
+function contractsTable(res) {
+  if (res.error && !res.rows) return `<div class="banner">${esc(res.error)}</div>`;
+  if (!res.rows || !res.rows.length) return '<div class="empty">nothing found</div>';
+  const body = res.rows.map((r) => `
+    <tr>
+      <td class="t-name">${r.ours ? '<span class="chip c-ours">ours</span> ' : ""}${esc(r.type)}</td>
+      <td class="t-ver">${esc(r.ver || "—")}</td>
+      <td>${addrCell(res.chainId, r.addr, short(r.addr))}</td>
+      <td class="t-ver">${r.lanes ? esc(r.lanes) : '<span class="muted">—</span>'}</td>
+      <td class="t-via" title="${esc(r.src.join("\n"))}">${esc(r.src[0] || "")}${r.src.length > 1 ? ` +${r.src.length - 1}` : ""}</td>
+    </tr>`).join("");
+  return `<div class="tw"><table>
+      <thead><tr><th>contract</th><th>version</th><th>address</th><th>lanes</th><th>discovered via</th></tr></thead>
+      <tbody>${body}</tbody></table></div>`;
+}
+
+function checksList(res) {
+  if (!res.checks || !res.checks.length) return "";
+  return `<ul class="checks">${res.checks.map((c) =>
+    `<li><span class="m" style="color:var(--${c.s === "mute" ? "ink-3" : c.s})">${markFor(c.s)}</span><span>${esc(c.t)}</span></li>`).join("")}</ul>`;
+}
+
+function sidePanel(res) {
+  const err = res.error ? `<div class="banner">${esc(res.error)}</div>` : "";
+  return `<section class="card">
+    ${chainHeader(res)}
+    ${err ? `<div class="card-body">${err}</div>` : ""}
+    <div class="card-body flush">${contractsTable(res)}</div>
+    <div class="card-body" style="border-top:1px solid var(--rule)">${checksList(res)}</div>
+  </section>`;
+}
+
+// ── lane tab ─────────────────────────────────────────────────────────────────
+// A lane carries dozens of tokens; the table needs the watched one plus a count, rest in title.
+function tokensCell(tokens) {
+  const t = tokens || [];
+  if (!t.length) return '<span class="muted">—</span>';
+  const hit = t.find((x) => x.toLowerCase() === String(state.token).toLowerCase());
+  const rest = t.length - (hit ? 1 : 0);
+  return `<span title="${esc(t.join(", "))}">${hit ? `<span class="chip c-cl">${esc(hit)}</span> ` : ""}${rest ? `+${rest} more` : ""}</span>`;
+}
+
+function laneSummary(env, a, b, ra, rb) {
+  const nameOf = (id) => (registry[env].chains[String(id)] || {}).displayName || id;
+  const rows = [];
+  for (const [side, res, from, to] of [["A", ra, a, b], ["B", rb, b, a]]) {
+    for (const r of (res.ramps || [])) {
+      if (isLegacyRamp(r.ver)) continue;
+      const row = (res.rows || []).find((x) => eq(x.addr, r.addr));
+      const cnt = res.counters[r.addr];
+      const ok = row && row.ver === r.ver;
+      rows.push(`<tr>
+        <td class="t-name">${esc(nameOf(from))} ${r.kind === "onRamp" ? "→" : "←"} ${esc(nameOf(to))}</td>
+        <td class="t-ver">${r.kind}</td>
+        <td class="t-ver">${esc(r.ver)}</td>
+        <td class="t-ver">${row ? `<span class="chip ${ok ? "c-ok" : "c-warn"}">${esc(row.type)} ${esc(row.ver || "")}</span>`
+                                : '<span class="chip c-bad">not on chain</span>'}</td>
+        <td>${addrCell(from, r.addr, short(r.addr))}</td>
+        <td class="t-ver">${cnt ? esc(cnt.next.toString()) : '<span class="muted">—</span>'}</td>
+        <td class="t-via">${tokensCell(r.tokens)}</td>
+      </tr>`);
+    }
+  }
+  return `<section class="card">
+    <div class="card-head">
+      <span class="eyebrow">lane</span>
+      <h2>${esc(env === "mainnet" ? liveViews().find((v) => v.id === `lane-${a}-${b}`)?.label || `${nameOf(a)} ↔ ${nameOf(b)}` : `${nameOf(a)} ↔ ${nameOf(b)}`)}</h2>
+      <span class="stamp">${isLiveLane(a, b)
+        ? `testnet v3 · deployed ${esc(LIVE.deployedAt)} · <a href="roles.html">roles ↗</a>`
+        : "both ramps of an “A_to_B” entry live on A"}</span>
+    </div>
+    <div class="card-body flush"><div class="tw"><table>
+      <thead><tr><th>direction</th><th>ramp</th><th>API version</th><th>typeAndVersion</th><th>address</th><th>next msg #</th><th>lane tokens</th></tr></thead>
+      <tbody>${rows.join("") || '<tr><td colspan="7" class="muted">no ≥1.6 lanes between these chains</td></tr>'}</tbody>
+    </table></div></div>
+  </section>`;
+}
+
+async function viewLane(a, b, force) {
+  const [ra, rb] = await Promise.all([crawl(state.env, a, b, force), crawl(state.env, b, a, force)]);
+  const worst = [ra, rb].flatMap((r) => (r.checks || []).map((c) => c.s));
+  tabStatus.set(`lane-${a}-${b}`, worst.includes("bad") || ra.error || rb.error ? "bad" : worst.includes("warn") ? "warn" : "ok");
+  views.innerHTML = laneSummary(state.env, a, b, ra, rb) + `<div class="grid2">${sidePanel(ra)}${sidePanel(rb)}</div>`;
+}
+
+// ── LDO overview ─────────────────────────────────────────────────────────────
+// Bridge metadata identifies a representation; totalSupply measures outstanding
+// destination tokens. Neither a missing catalogue entry nor an RPC failure means zero.
+const ldo = { rows: [], supply: new Map(), quote: null, quoteError: null };
+const strictUint = (hex) => /^0x[0-9a-fA-F]{64}$/.test(hex || "") ? decUint(hex) : null;
+const chainMatches = (hex, chain) => /^0x[0-9a-fA-F]+$/.test(hex || "") && BigInt(hex) === BigInt(chain);
+const scaleAmount = (v, decimals) => v * 10n ** 18n / 10n ** BigInt(decimals);
+const formatAmount = (v) => v > 0n && v < 10n ** 16n ? "&lt;0.01" : fmtUnits(v, 18, 2);
+const formatUsd = (v) => "$" + fmtUnits(v + 5n * 10n ** 17n, 18, 0);
+
+function ldoRows(networks) {
+  const rows = LDO.networks.map((r) => ({ ...r, chainId: String(r.chainId), key: rowKey(r.chainId, r.token) }));
+  const known = new Set(rows.map((r) => r.chainId));
+  for (const r of networks) {
+    const id = String(r.chainId);
+    if (id === "1" || known.has(id)) continue;
+    known.add(id);
+    rows.push({ chainId: id, name: r.name, token: null, key: `${id}:unknown` });
+  }
+  return rows; // One destination token is counted once even if wstETH has several rows.
+}
+
+async function destinationSupply(row, force, namespace) {
+  const url = rpcFor(row.chainId);
+  if (!url) return { v: null, at: null, err: "no RPC configured" };
+  const key = `${namespace}-supply|${row.key}`;
+  const cached = force ? null : metaCache.get(key);
+  if (cached?.url === url) return { v: ovBig(cached.supply), at: cached.at, err: null };
+  try {
+    const r = await rpcRead(url, [{ method: "eth_chainId", params: [] },
+      call(row.token, SEL.decimals), call(row.token, SEL.totalSupply)]);
+    if (!chainMatches(r[0], row.chainId)) throw Error("RPC chain does not match this network");
+    if (strictUint(r[1]) !== BigInt(row.decimals)) throw Error("token decimals unavailable or mismatched");
+    const raw = strictUint(r[2]);
+    if (raw === null) throw Error("supply unavailable");
+    const v = scaleAmount(raw, row.decimals), at = Date.now();
+    metaCache.set(key, { url, at, supply: v.toString() });
+    saveCache();
+    return { v, at, err: null };
+  } catch (e) { return { v: null, at: null, err: e.message }; }
+}
+
+const ldoSupply = (row, force) => destinationSupply(row, force, 'ldo');
+const stethSupply = (row, force) => destinationSupply(row, force, 'steth');
+
+function oracleRound(hex, decimals, scale, label, rate = false) {
+  if (strictUint(decimals) !== BigInt(scale)) throw Error(`${label}: decimals unavailable or mismatched`);
+  if (!/^0x[0-9a-fA-F]{320}$/.test(hex || "")) throw Error(`${label}: ${rate ? 'Rate' : 'price'} unavailable`);
+  const w = words(hex).map((v) => BigInt("0x" + v));
+  const answer = BigInt.asIntN(256, w[1]);
+  if (answer <= 0n || w[0] === 0n || w[4] < w[0] || w[3] === 0n || w[3] > 8640000000000n ||
+      rate && (w[2] === 0n || w[2] > 8640000000000n))
+    throw Error(`${label}: ${rate ? 'Invalid rate round' : 'invalid oracle round'}`);
+  return { answer: answer.toString(), startedAt: Number(w[2]) * 1000, updatedAt: Number(w[3]) * 1000 };
+}
+const feedRound = (hex, decimals, feed) => oracleRound(hex, decimals, feed.decimals, feed.pair);
+
+// A two-minute allowance handles small device/block-clock differences. It does
+// not extend the heartbeat. Temporal validity is derived afresh, never cached as err.
+const PRICE_CLOCK_SKEW_MS = 120000;
+function feedPriceError(quote, feeds) {
+  if (!quote) return "Loading USD price";
+  if (quote.err) return quote.err;
+  const now = Date.now();
+  for (let i = 0; i < feeds.length; i++) {
+    const round = quote.rounds[i], feed = feeds[i];
+    if (!round || !Number.isFinite(round.updatedAt) || round.updatedAt <= 0 || round.updatedAt > now + PRICE_CLOCK_SKEW_MS)
+      return `${feed.pair}: invalid oracle timestamp`;
+    if (now - round.updatedAt > feed.maxAgeSeconds * 1000) return `${feed.pair}: stale price`;
+  }
+  return null;
+}
+
+const ldoPriceError = (quote) => feedPriceError(quote, LDO.priceFeeds);
+const priceReads = new Map();
+async function feedQuote(namespace, feeds, force) {
+  const url = rpcFor(1), key = `${namespace}-price|ethereum|v2`;
+  if (!url) return { err: "USD unavailable: no Ethereum RPC", at: null };
+  const cached = force ? null : metaCache.get(key);
+  if (cached?.url === url && !feedPriceError(cached, feeds)) return cached;
+  const pendingKey = `${key}|${url}|${Boolean(force)}`;
+  if (priceReads.has(pendingKey)) return priceReads.get(pendingKey);
+  const read = (async () => {
+    try {
+      const r = await rpcRead(url, [{ method: "eth_chainId", params: [] }, ...feeds.flatMap((f) =>
+        [call(f.address, SEL.decimals), call(f.address, SEL.latestRoundData)])]);
+      if (!chainMatches(r[0], 1)) throw Error("USD unavailable: RPC is not Ethereum mainnet");
+      const quote = { url, at: Date.now(), rounds: feeds.map((f, i) => feedRound(r[2 + i * 2], r[1 + i * 2], f)), err: null };
+      metaCache.set(key, quote); saveCache();
+      return quote;
+    } catch (e) { return { err: e.message, at: null }; }
+  })();
+  priceReads.set(pendingKey, read);
+  try { return await read; } finally { priceReads.delete(pendingKey); }
+}
+const ldoPrice = (force) => feedQuote('ldo', LDO.priceFeeds, force);
+
+function ldoUsd(amount) {
+  if (amount === null || ldoPriceError(ldo.quote)) return null;
+  const [a, b] = ldo.quote.rounds.map((r) => BigInt(r.answer));
+  const decimals = LDO.priceFeeds.reduce((n, f) => n + f.decimals, 0);
+  return amount * a * b / 10n ** BigInt(decimals); // USD, retaining 18 fractional places.
+}
+
+function bridgeSupplyStatus(row, observation) {
+  if (!row.token) return '<span class="chip c-mute">Not identified</span>';
+  if (!observation) return '<span class="chip c-mute">Reading supply</span>';
+  if (observation.v === null) return '<span class="chip c-warn">Supply unread</span>';
+  return observation.v > 0n ? '<span class="chip c-ok">Bridged</span>'
+    : '<span class="chip c-mute">No outstanding supply</span>';
+}
+
+function bridgedAmount(observation, symbol, usd, loading = false) {
+  if (!observation) return '<span class="skel"></span>';
+  if (observation.v === null) return `<span class="chip c-warn" title="${esc(observation.err)}">Unavailable</span>`;
+  const raw = `${formatAmount(observation.v)} ${symbol}`;
+  return `<b>${raw}</b><div class="muted" style="font-size:var(--fs-xs)">${
+    usd === null ? loading ? '<span class="skel" aria-label="Loading USD price"></span>' : '<span class="chip c-warn">USD unavailable</span>' : `≈ ${formatUsd(usd)}`}</div>`;
+}
+
+const ldoAmount = (observation) => bridgedAmount(observation, 'LDO', ldoUsd(observation?.v ?? null), !ldo.quote);
+
+function sortedSupplyRows(rows, supply) {
+  return rows.filter((r) => r.token).sort((a, b) => {
+    const av = supply.get(a.key)?.v, bv = supply.get(b.key)?.v;
+    if (av == null) return bv == null ? 0 : 1;
+    if (bv == null) return -1;
+    return av > bv ? -1 : av < bv ? 1 : 0;
+  });
+}
+
+function paintBridgedSupply(namespace, model, symbol, usdValue) {
+  let sum = 0n, read = 0;
+  const rows = sortedSupplyRows(model.rows, model.supply);
+  const body = document.querySelector(`[data-${namespace}-rows]`);
+  for (const [i, row] of rows.entries()) {
+    const observation = model.supply.get(row.key);
+    if (observation?.v != null) { sum += observation.v; read++; }
+    const status = document.querySelector(`[data-${namespace}-status="${row.key}"]`);
+    if (status) status.innerHTML = bridgeSupplyStatus(row, observation);
+    const amount = document.querySelector(`[data-${namespace}-amount="${row.key}"]`);
+    if (amount) amount.innerHTML = bridgedAmount(observation, symbol, usdValue(observation?.v ?? null), !model.quote)
+      + (observation?.at ? readTime(observation.at) : "");
+    // Keep unchanged rows in place, including focused links in those rows.
+    if (body && amount && body.children[i] !== amount.closest('tr')) body.insertBefore(amount.closest('tr'), body.children[i] || null);
+  }
+  const total = document.querySelector(`[data-${namespace}-total]`), usd = usdValue(sum);
+  if (total) total.innerHTML = `${read ? `<span class="chip c-cl">${read === rows.length ? `Supply on listed ${symbol} networks` : `Partial ${symbol} supply`}:
+    <b>${formatAmount(sum)} ${symbol}</b></span>` : `<span class="chip ${model.supply.size < rows.length ? 'c-mute' : 'c-warn'}">${symbol} supply ${model.supply.size < rows.length ? 'loading' : 'unavailable'}</span>`}
+    <span class="chip c-mute">${read}/${rows.length} deployments read</span>${
+    read && usd !== null ? `<span class="chip c-cl">≈ ${formatUsd(usd)}</span>` : ""}`;
+}
+function paintPriceDetails(namespace, model, error, details) {
+  model.quoteError = error;
+  const price = document.querySelector(`[data-${namespace}-price]`);
+  if (price) price.innerHTML = !model.quote ? '<span class="skel" aria-label="Loading USD price"></span>'
+    : error ? `<span class="chip c-warn">${esc(error)}</span>` : details();
+}
+function ldoPaintNumbers() {
+  paintBridgedSupply('ldo', ldo, 'LDO', ldoUsd);
+  paintPriceDetails('ldo', ldo, ldoPriceError(ldo.quote), () =>
+    `USD estimate: LDO/ETH × ETH/USD · $${fmtUnits(ldoUsd(10n ** 18n), 18, 4)} per LDO · oracle updates ${
+      ldo.quote.rounds.map((r, i) => `${esc(LDO.priceFeeds[i].pair)} ${esc(minuteTime(r.updatedAt))}`).join(" · ")}`);
+  ovUpdateStatus();
+}
+
+function ldoCard() {
+  const known = sortedSupplyRows(ldo.rows, ldo.supply);
+  const unidentified = ldo.rows.filter((r) => !r.token);
+  return `<section class="card">
+    <div class="card-head"><span class="eyebrow">LDO</span><h2>LDO across mainnets</h2></div>
+    <div class="card-body"><div class="strip" data-ldo-total></div>
+      <details style="margin-top:var(--sp-3)">
+        <summary class="muted" style="cursor:pointer; font-size:var(--fs-sm)">Details</summary>
+      <p class="muted" style="font-size:var(--fs-sm)">Outstanding bridged token supply on each listed network.
+        Coverage is not exhaustive; networks without a sourced LDO deployment are listed below the table.</p>
+      <p class="muted" style="font-size:var(--fs-sm)">Token sources checked ${esc(LDO.takenAt)};
+        LDO bridge coverage is independent of the wstETH endorsement groups.
+        <a href="${esc(LDO.l1Source)}" target="_blank" rel="noopener">Ethereum LDO</a>: ${addrCell("1", LDO.l1Token, short(LDO.l1Token))}.</p>
+      <p class="muted" style="font-size:var(--fs-xs)" data-ldo-price></p>
+      <p class="muted" style="font-size:var(--fs-xs)">USD uses ${LDO.priceFeeds.map((f) =>
+        `<a href="${esc(f.source)}" target="_blank" rel="noopener">Chainlink ${esc(f.pair)}</a>`).join(" × ")}.
+        Prices older than their configured heartbeats are unavailable; future timestamps allow up to two minutes of device clock skew. Network supply and prices may be from different blocks;
+        estimates assume each bridged token is worth one Ethereum LDO.</p>
+      </details>
+    </div>
+    <div class="card-body flush"><div class="tw"><table>
+      <thead><tr><th>network</th><th>LDO bridged?</th><th>bridge / source</th><th>LDO token</th><th style="text-align:right">amount on network</th></tr></thead>
+      <tbody data-ldo-rows>${known.map((r) => `<tr>
+        <td class="t-name">${esc(r.name)}<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(r.chainId)}</span></td>
+        <td data-ldo-status="${esc(r.key)}">${bridgeSupplyStatus(r)}</td>
+        <td>${esc(r.bridge)}<br><a href="${esc(r.source)}" target="_blank" rel="noopener">Token source</a></td>
+        <td>${addrCell(r.chainId, r.token, short(r.token))}</td>
+        <td class="ovnum" data-ldo-amount="${esc(r.key)}"><span class="skel"></span></td>
+      </tr>`).join("")}</tbody>
+    </table></div></div>
+    ${unidentified.length ? `<div class="card-body"><p class="muted" style="margin:0; font-size:var(--fs-sm)">LDO bridging is not identified for networks: ${unidentified.map((r) => esc(r.name)).join(", ")}.</p></div>` : ""}
+  </section>`;
+}
+
+// ── stETH overview ───────────────────────────────────────────────────────────
+// totalSupply already converts shares using the destination oracle's rate.
+// L1 measurement time and L2 receipt time are independent of this browser's read time.
+const steth = { rows: [], supply: new Map(), rates: new Map(), quote: null, quoteError: null };
+const stethRows = () => STETH.networks.map((r) => ({ ...r, chainId: String(r.chainId), key: rowKey(r.chainId, r.token) }));
+const stethPriceError = (quote) => feedPriceError(quote, [STETH.priceFeed]);
+
+const stethPrice = (force) => feedQuote('steth', [STETH.priceFeed], force);
+
+function stethUsd(amount) {
+  if (amount === null || stethPriceError(steth.quote)) return null;
+  return amount * BigInt(steth.quote.rounds[0].answer) / 10n ** BigInt(STETH.priceFeed.decimals);
+}
+
+const stethRateRound = (hex, decimals, row) => oracleRound(hex, decimals, row.rateDecimals, 'Rate', true);
+
+async function stethRate(row, force) {
+  const url = rpcFor(row.chainId), key = `steth-rate|${row.key}`;
+  if (!url || !row.oracle) return { err: !url ? 'No RPC configured' : 'Rate oracle not identified', at: null };
+  const cached = force ? null : metaCache.get(key);
+  if (cached?.url === url) return cached;
+  try {
+    const r = await rpcRead(url, [{ method: 'eth_chainId', params: [] },
+      call(row.token, SEL.tokenRateOracle), call(row.oracle, SEL.decimals),
+      call(row.oracle, SEL.latestRoundData), call(row.oracle, SEL.tokenRateOutdatedDelay),
+      call(row.oracle, SEL.tokenRateUpdatesPaused)]);
+    if (!chainMatches(r[0], row.chainId)) throw Error('RPC chain does not match this network');
+    if (strictUint(r[1]) === null || decAddr(r[1])?.toLowerCase() !== row.oracle.toLowerCase())
+      throw Error('Token rate oracle unavailable or mismatched');
+    const delay = strictUint(r[4]), paused = strictUint(r[5]);
+    const observation = { ...stethRateRound(r[3], r[2], row), url, at: Date.now(), err: null,
+      outdatedDelay: delay !== null && delay <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(delay) : null,
+      paused: paused === 0n ? false : paused === 1n ? true : null };
+    metaCache.set(key, observation); saveCache();
+    return observation;
+  } catch (e) { return { err: e.message, at: null }; }
+}
+
+function stethRateStatus(observation) {
+  if (observation.paused) return '<span class="chip c-warn">Updates paused</span>';
+  if (observation.outdatedDelay != null && Date.now() > observation.updatedAt + observation.outdatedDelay * 1000)
+    return '<span class="chip c-warn">Rate outdated</span>';
+  if (observation.paused === null || observation.outdatedDelay === null)
+    return '<span class="chip c-warn">Rate status unavailable</span>';
+  return '';
+}
+
+function stethRateTime(at) {
+  const seconds = Math.floor(Math.abs(Date.now() - at) / 1000);
+  const age = seconds >= 86400 ? `${Math.floor(seconds / 86400)}d ${Math.floor(seconds % 86400 / 3600)}h`
+    : seconds >= 3600 ? `${Math.floor(seconds / 3600)}h ${Math.floor(seconds % 3600 / 60)}m`
+    : seconds >= 60 ? `${Math.floor(seconds / 60)}m` : `${seconds}s`;
+  return `<b>${at > Date.now() ? `in ${age}` : `${age} ago`}</b><div class="muted mono" style="font-size:var(--fs-xs)">
+    <time datetime="${new Date(at).toISOString()}">${new Date(at).toISOString().slice(0, 19).replace('T', ' ')} UTC</time></div>`;
+}
+
+function paintStethRates(agesOnly = false) {
+  for (const row of steth.rows) {
+    const rate = steth.rates.get(row.key);
+    if (agesOnly) {
+      if (!rate || rate.err) continue;
+      const status = document.querySelector(`[data-steth-rate-status="${row.key}"]`);
+      if (status) status.innerHTML = stethRateStatus(rate);
+    }
+    for (const field of agesOnly ? ['measured', 'updated'] : ['rate', 'measured', 'updated']) {
+      const cell = document.querySelector(`[data-steth-${field}="${row.key}"]`);
+      if (!cell) continue;
+      cell.innerHTML = !rate ? '<span class="skel"></span>' : rate.err
+        ? `<span class="chip c-warn" title="${esc(rate.err)}">Unavailable</span>`
+        : field === 'rate' ? `<b>${fmtUnits(BigInt(rate.answer), row.rateDecimals, 6)}</b>
+          <div style="font-size:var(--fs-xs)"><span data-steth-rate-status="${row.key}">${stethRateStatus(rate)}</span> ${addrCell(row.chainId, row.oracle, 'Oracle')}</div>${readTime(rate.at)}`
+        : stethRateTime(field === 'measured' ? rate.startedAt : rate.updatedAt);
+    }
+  }
+}
+function stethPaintPrice() {
+  paintBridgedSupply('steth', steth, 'stETH', stethUsd);
+  paintPriceDetails('steth', steth, stethPriceError(steth.quote), () =>
+    `USD estimate: ${formatUsd(stethUsd(10n ** 18n))} per stETH · oracle updated ${esc(minuteTime(steth.quote.rounds[0].updatedAt))}`);
+}
+function stethPaintNumbers() {
+  stethPaintPrice(); paintStethRates(); ovUpdateStatus();
+}
+
+function stethCard() {
+  const rows = sortedSupplyRows(steth.rows, steth.supply), known = new Set(rows.map((r) => r.chainId));
+  const unidentified = [...new Map([...ov.rows, ...ldo.rows].filter((r) => !known.has(r.chainId))
+    .map((r) => [r.chainId, r.name])).values()];
+  return `<section class="card">
+    <div class="card-head"><span class="eyebrow">stETH</span><h2>stETH across mainnets</h2></div>
+    <div class="card-body"><div class="strip" data-steth-total></div>
+      <details style="margin-top:var(--sp-3)"><summary class="muted" style="cursor:pointer; font-size:var(--fs-sm)">Details</summary>
+        <p class="muted" style="font-size:var(--fs-sm)">Outstanding stETH supply from the ledger's listed mainnet deployments.
+          Coverage is not exhaustive. Ethereum's native supply is excluded. These amounts are shown separately from wstETH totals.</p>
+        <p class="muted" style="font-size:var(--fs-sm)">Rate = stETH per wstETH, as stored by the destination
+          <a href="${esc(STETH.rateSource)}" target="_blank" rel="noopener">rate oracle</a>.
+          “Rate measured on L1” is latestRoundData.startedAt; “Rate updated on L2” is latestRoundData.updatedAt.
+          Ages use your device clock. “Rate outdated” uses the oracle's configured age limit; “Updates paused” reflects its pause flag.</p>
+        <p class="muted" style="font-size:var(--fs-sm)">Token addresses are from the ledger. Rate oracle addresses are from the ledger or
+          <a href="${esc(STETH.docsUrl)}" target="_blank" rel="noopener">Lido deployment docs</a>, checked ${esc(STETH.takenAt)}.
+          Ethereum stETH: ${addrCell('1', STETH.l1Token, short(STETH.l1Token))}.
+          L1 rate pushers: ${rows.filter((r) => r.pusher).map((r) => addrCell('1', r.pusher, r.name)).join(' · ')}.</p>
+        <p class="muted" style="font-size:var(--fs-xs)" data-steth-price></p>
+        <p class="muted" style="font-size:var(--fs-xs)">USD uses <a href="${esc(STETH.priceFeed.source)}" target="_blank" rel="noopener">Chainlink stETH / USD</a>;
+          prices older than the configured heartbeat are unavailable; future timestamps allow up to two minutes of device clock skew. Supply and price may be read from different blocks.
+          Estimates assume each destination stETH is worth one Ethereum stETH. Rate timestamps describe the stored rate, not a pending L1 push.</p>
+      </details>
+    </div>
+    <div class="card-body flush"><div class="tw"><table>
+      <thead><tr><th>network</th><th>stETH bridged?</th><th>bridge / source</th><th>stETH token</th>
+        <th>stETH per wstETH</th><th>rate measured on L1</th><th>rate updated on L2</th><th style="text-align:right">amount on network</th></tr></thead>
+      <tbody data-steth-rows>${rows.map((r) => `<tr>
+        <td class="t-name">${esc(r.name)}<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(r.chainId)}</span></td>
+        <td data-steth-status="${esc(r.key)}">${bridgeSupplyStatus(r)}</td>
+        <td>${esc(r.bridge)}<br><a href="${esc(r.source)}" target="_blank" rel="noopener">Token source</a></td>
+        <td>${addrCell(r.chainId, r.token, short(r.token))}</td>
+        <td data-steth-rate="${esc(r.key)}"><span class="skel"></span></td>
+        <td data-steth-measured="${esc(r.key)}"><span class="skel"></span></td>
+        <td data-steth-updated="${esc(r.key)}"><span class="skel"></span></td>
+        <td class="ovnum" data-steth-amount="${esc(r.key)}"><span class="skel"></span></td>
+      </tr>`).join('')}</tbody>
+    </table></div></div>
+    ${unidentified.length ? `<div class="card-body"><p class="muted" style="margin:0; font-size:var(--fs-sm)">stETH bridging is not identified for networks: ${unidentified.map(esc).join(', ')}.</p></div>` : ''}
+  </section>`;
+}
+
+// ── overview tab ─────────────────────────────────────────────────────────────
+// Where wstETH actually lives, grouped by who stands behind the deployment.
+//
+// Mainnet only, and it says so on the card: the env selector does not reach this tab.
+//
+// Loading is two-phase on purpose. ONE batched read of Ethereum settles every L1 escrow, the
+// CCIP pool, its per-destination silos and the price — enough to paint the whole table at once.
+// The per-network supplies then stream in from up to 24 other chains, each row filling itself
+// as its chain answers. A row whose chain never answers says so; it never quietly reads zero.
+const OV_KEY = "ov-l1|mainnet|v3";
+const ovStr = (v) => (v === null || v === undefined ? null : v.toString());
+const ovBig = (v) => (v === null || v === undefined ? null : BigInt(v));
+
+// rows: the build-time ledger projection plus whatever the CCIP registry currently lists. The hub is
+// not a destination, so it is dropped here and reported separately.
+//
+// A row is keyed by chain AND token, never by chain alone. One network can legitimately carry two
+// wstETH deployments — a Lido bridge token and a separate CCIP burn/mint token — and this repo is
+// building exactly that for Mantle, which is already in the legacy group. Keying by chain would
+// then add one supply to the totals twice, and leave the second row's cells a skeleton forever,
+// because a `[data-ov-amt="<chain>"]` selector matches only the first of them.
+const rowKey = (chainId, token) => `${chainId}:${String(token).toLowerCase()}`;
+
+function overviewRows() {
+  const rows = LIDO_NETWORKS.map((n) => ({
+    ...n, chainId: String(n.chainId), selector: null, key: rowKey(n.chainId, n.token),
+  }));
+  const byChain = ((registry.mainnet || {}).tokens || {}).wstETH || {};
+  const chains = (registry.mainnet || {}).chains || {};
+  for (const info of Object.values(byChain)) {
+    const id = String(info.chainId);
+    if (id === "1") continue;
+    if (rows.some((r) => r.key === rowKey(id, info.tokenAddress))) continue;
+    rows.push({
+      chainId: id, name: info.chainName, group: "ccip", bridge: "CCIP burn/mint",
+      token: info.tokenAddress, escrow: null, escrowLabel: null,
+      selector: (chains[id] || {}).selector || null,
+      src: { token: "ccip registry", escrow: null },
+      key: rowKey(id, info.tokenAddress),
+    });
+  }
+  return rows;
+}
+
+// Everything Ethereum can answer about the whole picture, in one batch.
+async function overviewL1(rows, force) {
+  const url = rpcFor(1);
+  const hub = (((registry.mainnet || {}).tokens || {}).wstETH || {})["1"] || null;
+  const out = { url, at: null, err: null, rate: null, supply: null,
+                stethQuote: null, ldoQuote: null, escrow: {}, silo: {}, pool: { addr: hub ? hub.poolAddress : null, held: null, unsiloed: null } };
+  if (!url) { out.err = "no RPC configured for Ethereum"; return out; }
+
+  const quotes = Promise.all([stethPrice(force), ldoPrice(force)]);
+  const applyQuotes = async () => { [out.stethQuote, out.ldoQuote] = await quotes; };
+  let c = force ? null : metaCache.get(OV_KEY);
+  if (c && c.url !== url) c = null;
+  if (c) {
+    out.at = c.at; out.rate = ovBig(c.rate); out.supply = ovBig(c.supply);
+    for (const [k, v] of Object.entries(c.escrow)) out.escrow[k] = ovBig(v);
+    for (const [k, v] of Object.entries(c.silo)) out.silo[k] = { siloed: v.siloed, available: ovBig(v.available) };
+    out.pool.held = ovBig(c.pool.held); out.pool.unsiloed = ovBig(c.pool.unsiloed);
+    await applyQuotes();
+    return out;
+  }
+
+  const escrows = rows.filter((r) => r.escrow);
+  const spokes = rows.filter((r) => r.group === "ccip" && r.selector);
+  const calls = [
+    call(L1_WSTETH, SEL.totalSupply),
+    call(L1_WSTETH, SEL.stEthPerToken),
+    ...escrows.map((r) => call(L1_WSTETH, SEL.balanceOf + addrArg(r.escrow))),
+  ];
+  if (out.pool.addr) {
+    calls.push(call(L1_WSTETH, SEL.balanceOf + addrArg(out.pool.addr)),
+               call(out.pool.addr, SEL.getUnsiloedLiquidity));
+    for (const s of spokes) {
+      calls.push(call(out.pool.addr, SEL.isSiloed + u64arg(s.selector)),
+                 call(out.pool.addr, SEL.getAvailableTokens + u64arg(s.selector)));
+    }
+  }
+
+  try {
+    const r = await rpcRead(url, calls);
+    let k = 0;
+    out.supply = decUint(r[k++]);
+    out.rate = decUint(r[k++]);
+    for (const e of escrows) out.escrow[e.key] = decUint(r[k++]);
+    if (out.pool.addr) {
+      out.pool.held = decUint(r[k++]);
+      out.pool.unsiloed = decUint(r[k++]);
+      for (const s of spokes) {
+        const siloed = decBool(r[k++]), available = decUint(r[k++]);
+        out.silo[s.key] = { siloed, available };
+      }
+    }
+    out.at = Date.now();
+    metaCache.set(OV_KEY, {
+      url, at: out.at, rate: ovStr(out.rate), supply: ovStr(out.supply),
+      escrow: Object.fromEntries(Object.entries(out.escrow).map(([a, b]) => [a, ovStr(b)])),
+      silo: Object.fromEntries(Object.entries(out.silo).map(([a, b]) => [a, { siloed: b.siloed, available: ovStr(b.available) }])),
+      pool: { held: ovStr(out.pool.held), unsiloed: ovStr(out.pool.unsiloed) },
+    });
+    saveCache();
+  } catch (e) { out.err = e.message; }
+  await applyQuotes();
+  return out;
+}
+
+// One network's own wstETH supply. Cached next to everything else, keyed by the RPC that
+// produced it so pointing a chain at a different endpoint drops the old figure.
+async function overviewSupply(row, force) {
+  const url = rpcFor(row.chainId);
+  if (!url) return { v: null, at: null, err: "no RPC" };
+  const key = `ov|${row.chainId}|${row.token.toLowerCase()}`;
+  let c = force ? null : metaCache.get(key);
+  if (c && c.url !== url) c = null;
+  if (c) return { v: ovBig(c.supply), at: c.at, err: null };
+  try {
+    const r = await rpcRead(url, [call(row.token, SEL.totalSupply)]);
+    const v = decUint(r[0]);
+    if (v === null) return { v: null, at: null, err: "no answer" };
+    const at = Date.now();
+    metaCache.set(key, { url, at, supply: ovStr(v) });
+    saveCache();
+    return { v, at, err: null };
+  } catch (e) { return { v: null, at: null, err: e.message }; }
+}
+
+// ── overview: numbers ────────────────────────────────────────────────────────
+// Live view state. `epoch` guards against a fill from a previous render landing in a table
+// that is no longer on screen.
+const ov = { epoch: 0, rows: [], l1: null, registryError: null, supply: new Map() };
+
+const ovUsd = (amount) => {
+  if (amount === null || !ov.l1 || ov.l1.rate === null) return null;
+  return stethUsd(amount * ov.l1.rate / 10n ** 18n);
+};
+// 0.01% resolution, which is as fine as the share column is ever read.
+const ovPct = (part, whole) => (whole && whole > 0n ? Number(part * 10000n / whole) / 100 : null);
+
+// What the L1 side says backs a given row. For a CCIP spoke that is only answerable when the
+// destination is siloed — the unsiloed liquidity is one pot shared by all the unsiloed spokes,
+// so attributing a slice of it to any one network would be an invention.
+function ovBacking(row) {
+  if (!ov.l1) return { v: null, kind: "none" };
+  if (row.group !== "ccip") return { v: ov.l1.escrow[row.key] ?? null, kind: "escrow" };
+  const s = ov.l1.silo[row.key];
+  if (!s) return { v: null, kind: "none" };
+  if (s.siloed === null) return { v: null, kind: "none" };
+  return s.siloed ? { v: s.available, kind: "silo" } : { v: null, kind: "pooled" };
+}
+
+// State the custody model independently from the amount. In particular, an unsiloed CCIP lane
+// has real L1 backing, but no honest per-network share of the common pot can be reported.
+function ovLiquidityModel(row) {
+  if (row.group !== "ccip") {
+    return '<span class="chip c-mute">dedicated</span><div class="muted" style="font-size:var(--fs-xs)">separate escrow</div>';
+  }
+  const s = ov.l1 && ov.l1.silo[row.key];
+  if (!s || s.siloed === null) return '<span class="chip c-warn">unread</span>';
+  return s.siloed
+    ? '<span class="chip c-ok">siloed</span><div class="muted" style="font-size:var(--fs-xs)">isolated lane balance</div>'
+    : '<span class="chip c-cl">unsiloed</span><div class="muted" style="font-size:var(--fs-xs)">shared pool balance</div>';
+}
+
+function ovL1HolderCell(row) {
+  if (row.escrow) {
+    return `${addrCell("1", row.escrow, short(row.escrow))} ${ovSrcChip(row.src.escrow)}${
+      row.escrowLabel ? `<div class="muted" style="font-size:var(--fs-xs)">${esc(row.escrowLabel)}</div>` : ""}`;
+  }
+  const pool = row.group === "ccip" && ov.l1 ? ov.l1.pool.addr : null;
+  return pool
+    ? `${addrCell("1", pool, short(pool))}<div class="muted" style="font-size:var(--fs-xs)">one pool · all CCIP lanes</div>`
+    : '<span class="muted">—</span>';
+}
+
+function ovTotals() {
+  const t = { all: 0n, read: 0, missing: 0, group: {} };
+  for (const g of Object.keys(GROUPS)) t.group[g] = { sum: 0n, read: 0, total: 0 };
+  for (const r of ov.rows) {
+    const g = t.group[r.group];
+    g.total++;
+    const s = ov.supply.get(r.key);
+    if (s && s.v !== null) { t.all += s.v; t.read++; g.sum += s.v; g.read++; }
+    else if (s) t.missing++;
+  }
+  return t;
+}
+
+// The L1 side of one row, and what it says about the L2 side once that has arrived. The two
+// figures are read seconds and a bridge apart, so they are never expected to match to the wei;
+// Display the signed difference without assigning a cause. Independent read blocks and
+// bridge accounting need investigation before interpreting either sign.
+function ovL1Cell(row, s) {
+  const back = ovBacking(row);
+  if (back.kind === "pooled") {
+    return `<span class="muted" title="this destination is not siloed: its backing sits in the pool's shared unsiloed liquidity, and no single network can claim a slice of that">in shared pool</span>`;
+  }
+  if (back.v === null) return '<span class="muted">—</span>';
+  const head = fmtUnits(back.v, 18, 2);
+  const tag = back.kind === "silo" ? '<div class="muted" style="font-size:var(--fs-xs)">siloed</div>' : "";
+  if (!s || s.v === null) return head + tag;
+  const d = back.v - s.v;
+  const sub = (html) => `${head}${tag}<div class="muted" style="font-size:var(--fs-xs)">${html}</div>`;
+  const material = back.v > 0n ? (d < 0n ? -d : d) * 1000n > back.v : d !== 0n;   // > 0.1%
+  if (!material) return sub("within 0.1% of L1 balance");
+  if (d > 0n) return sub(`L1 exceeds supply by ${fmtUnits(d, 18, 2)}`);
+  return `${head}${tag}<div style="font-size:var(--fs-xs)"><span class="chip c-bad">${fmtUnits(-d, 18, 2)} over escrow</span></div>`;
+}
+
+// Patch only the cells that carry numbers. A fill must not rewrite the table: that would drop
+// scroll position and hover, 24 times over.
+const minuteTime = (at) => new Date(at).toISOString().slice(0, 16).replace("T", " ") + " UTC";
+const differsFromBoard = (at) => at != null && dataAt != null && Math.abs(at - dataAt) > 120000;
+function readTime(at) {
+  if (!differsFromBoard(at)) return "";
+  return `<div class="muted" style="font-size:var(--fs-xs)">read <time datetime="${esc(new Date(at).toISOString())}">${esc(minuteTime(at))}</time></div>`;
+}
+
+function ovUpdateStatus() {
+  const t = ovTotals();
+  tabStatus.set("overview", t.read === ov.rows.length && !ov.registryError && registry.mainnet && ov.l1 && !ov.l1.err
+    && ov.rows.every((r) => { const b = ovBacking(r); return b.kind === "pooled" || b.v !== null; })
+    && ldo.rows.every((r) => !r.token || ldo.supply.get(r.key)?.v != null)
+    && !ldoPriceError(ldo.quote)
+    && steth.rows.every((r) => steth.supply.get(r.key)?.v != null
+      && steth.rates.get(r.key) && !steth.rates.get(r.key).err && !stethRateStatus(steth.rates.get(r.key)))
+    && !stethPriceError(steth.quote) ? "ok" : "warn");
+}
+
+function ovPaintNumbers() {
+  const t = ovTotals();
+  const dec = 18;
+  ovUpdateStatus();
+  for (const r of ov.rows) {
+    const s = ov.supply.get(r.key);
+    const amt = document.querySelector(`[data-ov-amt="${r.key}"]`);
+    if (amt) {
+      if (!s) amt.innerHTML = '<span class="skel"></span>';
+      else if (s.v === null) amt.innerHTML = `<span class="chip c-warn">${esc(s.err || "unread")}</span>`;
+      else {
+        const usd = ovUsd(s.v);
+        amt.innerHTML = `<b>${fmtUnits(s.v, dec, 2)}</b>${
+          usd === null ? "" : `<div class="muted" style="font-size:var(--fs-xs)">$${fmtUnits(usd, dec, 0)}</div>`}`;
+      }
+    }
+    if (amt && s?.at) amt.innerHTML += readTime(s.at);
+    const l1 = document.querySelector(`[data-ov-l1="${r.key}"]`);
+    if (l1) l1.innerHTML = ovL1Cell(r, s) + (ov.l1?.at ? readTime(ov.l1.at) : "");
+    const sh = document.querySelector(`[data-ov-share="${r.key}"]`);
+    if (sh) {
+      const p = s && s.v !== null ? ovPct(s.v, t.all) : null;
+      sh.innerHTML = p === null ? '<span class="muted">—</span>'
+        : `<span class="ovbar"><i style="width:${Math.min(100, p).toFixed(2)}%"></i></span><span class="ovpct">${p.toFixed(2)}%</span>`;
+    }
+  }
+  for (const [g, agg] of Object.entries(t.group)) {
+    const el2 = document.querySelector(`[data-ov-sub="${g}"]`);
+    if (!el2) continue;
+    const p = ovPct(agg.sum, t.all);
+    el2.innerHTML = `<b>${fmtUnits(agg.sum, dec, 2)}</b> wstETH${p === null ? "" : ` · ${p.toFixed(2)}%`}${
+      agg.read < agg.total ? ` · <span class="muted">${agg.read}/${agg.total} networks read</span>` : ""}`;
+  }
+  const tot = document.querySelector("[data-ov-total]");
+  if (tot) {
+    const usd = ovUsd(t.all);
+    tot.innerHTML = `<span class="chip c-cl">${t.read === ov.rows.length ? "supply on listed networks" : "partial supply · networks read"}
+        <b style="margin-left:4px">${fmtUnits(t.all, dec, 2)}</b></span>
+      ${usd === null ? "" : `<span class="chip c-cl" title="Estimate: stEthPerToken() × Chainlink STETH/USD">≈ <b style="margin-left:4px">$${fmtUnits(usd, dec, 0)}</b></span>`}
+      ${ov.l1 && ov.l1.supply !== null
+        ? `<span class="chip c-mute">of ${fmtUnits(ov.l1.supply, dec, 0)} wstETH on Ethereum</span>` : ""}
+      <span class="chip ${t.read === ov.rows.length ? "c-ok" : "c-warn"}">${t.read}/${ov.rows.length} networks read</span>`;
+  }
+}
+
+// ── overview: render ─────────────────────────────────────────────────────────
+function ovSrcChip(kind) {
+  if (!kind) return "";
+  const tone = kind === "ledger" ? "c-ok" : kind === "docs" ? "c-warn" : "c-cl";
+  return `<span class="chip ${tone}" style="font-size:9px; padding:1px 5px">${esc(kind)}</span>`;
+}
+
+// The five descriptive columns, in group-dependent order. On the CCIP card the liquidity model
+// is the discriminator that explains why "locked on L1" reads "in shared pool" for most rows, so
+// it leads, right after the network it qualifies. On the other two cards it is the constant
+// "dedicated" for every row, so it stays where it was, beside the L1 holder it describes.
+// Head and body read the same order from one place; they cannot drift apart.
+function overviewNetworkName(row) {
+  const lane = (state.lanes.mainnet || []).find(([a, b]) =>
+    (String(a) === "1" && String(b) === row.chainId) ||
+    (String(b) === "1" && String(a) === row.chainId));
+  return lane
+    ? `<a href="#lane-${esc(lane[0])}-${esc(lane[1])}">${esc(row.name)}</a>`
+    : esc(row.name);
+}
+
+const OV_COLS = {
+  name:   { th: "network", td: (r) => `<td class="t-name">${overviewNetworkName(r)}<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(r.chainId)}</span></td>` },
+  model:  { th: "L1 liquidity model", td: (r) => `<td>${ovLiquidityModel(r)}</td>` },
+  via:    { th: "how it gets there", td: (r) => `<td class="t-via" style="white-space:normal; max-width:190px">${esc(r.bridge)}</td>` },
+  token:  { th: "network token", td: (r) => `<td>${addrCell(r.chainId, r.token, short(r.token))} ${ovSrcChip(r.src.token)}</td>` },
+  holder: { th: "L1 holder", td: (r) => `<td>${ovL1HolderCell(r)}</td>` },
+};
+const ovColOrder = (group) => (group === "ccip"
+  ? ["name", "model", "via", "token", "holder"]
+  : ["name", "via", "token", "holder", "model"]).map((k) => OV_COLS[k]);
+
+function ovGroupCard(group, rows) {
+  const g = GROUPS[group];
+  const cols = ovColOrder(group);
+  const body = rows.map((r) => `<tr>
+      ${cols.map((c) => c.td(r)).join("\n      ")}
+      <td class="ovnum" data-ov-amt="${esc(r.key)}"><span class="skel"></span></td>
+      <td class="ovnum" data-ov-l1="${esc(r.key)}"></td>
+      <td class="ovshare" data-ov-share="${esc(r.key)}"><span class="muted">—</span></td>
+    </tr>`).join("");
+  return `<section class="card">
+    <div class="card-head">
+      <span class="eyebrow">${esc(g.eyebrow)}</span>
+      <h2>${esc(g.label)}</h2>
+      <span class="chip ${g.tone}">${rows.length} network${rows.length === 1 ? "" : "s"}</span>
+      <span class="stamp" data-ov-sub="${esc(group)}"></span>
+    </div>
+    <div class="card-body" style="padding-bottom:var(--sp-3)">
+      <p class="muted" style="margin:0; font-size:var(--fs-sm)">${g.note}</p>
+    </div>
+    <div class="card-body flush"><div class="tw"><table>
+      <thead><tr>
+        ${cols.map((c) => `<th>${c.th}</th>`).join("")}
+        <th style="text-align:right">on network</th><th style="text-align:right">locked on L1</th><th title="Share of successfully read supply">share</th>
+      </tr></thead>
+      <tbody>${body || `<tr><td colspan="${cols.length + 3}" class="muted">none</td></tr>`}</tbody>
+    </table></div></div>
+  </section>`;
+}
+
+async function viewOverview(force) {
+  let registryError = null;
+  try { await loadRegistry("mainnet", force); }
+  catch (e) { registryError = e.message; } // Sourced token and ledger reads can proceed independently.
+  const epoch = ++ov.epoch;
+  ov.registryError = registryError;
+  ov.l1 = null;
+  ov.rows = overviewRows();
+  ldo.rows = ldoRows(ov.rows);
+  ldo.supply = new Map();
+  ldo.quote = null;
+  steth.rows = stethRows();
+  steth.supply = new Map();
+  steth.rates = new Map();
+  steth.quote = null;
+  ov.supply = new Map();
+  ov.l1 = await overviewL1(ov.rows, force);
+  steth.quote = ov.l1.stethQuote || {err: ov.l1.err || "USD price unavailable", at: null};
+  ldo.quote = ov.l1.ldoQuote || {err: ov.l1.err || "USD price unavailable", at: null};
+  noteDataAge(ov.l1.at);
+  ovUpdateStatus();
+
+  const pool = ov.l1.pool;
+  const ccipRows = ov.rows.filter((r) => r.group === "ccip");
+  const siloedRows = ccipRows.filter((r) => ov.l1.silo[r.key]?.siloed === true);
+  const unsiloedRows = ccipRows.filter((r) => ov.l1.silo[r.key]?.siloed === false);
+  const unreadSiloRows = ccipRows.filter((r) => ov.l1.silo[r.key]?.siloed == null);
+  const siloedSum = Object.values(ov.l1.silo).reduce(
+    (s, x) => s + (x.siloed === true && x.available !== null ? x.available : 0n), 0n);
+  // Compare only when all listed balances were read. A mismatch may reflect read blocks
+  // or incomplete registry coverage; the arithmetic alone does not identify its cause.
+  const poolComplete = ccipRows.length > 0 && unreadSiloRows.length === 0
+    && siloedRows.every((r) => ov.l1.silo[r.key].available !== null)
+    && pool.held !== null && pool.unsiloed !== null;
+  const poolOk = poolComplete && pool.held === pool.unsiloed + siloedSum;
+
+  views.innerHTML = `
+    <section class="card">
+      <div class="card-head">
+        <span class="eyebrow">overview</span>
+        <h2>wstETH across mainnets</h2>
+        <span class="stamp">mainnet</span>
+      </div>
+      <div class="card-body">
+        ${registryError ? `<div class="banner">CCIP registry unavailable; showing configured networks and any cached registry entries. ${esc(registryError)}</div>` : ""}
+        ${ov.l1.err ? `<div class="banner">${esc(ov.l1.err)}</div>` : ""}
+        <div class="strip" data-ov-total></div>
+        <p class="muted" style="margin:var(--sp-3) 0 0; font-size:var(--fs-sm)">
+          Network supply vs. Ethereum backing. Reads may be from different blocks.
+        </p>
+      </div>
+    </section>
+
+    ${ovGroupCard("supported", ov.rows.filter((r) => r.group === "supported"))}
+    ${ovGroupCard("ccip", ov.rows.filter((r) => r.group === "ccip"))}
+
+    <section class="card">
+      <div class="card-head">
+        <span class="eyebrow">ccip pool</span>
+        <h2>Why most CCIP rows have no L1 figure</h2>
+        <span class="stamp">${pool.addr ? addrCell("1", pool.addr, short(pool.addr)) : "—"}</span>
+      </div>
+      <div class="card-body">
+        <p class="muted" style="margin:0 0 var(--sp-3); font-size:var(--fs-sm)">
+          Shared L1 liquidity has no per-network balance; siloed lanes do.
+        </p>
+        <div class="strip">
+          <span class="chip c-cl">pool holds <b style="margin-left:4px">${fmtUnits(pool.held, 18, 2)}</b></span>
+          <span class="chip c-cl">unsiloed <b style="margin-left:4px">${fmtUnits(pool.unsiloed, 18, 2)}</b></span>
+          <span class="chip c-cl">known silo balances <b style="margin-left:4px">${fmtUnits(siloedSum, 18, 2)}</b></span>
+          <span class="chip c-ok">${siloedRows.length} isolated lane${siloedRows.length === 1 ? "" : "s"}</span>
+          <span class="chip c-cl">${unsiloedRows.length} shared lane${unsiloedRows.length === 1 ? "" : "s"}</span>
+          ${unreadSiloRows.length ? `<span class="chip c-warn">${unreadSiloRows.length} status unread</span>` : ""}
+          <span class="chip ${poolOk ? "c-ok" : "c-warn"}">${
+            poolOk ? "listed silos + unsiloed = pool balance" : poolComplete
+              ? "listed balances differ · check read blocks and lane coverage" : "reconciliation unavailable · incomplete reads"}</span>
+        </div>
+        <div class="grid2" style="margin-top:var(--sp-3)">
+          <div class="kv"><dt>siloed</dt><dd>${siloedRows.length
+            ? siloedRows.map((r) => esc(r.name)).join(" · ") : '<span class="muted">none</span>'}</dd></div>
+          <div class="kv"><dt>unsiloed</dt><dd>${unsiloedRows.length
+            ? unsiloedRows.map((r) => esc(r.name)).join(" · ") : '<span class="muted">none</span>'}</dd></div>
+        </div>
+      </div>
+    </section>
+
+    ${ovGroupCard("legacy", ov.rows.filter((r) => r.group === "legacy"))}
+    ${ov.rows.some((r) => r.group === "unclassified") ? ovGroupCard("unclassified", ov.rows.filter((r) => r.group === "unclassified")) : ""}
+
+    <section class="card">
+      <div class="card-head"><span class="eyebrow">provenance</span><h2>Where each column comes from</h2></div>
+      <div class="card-body">
+        <ul class="checks" style="margin:0">
+          <li><span class="m">·</span><span>Cached RPC reads. Row times appear only if >2 min from the board time.</span></li>
+          <li><span class="m">·</span><span>Groups: <a href="${esc(LIDO_SNAPSHOT.docsUrl)}" target="_blank" rel="noopener">Lido docs</a> snapshot · ${esc(LIDO_SNAPSHOT.takenAt)}.</span></li>
+          <li><span class="m">·</span><span>Addresses: <a href="${esc(LIDO_SNAPSHOT.ledgerUrl)}" target="_blank" rel="noopener">Lido ledger</a> · ${esc(LIDO_SNAPSHOT.ledgerUpdatedAt)}; docs or CCIP registry.</span></li>
+          <li><span class="m">·</span><span>Missing RPC? Add an endpoint in settings ⚙.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    ${stethCard()}
+    ${ldoCard()}`;
+
+  ovPaintNumbers();
+  ldoPaintNumbers();
+  stethPaintNumbers();
+  const paintSteth = (at) => {
+    if (ov.epoch !== epoch || currentView() !== 'overview') return;
+    noteDataAge(at); stethPaintNumbers(); renderTabs(); tickStamp();
+  };
+  for (const row of steth.rows) {
+    stethSupply(row, force).then((s) => {
+      if (ov.epoch !== epoch || currentView() !== 'overview') return;
+      steth.supply.set(row.key, s); paintSteth(s.at);
+    });
+    stethRate(row, force).then((rate) => {
+      if (ov.epoch !== epoch || currentView() !== 'overview') return;
+      steth.rates.set(row.key, rate); paintSteth(rate.at);
+    });
+  }
+  const paintLdo = (at) => {
+    if (ov.epoch !== epoch || currentView() !== "overview") return;
+    noteDataAge(at); ldoPaintNumbers(); renderTabs(); tickStamp();
+  };
+  for (const row of ldo.rows.filter((r) => r.token)) {
+    ldoSupply(row, force).then((s) => {
+      if (ov.epoch !== epoch || currentView() !== "overview") return;
+      ldo.supply.set(row.key, s); paintLdo(s.at);
+    });
+  }
+
+  // Phase two. Deliberately not awaited: the table is already usable, and one hung endpoint
+  // must not hold the other 23 hostage.
+  for (const r of ov.rows) {
+    overviewSupply(r, force).then((s) => {
+      if (ov.epoch !== epoch || currentView() !== "overview") return;             // the view moved on; this answer is stale
+      ov.supply.set(r.key, s);
+      noteDataAge(s.at);
+      ovPaintNumbers();
+      renderTabs(); tickStamp();
+    });
+  }
+}
+
+// ── settings tab ─────────────────────────────────────────────────────────────
+function viewSettings() {
+  const reg = registry[state.env] || { chains: {}, tokens: {} };
+  // Lido's own networks are not in Chainlink's registry, so their names come from the snapshot.
+  // "1" is spelled out because on testnet the registry has no mainnet chains to name it from,
+  // and the overview reads Ethereum regardless of the selector.
+  const lidoName = Object.fromEntries([["1", "Ethereum"], ...LIDO_NETWORKS.map((n) => [String(n.chainId), n.name]),
+    ...LDO.networks.map((n) => [String(n.chainId), n.name]),
+    ...STETH.networks.map((n) => [String(n.chainId), n.name])]);
+  const nameOf = (id) => reg.chains[id]?.displayName ||
+    ({ 11155111: "Sepolia", 5003: "Mantle Sepolia" })[id] || lidoName[id] || `chain ${id}`;
+  const used = new Set(LIVE.lane.map(String));
+  (state.lanes[state.env] || []).forEach(([a, b]) => { used.add(String(a)); used.add(String(b)); });
+  const tok = reg.tokens.wstETH;
+  if (tok) Object.keys(tok).forEach((k) => used.add(k));
+  // The overview reads chains no other tab touches, and Lido's own networks are not in
+  // Chainlink's registry, so without this they would have no row here and no way to override.
+  used.add("1");
+  Object.keys(lidoName).forEach((k) => used.add(k));
+  const order = [...used].sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+  const rows = order.map((id) => {
+    const nm = nameOf(id);
+    const v = state.rpc[id] || "";
+    return `<div class="rpcrow">
+      <span class="nm">${esc(nm)}<small>${esc(id)}</small></span>
+      <input type="url" data-rpc="${esc(id)}" value="${esc(v)}" placeholder="${esc(DEFAULT_RPC[id] || "no RPC — paste a URL")}">
+      <button class="btn" data-rpcclear="${esc(id)}">reset</button>
+    </div>`;
+  }).join("");
+  const laneRows = (state.lanes[state.env] || []).map(([a, b], i) =>
+    `<div class="rpcrow"><span class="nm">${esc(reg.chains[String(a)]?.displayName || a)} ↔ ${esc(reg.chains[String(b)]?.displayName || b)}</span>
+      <span class="muted mono" style="font-size:var(--fs-xs)">${esc(a)} / ${esc(b)}</span>
+      <button class="btn" data-lanedel="${i}">remove</button></div>`).join("");
+  const chainOpts = Object.entries(reg.chains)
+    .sort((x, y) => x[1].displayName.localeCompare(y[1].displayName))
+    .map(([id, c]) => `<option value="${esc(id)}">${esc(c.displayName)} · ${esc(id)}</option>`).join("");
+  views.innerHTML = `
+    <section class="card">
+      <div class="card-head"><span class="eyebrow">Live · mainnet lanes</span></div>
+      <div class="card-body">
+        ${laneRows || '<p class="muted">none yet</p>'}
+        <div class="rpcrow" style="margin-top:var(--sp-3)">
+          <select id="laneA">${chainOpts}</select>
+          <select id="laneB">${chainOpts}</select>
+          <button class="btn btn-primary" id="laneadd">add</button>
+        </div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head"><span class="eyebrow">cache</span>
+        <span class="stamp">Cached until refresh; missing data is fetched on open.</span></div>
+      <div class="card-body strip">
+        <span class="chip c-mute">${structCache.size} chain inventor${structCache.size === 1 ? "y" : "ies"}</span>
+        <span class="chip c-mute">${metaCache.size} pool record(s)</span>
+        ${cacheAge() !== null ? `<span class="chip c-mute">oldest reading ${ago(cacheAge())}</span>` : ""}
+        ${regAge(state.env) !== null ? `<span class="chip c-mute">registry ${ago(regAge(state.env))}</span>` : ""}
+        <button class="btn" id="cacheclear">clear cache</button>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head"><span class="eyebrow">RPC</span>
+        <span class="stamp">empty = the built-in public endpoint shown as placeholder</span></div>
+      <div class="card-body">${rows}</div>
+    </section>`;
+  tabStatus.set("settings", null);
+}
+
+// ── tabs and routing ─────────────────────────────────────────────────────────
+function tabsModel() {
+  return [{ id: "overview", label: "Live" },
+    { id: `lane-${LIVE.lane[0]}-${LIVE.lane[1]}`, label: "Dev (testnet)" }];
+}
+function liveViews() {
+  const t = [{ id: "overview", label: "Overview" }];
+  for (const [a, b] of (state.lanes.mainnet || [])) {
+    // "Ethereum Sepolia" -> "Sepolia", "MegaETH Mainnet" -> "MegaETH", but "Ethereum" stays itself
+    const nm = (id) => String(registry.mainnet?.chains?.[String(id)]?.displayName || id)
+      .replace(/\s+(Mainnet|Testnet)$/i, "").replace(/^Ethereum\s+(?=\S)/, "");
+    t.push({ id: `lane-${a}-${b}`, label: String(a) === "1" ? nm(b) : String(b) === "1" ? nm(a) : `${nm(a)} ↔ ${nm(b)}` });
+  }
+  return t;
+}
+let renderedTabMarkup = null;
+function renderTabs() {
+  el("settings").classList.toggle("active", state.view === "settings");
+  el("settings").setAttribute("aria-pressed", String(state.view === "settings"));
+  const markup = tabsModel().map((t) => {
+    const active = t.id === state.view || (t.id === "overview" && liveViews().some((v) => v.id === state.view));
+    const s = busy && active ? "busy" : tabStatus.get(active ? state.view : t.id);
+    return `<button class="tab${active ? " active" : ""}" data-tab="${esc(t.id)}">
+      ${esc(t.label)}${s ? `<span class="tab-dot" data-s="${s}" role="img" aria-label="${s === "ok" ? "displayed checks passed" : s === "busy" ? "reading" : "incomplete reads or check issues"}" title="${s === "ok" ? "Displayed checks passed; not a bridge safety assessment" : s === "busy" ? "Reading" : "Incomplete reads or check issues"}"></span>` : ""}</button>`;
+  }).join("");
+  const tabs = el("tabs");
+  if (renderedTabMarkup === markup) return;
+  renderedTabMarkup = markup;
+  const focused = document.activeElement?.dataset?.tab;
+  tabs.innerHTML = markup;
+  if (focused) [...tabs.querySelectorAll('[data-tab]')].find((button) => button.dataset.tab === focused)?.focus();
+}
+function currentView() {
+  const h = location.hash.replace(/^#/, "");
+  const ids = [...tabsModel().map((t) => t.id), ...liveViews().map((t) => t.id), "settings"];
+  return ids.includes(h) ? h : ids[0];
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. Refresh cycle and events
+// ─────────────────────────────────────────────────────────────────────────────
+
+function setStamp(text) { el("stamp").textContent = text; }
+// Refresh is manual only, so the header reports the age of the DATA, not of the last render.
+function tickStamp() {
+  if (busy) return setStamp("reading…");
+  const age = dataAt ? `oldest read ${minuteTime(dataAt)}` : "—";
+  setStamp(offline ? `${age} · offline copy` : age);
+}
+
+async function run() {
+  if (busy) { runPending = true; return; }
+  ++ov.epoch; // Ignore background supply reads from the previous view.
+  const force = forceNext; forceNext = false;
+  dataAt = null;
+  busy = true; el("refresh").disabled = true; renderTabs(); tickStamp();
+  try {
+    state.view = currentView();
+    state.env = state.view === `lane-${LIVE.lane[0]}-${LIVE.lane[1]}` ? LIVE.env : "mainnet";
+    if (state.view !== "overview") await loadRegistry(state.env, force);
+    renderTabs();
+    if (state.view === "overview") {
+      await viewOverview(force);
+    } else if (state.view === "settings") {
+      viewSettings();
+    } else {
+      const [, a, b] = state.view.split("-");
+      await viewLane(a, b, force);
+      if (state.env === LIVE.env) {
+        views.insertAdjacentHTML("afterbegin", '<p class="sub" style="margin-bottom:var(--sp-3)"><a href="roles.html">who may change it ↗</a></p>');
+      }
+    }
+    if (state.env === "mainnet" && state.view.startsWith("lane-")) {
+      views.insertAdjacentHTML("afterbegin", '<p class="sub" style="margin-bottom:var(--sp-3)"><a href="#overview">← Live overview</a></p>');
+    }
+  } catch (e) {
+    views.innerHTML = `<div class="banner">${esc(e && e.message || e)}</div>`;
+  } finally {
+    busy = false; el("refresh").disabled = false; renderTabs(); tickStamp();
+    if (runPending) { runPending = false; void run(); }
+  }
+}
+
+function go(view) {
+  if (location.hash.replace(/^#/, "") === view) run();
+  else location.hash = view;                         // hashchange kicks off run()
+}
+
+// delegation: tabs
+el("tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-tab]"); if (b) go(b.dataset.tab);
+});
+el("settings").addEventListener("click", () => go("settings"));
+// delegation: tab contents
+views.addEventListener("click", async (e) => {
+  const view = e.target.closest("[data-view]");
+  if (view) { go(view.dataset.view); return; }
+  const copy = e.target.closest("[data-copy]");
+  if (copy) {
+    try { await navigator.clipboard.writeText(copy.dataset.copy); copy.textContent = "✓";
+          setTimeout(() => (copy.textContent = "⧉"), 900); } catch {}
+    return;
+  }
+  const del = e.target.closest("[data-lanedel]");
+  if (del) { state.lanes[state.env].splice(Number(del.dataset.lanedel), 1); save(); renderTabs(); viewSettings(); return; }
+  if (e.target.id === "laneadd") {
+    const a = el("laneA").value, b = el("laneB").value;
+    if (a === b) return;
+    const list = state.lanes[state.env] || (state.lanes[state.env] = []);
+    if (!list.some(([x, y]) => String(x) === a && String(y) === b)) list.push([a, b]);
+    save(); renderTabs(); viewSettings(); return;
+  }
+  const clr = e.target.closest("[data-rpcclear]");
+  if (clr) { delete state.rpc[clr.dataset.rpcclear]; save(); viewSettings(); return; }
+  if (e.target.id === "cacheclear") { clearCache(); viewSettings(); return; }
+});
+views.addEventListener("change", (e) => {
+  const rpcIn = e.target.closest("[data-rpc]");
+  if (rpcIn) {
+    const id = rpcIn.dataset.rpc, v = rpcIn.value.trim();
+    if (v) state.rpc[id] = v; else delete state.rpc[id];
+    save();
+  }
+});
+
+el("refresh").addEventListener("click", () => { forceNext = true; run(); });   // only the button re-crawls
+window.addEventListener("hashchange", () => run());
+
+// No RPC polling: age cells and price validity use the stored observations.
+let stethAgeMinute = null;
+function tickOverview() {
+  if (busy || currentView() !== 'overview') return;
+  if (ldo.quote && ldo.quoteError !== ldoPriceError(ldo.quote)) ldoPaintNumbers();
+  if (steth.quote && steth.quoteError !== stethPriceError(steth.quote)) {
+    stethPaintPrice(); ovPaintNumbers();
+  }
+  const minute = Math.floor(Date.now() / 60000);
+  if (stethAgeMinute !== minute) { stethAgeMinute = minute; paintStethRates(true); }
+  ovUpdateStatus(); renderTabs();
+}
+setInterval(() => { tickStamp(); tickOverview(); }, 1000);
+
+// start
+if (!location.hash) location.hash = "overview";
+run();
+</script>
+</body>
+</html>

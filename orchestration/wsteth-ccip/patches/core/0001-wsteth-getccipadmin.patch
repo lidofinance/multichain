@@ -1,0 +1,69 @@
+Subject: [core] TESTNET-ONLY — expose getCCIPAdmin()/setCCIPAdmin() on wstETH
+
+Base: lib/core @ fe5aa4956 (lidofinance/core, feat/scratch-dg)
+Applies to: contracts/0.6.12/WstETH.sol
+
+WHY
+  CCIP's TokenAdminRegistry is registered into permissionlessly, but only via one of the
+  conventions RegistryModuleOwnerCustom knows: getCCIPAdmin(), owner(), or AccessControl's
+  DEFAULT_ADMIN_ROLE. The disposable Lido core that step 01 deploys to Sepolia carries the
+  canonical WstETH, which exposes NONE of them — so without this the deployer cannot seat
+  itself as TAR admin and step 07 falls into its guarded impersonation branch, which aborts
+  on a live RPC (script/07_set_pool_gov.sh:155-171).
+
+  Adding the hook (mirroring Chainlink's own BurnMintERC20) makes step 07 run
+  impersonation-free against the REAL Chainlink Sepolia TAR. See LIVE_DEPLOY_CONCERNS.md
+  §1 and §5 item 3.
+
+SCOPE — DO NOT GENERALISE
+  This changes deployed bytecode and is valid ONLY for the throwaway testnet core. Canonical
+  mainnet wstETH is immutable and cannot gain this hook, so mainnet CCIP onboarding still
+  requires the TAR owner (Chainlink) to seat the admin manually. Treat that as a real
+  onboarding dependency, not something this patch solves.
+
+diff --git a/contracts/0.6.12/WstETH.sol b/contracts/0.6.12/WstETH.sol
+index 0f3620abe..217ee54f7 100644
+--- a/contracts/0.6.12/WstETH.sol
++++ b/contracts/0.6.12/WstETH.sol
+@@ -28,6 +28,17 @@ import "./interfaces/IStETH.sol";
+ contract WstETH is ERC20Permit {
+     IStETH public stETH;
+ 
++    /// @dev TESTNET-ONLY ADDITION (wsteth-2.0): CCIP TokenAdminRegistry admin hook. Canonical
++    /// mainnet wstETH is immutable and exposes neither this nor Ownable/AccessControl, so on
++    /// mainnet CCIP onboarding requires the TAR owner (Chainlink) to seat the admin. Adding
++    /// `getCCIPAdmin()` here lets the disposable/testnet wstETH self-register into CCIP's
++    /// TokenAdminRegistry via RegistryModuleOwnerCustom.registerAdminViaGetCCIPAdmin — no
++    /// owner-impersonation needed. Seeded to the deployer (constructor msg.sender) at deploy.
++    /// See LIVE_DEPLOY_CONCERNS.md §1-§2.
++    address private s_ccipAdmin;
++
++    event CCIPAdminTransferred(address indexed previousAdmin, address indexed newAdmin);
++
+     /**
+      * @param _stETH address of the StETH token to wrap
+      */
+@@ -37,6 +48,23 @@ contract WstETH is ERC20Permit {
+         ERC20("Wrapped liquid staked Ether 2.0", "wstETH")
+     {
+         stETH = _stETH;
++        s_ccipAdmin = msg.sender;
++        emit CCIPAdminTransferred(address(0), msg.sender);
++    }
++
++    /// @notice Returns the CCIP administrator, as read by CCIP's
++    ///         RegistryModuleOwnerCustom.registerAdminViaGetCCIPAdmin(token).
++    function getCCIPAdmin() external view returns (address) {
++        return s_ccipAdmin;
++    }
++
++    /// @notice Transfers the CCIP administrator. Restricted to the current CCIP admin.
++    /// @param newAdmin the new CCIP administrator.
++    function setCCIPAdmin(address newAdmin) external {
++        require(msg.sender == s_ccipAdmin, "wstETH: not CCIP admin");
++        address previousAdmin = s_ccipAdmin;
++        s_ccipAdmin = newAdmin;
++        emit CCIPAdminTransferred(previousAdmin, newAdmin);
+     }
+ 
+     /**
