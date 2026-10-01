@@ -265,6 +265,9 @@ echo "▸ POM UUPS implementation and selector policy"
 assert_uups_pom "L1-POM" "${L1_POM}" "${RPC_SEPOLIA}"
 assert_uups_pom "L2-POM" "${L2_POM}" "${L2_RPC}"
 
+# The L1 token's separate CCIP authority is checked in the state-mate matrix
+# (l1/l1WstETH/getCCIPAdmin), with its contract-level diagnostic and archived result.
+
 echo "✓ step 08 done — on-chain state matches the expected §4 matrix."
 
 # ── 5. Archive the verified artifacts to deployments/<type>/<pair>/<date-time>/. ──────────────

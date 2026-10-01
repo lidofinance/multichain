@@ -10,7 +10,8 @@
 #      Fork-only fallback for tokens exposing none of the above (the canonical L1 wstETH):
 #      impersonate the module owner and call TAR.proposeAdministrator directly; aborts loudly
 #      on a live RPC (see LIVE_DEPLOY_CONCERNS.md §1-§2). See propose_tar_admin below.
-#   C) Both chains: drive the vendored 3_SetPoolAndTransferOwnership.s.sol — accepts the TAR
+#   C) L1: transfer the fresh token CCIP admin to the DAO Agent after TAR registration.
+#      Both chains: drive the vendored 3_SetPoolAndTransferOwnership.s.sol — accepts the TAR
 #      admin role, setPool(token,pool), transfers TAR admin -> POM (POM.directCall accepts),
 #      then grants POM DEFAULT_ADMIN_ROLE -> Lido DAO (Agent on L1 / OpExec on L2) and revokes
 #      the deployer.
@@ -75,6 +76,7 @@ L2_CFG="${L2_CFG_CANON}"
 for f in config/chains/sepolia.json "${L2_CFG}"; do
     [ -f "$f" ] || { echo "✗ missing $f (run steps 04–05)"; exit 1; }
 done
+L1_AGENT=$(jq -er '.governance_addresses.lido_dao_agent' "${CFG_DIR}/sepolia.json")
 L1_TOKEN=$(jq -r '.addresses.token'              config/chains/sepolia.json)
 L1_TAR=$(jq -r '.ccip.token_admin_registry'      config/chains/sepolia.json)
 L1_RMO=$(jq -r '.ccip.registry_module_owner'     config/chains/sepolia.json)
@@ -185,6 +187,29 @@ echo ""
 echo "▸ B) seat deployer as pending TAR admin (both chains)"
 propose_tar_admin sepolia       "${L1_TAR}" "${L1_RMO}" "${L1_TOKEN}" "${L1_RPC}"
 propose_tar_admin "${L2_CHAIN}" "${L2_TAR}" "${L2_RMO}" "${L2_TOKEN}" "${L2_RPC}" true
+
+# The fresh L1 token uses the testnet core patch's current-CCIP-admin setter,
+# rather than AccessControl.DEFAULT_ADMIN_ROLE. Complete that explicit integration
+# independently of whether TAR was already proposed, registered or handed over.
+echo ""
+echo "▸ transfer fresh L1 token CCIP administration to the DAO Agent"
+if ! L1_CCIP_ADMIN=$(cast call "${L1_TOKEN}" 'getCCIPAdmin()(address)' --rpc-url "${L1_RPC}"); then
+    echo "✗ cannot read fresh L1 token CCIP admin; check the core patch and RPC"
+    exit 1
+fi
+if eq "${L1_CCIP_ADMIN}" "${L1_AGENT}"; then
+    echo "  L1 token CCIP admin already DAO Agent; skip."
+elif eq "${L1_CCIP_ADMIN}" "${DEPLOYER}"; then
+    cast send "${L1_TOKEN}" 'setCCIPAdmin(address)' "${L1_AGENT}" \
+        --private-key "${DEPLOYER_PRIVATE_KEY}" --rpc-url "${L1_RPC}" >/dev/null
+    L1_CCIP_ADMIN=$(cast call "${L1_TOKEN}" 'getCCIPAdmin()(address)' --rpc-url "${L1_RPC}")
+    eq "${L1_CCIP_ADMIN}" "${L1_AGENT}" \
+        || { echo "✗ L1 token CCIP admin handover did not reach the DAO Agent"; exit 1; }
+    echo "  L1 token CCIP admin -> DAO Agent."
+else
+    echo "✗ L1 token CCIP admin is neither deployer nor DAO Agent: ${L1_CCIP_ADMIN}"
+    exit 1
+fi
 
 # ═══════════════════════════════════════════════════════════════════════════
 # C) drive 3_SetPoolAndTransferOwnership on both chains (TAR setPool + POM admin -> DAO)

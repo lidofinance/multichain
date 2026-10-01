@@ -81,3 +81,49 @@ A.15 CC-A15-1/2 separates procedures, target intent, performed work, and records
 L2 token sources and unit tests are maintained in `components/wsteth-token/`.
 Run `just wsteth-token-test` from the repository root. No lido-l2-with-steth
 submodule is required. New run snapshots include the local token source edition.
+
+Fresh deployments use CCIP `review/lido-proposals` at `ca8a66b`, with the local
+`patches/ccip/0001-token-admin-handover.patch` applied. The POM uses uint16 epochs
+and globally keyed proposal IDs: halted proposals remain expired, re-proposal
+requires a new ID, and executed predecessors remain Done across halts. This is
+a fresh deployment flow; it does not upgrade an older POM storage layout. The
+target owns the CCV scenario mocks removed from CCIP upstream.
+
+For CCIP-created tokens (`addresses.token = 0`), configuration grants pool roles,
+registers and accepts deployer TAR administration, sets token CCIP admin to the
+DAO, then starts the token admin transfer. The DAO may accept before or after
+script 3 because TAR administration is separate. The fork scenario suite tests
+both acceptance timings with both fresh and pre-proposed TAR registration. The
+main target continues to deploy its maintained permit token separately.
+
+Fresh-token scenarios load configuration directly into script harnesses, share the
+RPC fallback and `FORK_BLOCK_L2` handling with bridge scenarios, and keep scratch
+records in `state`. Configuration rejects foreign TAR proposals; handover checks
+TAR readiness before revoking deployer authority. The state-mate matrix checks
+the fresh L1 token's separate CCIP admin against the DAO Agent.
+Step 07 transfers that admin using the testnet core token's custom authorization;
+the CCIP script guards BurnMint setters using DEFAULT_ADMIN_ROLE before broadcast.
+
+### Fresh-flow boundary and handover recovery
+
+The vendored README describes upstream behavior; this section defines the additional host handovers.
+Use one reviewed source snapshot for steps 1–3 of the vendored deployment scripts. This flow also
+changes token handover ordering: script 2 registers TAR and sets token CCIP administration before
+starting the DAO's default-admin transfer. It does not migrate partially configured tokens from
+an earlier patch edition. Start a fresh deployment for that case; if governance already accepted
+an old token admin transfer, its authorized admin must resolve the remaining authority explicitly.
+
+Step 07 always reads deployment addresses and governance recipients from the active run's canonical
+`config/chains` records. `RECORD_DIR` selects records for verification only. The fresh L1 custom
+CCIP-admin setter runs after TAR registration and before the POM handover. Each handover can be
+retried after a later operation fails, including after the deployer's POM admin was revoked.
+
+The current state matrix asserts the completed fresh-flow end-state, including the L1 token CCIP
+admin being the DAO Agent. Older records are not accepted as completed by this matrix. This is an
+end-state assertion, not a storage-migration promise. The upgrade rehearsal first rejects the old
+epoch-keyed proposal model and checks both expired and pending proposals across the rehearsed upgrade.
+
+Script 3 registers/accepts TAR authority separately from token CCIP administration. For an existing
+BurnMint token it calls `setCCIPAdmin` only while the deployer holds token `DEFAULT_ADMIN_ROLE`.
+Other token authorization schemes require their own explicit handover; the fresh L1 core integration
+in step 07 provides one. A getter alone does not authorize the setter.

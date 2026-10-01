@@ -1,7 +1,7 @@
 # Local patches on vendored submodules
 
-`lib/core` and `lib/ccip` are pinned to upstream commits, but this pipeline needs a small core-only
-change on top. It lives here as patch files rather than as uncommitted edits
+`lib/core` and `lib/ccip` are pinned to upstream commits, but this pipeline needs small deployment
+changes on top. It lives here as patch files rather than as uncommitted edits
 inside the submodules, so that:
 
 - a fresh `git clone --recursive` reproduces the same deploy (before this, the edits existed only in
@@ -24,6 +24,8 @@ touches, and a `WHY` block. Read the header before touching the patch.
 |---|---|---|
 | `core/0001-wsteth-getccipadmin.patch` | `contracts/0.6.12/WstETH.sol` | **Changes deployed bytecode.** Testnet-only. |
 | `core/0002-hardhat-live-rpc.patch` | `hardhat.config.ts` | Deploy mechanics over a public RPC. |
+| `ccip/0001-token-admin-handover.patch` | Three deployment scripts | Finish token CCIP authority before DAO token-admin acceptance; share configuration loading with rehearsals and allow POM handover retries. POM bytecode is unchanged. |
+| `ccip/0002-handover-test-fixtures.patch` | Existing upstream test fixture setup | Seed the script-2 end-state required by the updated script-3 preflight. No new regressions or docs in the vendor patch. |
 
 Keep this set as small as it can be. Three things do **not** belong in a patch:
 
@@ -150,3 +152,8 @@ The imported core patches were cut at `fe5aa4956`; they also reverse-apply clean
 at the current `f36c1b632` checkout with patches present. The driver checks patch
 applicability; run manifests capture the actual revision and local tracked diff.
 CCIP uses the superproject index gitlink as its current pin.
+
+CCIP handover regression suites live under the target's `test/unit`, and its fresh-token fork
+rehearsal uses the same explicit-path loading hooks as the real scripts. The primary CCIP patch contains only deployment
+scripts. A separate small patch adjusts upstream fixtures so the existing suite stays valid; new
+regressions and operator documentation are maintained by this repository.

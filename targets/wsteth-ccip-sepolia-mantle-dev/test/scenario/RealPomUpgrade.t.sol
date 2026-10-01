@@ -5,6 +5,7 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {IERC1967} from "@openzeppelin/contracts/interfaces/IERC1967.sol";
 import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
+import {PausableAdvancedPoolHooks} from "@ccip-lido/PausableAdvancedPoolHooks.sol";
 import {PoolOperationManager} from "@ccip-lido/PoolOperationManager.sol";
 
 import {BridgeScenarioBase} from "./BridgeScenarioBase.sol";
@@ -53,6 +54,7 @@ contract RealPomUpgrade is BridgeScenarioBase {
             manager.isSelectorBlocked(UPGRADE_SELECTOR), true, string.concat(chainLabel, ": upgrade selector policy")
         );
 
+        ProposalRehearsal memory proposals = _prepareProposals(c, manager);
         Snapshot memory before_ = _snapshot(manager);
         PomUpgradeRehearsalV2 next = new PomUpgradeRehearsalV2();
 
@@ -75,6 +77,59 @@ contract RealPomUpgrade is BridgeScenarioBase {
         );
         assertEq(upgraded.upgradeMarker(), UPGRADE_MARKER, string.concat(chainLabel, ": reinitializer"));
         _assertSnapshot(manager, before_, chainLabel);
+        _assertProposals(c, manager, proposals, chainLabel);
+    }
+
+    struct ProposalRehearsal {
+        bytes data;
+        bytes32 expiredId;
+        bytes32 pendingId;
+        bytes32 pendingSalt;
+        PoolOperationManager.Proposal pending;
+    }
+
+    function _prepareProposals(Ctx storage c, PoolOperationManager manager)
+        internal returns (ProposalRehearsal memory r)
+    {
+        // Admit only the current global-ID proposal model: an old epoch-keyed POM
+        // loses this entry at halt. Reject that baseline before trying an upgrade.
+        r.data = abi.encodeCall(PausableAdvancedPoolHooks.pauseCrossChainTransfers, ());
+        bytes32 expiredSalt = keccak256("upgrade-layout-admission");
+        uint40 delay = manager.getGlobalMinDelay();
+        vm.prank(manager.getRoleMember(manager.PROPOSER_ROLE(), 0));
+        r.expiredId = manager.propose(c.hooks, 0, r.data, bytes32(0), expiredSalt, delay);
+        vm.prank(c.govAdmin);
+        manager.haltProposalQueue();
+        vm.prank(c.govAdmin);
+        manager.restartProposalQueue();
+        assertEq(
+            uint8(manager.getProposalState(r.expiredId)), uint8(PoolOperationManager.ProposalState.Expired),
+            "Fresh POM required: proposal IDs must survive an epoch change"
+        );
+
+        r.pendingSalt = keccak256("upgrade-pending-proposal");
+        vm.prank(manager.getRoleMember(manager.PROPOSER_ROLE(), 0));
+        r.pendingId = manager.propose(c.hooks, 0, r.data, bytes32(0), r.pendingSalt, delay);
+        r.pending = manager.getProposal(r.pendingId);
+    }
+
+    function _assertProposals(Ctx storage c, PoolOperationManager manager, ProposalRehearsal memory r, string memory chainLabel)
+        internal
+    {
+        assertEq(
+            uint8(manager.getProposalState(r.expiredId)), uint8(PoolOperationManager.ProposalState.Expired),
+            string.concat(chainLabel, ": expired proposal preserved")
+        );
+        PoolOperationManager.Proposal memory after_ = manager.getProposal(r.pendingId);
+        assertEq(abi.encode(after_), abi.encode(r.pending), string.concat(chainLabel, ": pending proposal data preserved"));
+        assertEq(
+            uint8(manager.getProposalState(r.pendingId)), uint8(PoolOperationManager.ProposalState.Waiting),
+            string.concat(chainLabel, ": pending proposal state preserved")
+        );
+        vm.warp(uint256(r.pending.timestamp) + r.pending.delay);
+        vm.prank(c.govAdmin);
+        manager.execute(c.hooks, 0, r.data, bytes32(0), r.pendingSalt);
+        assertTrue(PausableAdvancedPoolHooks(c.hooks).paused(), string.concat(chainLabel, ": pending proposal executes"));
     }
 
     struct Snapshot {
@@ -82,7 +137,7 @@ contract RealPomUpgrade is BridgeScenarioBase {
         address hooks;
         uint40 minDelay;
         uint40 expiryPeriod;
-        uint24 epoch;
+        uint16 epoch;
         bool upgradeMode;
         bool ownershipMode;
         bool hooksUnpauseMode;

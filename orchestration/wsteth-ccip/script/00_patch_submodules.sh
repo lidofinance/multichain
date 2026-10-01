@@ -10,7 +10,8 @@
 #   patches/core/  → ../../components/core   0001 TESTNET-ONLY getCCIPAdmin()/setCCIPAdmin() on wstETH (changes
 #                               DEPLOYED BYTECODE; what lets step 07 self-register into the real
 #                               Chainlink TAR), 0002 hardhat local-devnet fixed gas limit.
-#   ../../components/ccip                  NO patches. Its former guardian-unseating patch was retired after
+#   patches/ccip/  → ../../components/ccip  token/TAR deployment handover fixes; POM remains upstream.
+#                             Its former guardian-unseating patch was retired after
 #                             lido-proposals removed GUARDIAN_ROLE from PoolOperationManager and
 #                             its deployment inputs entirely.
 #   components/wsteth-token is locally maintained and has no submodule patches.
@@ -122,7 +123,7 @@ patch_submodule() {
     done
 }
 
-# The CCIP tree is intentionally patch-free, so the patch probes above cannot detect a stale
+# The CCIP POM is intentionally unmodified, so the deployment patch probes cannot detect a stale
 # checkout after the parent repo's gitlink moves. Check the deployment-critical source properties
 # directly before any caller can compile and broadcast a POM from the wrong vendor revision.
 check_ccip_base_shape() {
@@ -147,9 +148,9 @@ check_ccip_base_shape() {
         echo "  ✗ ../../components/ccip: ${actual_rev} checked out; expected pinned ${expected_rev}"
         bad=1
     fi
-    if ! git -C "${sub}" diff --quiet -- "${pom#${sub}/}" "${deploy#${sub}/}" \
-            || ! git -C "${sub}" diff --cached --quiet -- "${pom#${sub}/}" "${deploy#${sub}/}"; then
-        echo "  ✗ ../../components/ccip: PoolOperationManager or its deployment script has local modifications"
+    if ! git -C "${sub}" diff --quiet -- "${pom#${sub}/}" \
+            || ! git -C "${sub}" diff --cached --quiet -- "${pom#${sub}/}"; then
+        echo "  ✗ ../../components/ccip: PoolOperationManager has local modifications"
         bad=1
     fi
 
@@ -163,6 +164,9 @@ check_ccip_base_shape() {
         || { echo "  ✗ ../../components/ccip: PoolOperationManager is not UUPSUpgradeable"; bad=1; }
     grep -q '__UUPSUpgradeable_init();' "${pom}" \
         || { echo "  ✗ ../../components/ccip: PoolOperationManager does not initialize its UUPS base"; bad=1; }
+    # Exact gitlink and pristine POM checks above bind the proposal model to the reviewed
+    # revision. ABI compatibility is checked during compilation/state verification, without
+    # depending on private parameter names or formatting of the upstream storage declaration.
     for role in PROPOSAL_QUEUE_HALT_ROLE CROSS_CHAIN_TRANSFERS_PAUSE_ROLE PROPOSAL_QUEUE_RESTART_ROLE CROSS_CHAIN_TRANSFERS_UNPAUSE_ROLE; do
         grep -q "bytes32 public constant ${role}" "${pom}" \
             || { echo "  ✗ ../../components/ccip: missing operational role ${role}"; bad=1; }

@@ -9,7 +9,7 @@ import {Client} from "@chainlink/contracts-ccip/libraries/Client.sol";
 import {AdvancedPoolHooks} from "@chainlink/contracts-ccip/pools/AdvancedPoolHooks.sol";
 import {Internal} from "@chainlink/contracts-ccip/libraries/Internal.sol";
 
-import {MockCCV} from "@ccip-lido/test/mocks/MockCCV.sol";
+import {MockCCV} from "../mocks/MockCCV.sol";
 
 import {BridgeScenarioBase, IPom} from "./BridgeScenarioBase.sol";
 

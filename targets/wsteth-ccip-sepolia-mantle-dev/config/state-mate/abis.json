@@ -918,7 +918,7 @@
       "name": "getEpoch",
       "outputs": [
         {
-          "type": "uint24"
+          "type": "uint16"
         }
       ],
       "stateMutability": "view",
@@ -1412,5 +1412,19 @@
       "type": "function"
     }
   ],
-  "ERC1967Proxy": []
+  "ERC1967Proxy": [],
+  "WstETHCCIPAuthority": [
+    {
+      "type": "function",
+      "name": "getCCIPAdmin",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view"
+    }
+  ]
 }

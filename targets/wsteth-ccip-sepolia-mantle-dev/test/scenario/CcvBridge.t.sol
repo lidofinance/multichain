@@ -12,9 +12,9 @@ import {AdvancedPoolHooks} from "@chainlink/contracts-ccip/pools/AdvancedPoolHoo
 import {Internal} from "@chainlink/contracts-ccip/libraries/Internal.sol";
 import {RateLimiter} from "@chainlink/contracts-ccip/libraries/RateLimiter.sol";
 
-import {MockCCV} from "@ccip-lido/test/mocks/MockCCV.sol";
-import {MockFeeQuoter} from "@ccip-lido/test/mocks/MockFeeQuoter.sol";
-import {MockArmProxy} from "@ccip-lido/test/mocks/MockArmProxy.sol";
+import {MockCCV} from "../mocks/MockCCV.sol";
+import {MockFeeQuoter} from "../mocks/MockFeeQuoter.sol";
+import {MockArmProxy} from "../mocks/MockArmProxy.sol";
 
 import {BridgeScenarioBase, IPom, IPausableHooks} from "./BridgeScenarioBase.sol";
 

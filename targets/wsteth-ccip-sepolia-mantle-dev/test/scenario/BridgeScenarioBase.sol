@@ -75,10 +75,7 @@ abstract contract BridgeScenarioBase is Test {
         l1Fork = _createFork("RPC_SEPOLIA", "FORK_BLOCK_L1");
         // RPC resolution: explicit L2_RPC (set by the just recipes) > RPC_<UPPER(slug)>. No
         // committed default — the endpoint must come from the environment (forks tray / .env).
-        string memory l2RpcVar = string.concat("RPC_", _upper(l2Chain));
-        string memory l2Url = vm.envOr("L2_RPC", vm.envOr(l2RpcVar, string("")));
-        require(bytes(l2Url).length != 0, string.concat("set L2_RPC or ", l2RpcVar));
-        l2Fork = _createForkUrl(l2Url, "FORK_BLOCK_L2");
+        l2Fork = _createL2Fork(l2Chain);
         _loadAddrs();
         _assertDeployed();
     }
@@ -89,6 +86,13 @@ abstract contract BridgeScenarioBase is Test {
             if (b[i] >= 0x61 && b[i] <= 0x7a) b[i] = bytes1(uint8(b[i]) - 32);
         }
         return string(b);
+    }
+
+    function _createL2Fork(string memory chain) internal returns (uint256) {
+        string memory rpcVar = string.concat("RPC_", _upper(chain));
+        string memory url = vm.envOr("L2_RPC", vm.envOr(rpcVar, string("")));
+        require(bytes(url).length != 0, string.concat("set L2_RPC or ", rpcVar));
+        return _createForkUrl(url, "FORK_BLOCK_L2");
     }
 
     /// @dev FORK_BLOCK_* (optional) pins the fork: Foundry's RPC disk cache is keyed by

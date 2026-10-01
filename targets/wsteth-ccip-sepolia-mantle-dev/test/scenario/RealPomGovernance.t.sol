@@ -47,7 +47,7 @@ contract RealPomGovernance is BridgeScenarioBase {
         );
         p.haltProposalQueue();
 
-        uint24 epoch = p.getEpoch();
+        uint16 epoch = p.getEpoch();
         vm.prank(transferActor);
         p.pauseCrossChainTransfers();
         assertTrue(h.paused());
@@ -111,6 +111,20 @@ contract RealPomGovernance is BridgeScenarioBase {
         );
         p.execute(c.hooks, 0, data, bytes32(0), bytes32(0));
         assertFalse(PausableAdvancedPoolHooks(c.hooks).paused());
+        assertEq(uint8(p.getProposalState(id)), uint8(PoolOperationManager.ProposalState.Expired));
+
+        vm.prank(proposer);
+        vm.expectPartialRevert(PoolOperationManager.InvalidProposalState.selector);
+        p.propose(c.hooks, 0, data, bytes32(0), bytes32(0), delay);
+
+        bytes32 newSalt = keccak256("reproposal-after-halt");
+        vm.prank(proposer);
+        bytes32 newId = p.propose(c.hooks, 0, data, bytes32(0), newSalt, delay);
+        assertTrue(newId != id);
+        vm.warp(block.timestamp + delay);
+        p.execute(c.hooks, 0, data, bytes32(0), newSalt);
+        assertTrue(PausableAdvancedPoolHooks(c.hooks).paused());
+        assertEq(uint8(p.getProposalState(newId)), uint8(PoolOperationManager.ProposalState.Done));
     }
 
     function test_L1HubUnpauseCannotBeQueued() public {
@@ -122,6 +136,40 @@ contract RealPomGovernance is BridgeScenarioBase {
         vm.prank(proposer);
         vm.expectRevert(abi.encodeWithSelector(PoolOperationManager.BlockedSelector.selector, bytes4(data)));
         p.propose(l1.hooks, 0, data, bytes32(0), bytes32(0), delay);
+    }
+
+    function test_L1ExecutedPredecessorSurvivesHalt() public {
+        vm.selectFork(l1Fork);
+        _executedPredecessorSurvivesHalt(l1);
+    }
+
+    function test_L2ExecutedPredecessorSurvivesHalt() public {
+        vm.selectFork(l2Fork);
+        _executedPredecessorSurvivesHalt(l2);
+    }
+
+    function _executedPredecessorSurvivesHalt(Ctx storage c) internal {
+        PoolOperationManager p = PoolOperationManager(c.pom);
+        address proposer = p.getRoleMember(p.PROPOSER_ROLE(), 0);
+        uint40 delay = p.getGlobalMinDelay();
+        bytes memory first = abi.encodeWithSignature("setThresholdAmount(uint256)", 1);
+        vm.prank(proposer);
+        bytes32 predecessor = p.propose(c.hooks, 0, first, bytes32(0), bytes32(0), delay);
+        vm.warp(block.timestamp + delay);
+        p.execute(c.hooks, 0, first, bytes32(0), bytes32(0));
+
+        vm.startPrank(c.govAdmin);
+        p.haltProposalQueue();
+        p.restartProposalQueue();
+        vm.stopPrank();
+        assertEq(uint8(p.getProposalState(predecessor)), uint8(PoolOperationManager.ProposalState.Done));
+
+        bytes memory second = abi.encodeWithSignature("setThresholdAmount(uint256)", 2);
+        vm.prank(proposer);
+        p.propose(c.hooks, 0, second, predecessor, bytes32(0), delay);
+        vm.warp(block.timestamp + delay);
+        p.execute(c.hooks, 0, second, predecessor, bytes32(0));
+        assertEq(PausableAdvancedPoolHooks(c.hooks).getThresholdAmount(), 2);
     }
 
     function test_L2SpokeUnpauseRequiresTimelockThenPermissionlessExecution() public {

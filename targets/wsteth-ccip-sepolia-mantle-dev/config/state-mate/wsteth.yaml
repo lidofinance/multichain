@@ -138,6 +138,11 @@ l1:
   chainId: *l1ChainId
   rpcUrl: RPC_SEPOLIA
   contracts:
+    l1WstETH:
+      name: WstETHCCIPAuthority
+      address: *l1WstETH
+      checks:
+        getCCIPAdmin: *l1LidoDAOAgent
     l1TokenPool:
       name: SiloedLockReleaseTokenPool
       address: *l1TokenPool
