@@ -174,6 +174,10 @@ main{padding:var(--sp-5) 0 var(--sp-6)}
 .kv dt{font-family:var(--mono); font-size:var(--fs-xs); color:var(--ink-3); text-transform:uppercase; letter-spacing:.06em; padding-top:3px}
 .kv dd{margin:0; min-width:0}
 .strip{display:flex; flex-wrap:wrap; gap:var(--sp-2) var(--sp-3); align-items:center}
+.ov-summary{overflow-x:auto}
+.ov-summary .strip{flex-wrap:nowrap; white-space:nowrap}
+.ov-networks{margin-top:var(--sp-3); font-size:var(--fs-sm); color:var(--ink-3)}
+.ov-networks b{color:var(--ink); font-weight:500}
 
 /* ── tables ─────────────────────────────────────────────────────── */
 .tw{overflow-x:auto}
@@ -248,11 +252,11 @@ td.ovshare{white-space:nowrap; min-width:132px}
 
 <main class="wrap" id="views"></main>
 
-<footer class="wrap foot">Read-only dashboard · Live: mainnet · Dev: testnet · Refresh to update<br>Ledger: <a href="https://github.com/lidofinance/multichain/blob/1429b8866810394d050d640870a1a1f8389f515d/ledger.json">build input</a> · updated 2026-09-17 · SHA-256 1e294ff4cf26<br>Testnet source: <a href="upstream/dashboard-build.json">saved dashboard build data</a> · REUSED BUILD DATA · record config/chains.live-mantle-2026-09-15<br>Upstream deployment inputs were not refreshed. <a href="dashboard-build.json">Build provenance</a> · observations are read separately via RPC.</footer>
+<footer class="wrap foot">Read-only dashboard · Live: mainnet · Dev: testnet · Refresh to update<br>Ledger: <a href="https://github.com/lidofinance/multichain/blob/527cfbdd1ca624d6709da5ce0f7253f990fe5890/ledger.json">build input</a> · updated 2026-09-17 · SHA-256 1e294ff4cf26<br>Testnet source: <a href="upstream/dashboard-build.json">saved dashboard build data</a> · REUSED BUILD DATA · record config/chains.live-mantle-2026-09-15<br>Upstream deployment inputs were not refreshed. <a href="dashboard-build.json">Build provenance</a> · observations are read separately via RPC.</footer>
 
 <!-- Baked snapshot. Empty in the repository; components/dashboard/scripts/build-lane-watch-snapshot.mjs fills it in a
      copy meant to be published somewhere that cannot reach the registry or any RPC. -->
-<script type="application/json" id="dashboard-data">{"live": {"record": "config/chains.live-mantle-2026-09-15", "deployedAt": "2026-09-15", "env": "testnet", "lane": [11155111, 5003], "tokens": {"11155111": {"chainId": "11155111", "chainName": "Sepolia", "tokenAddress": "0x03EA7F67bDE498c989b22628b5DFCeeeb4cA9434", "poolAddress": "0x60dF5C229afF442dbe94C0E1a87c40036FCca242", "poolType": "lockRelease", "decimals": 18}, "5003": {"chainId": "5003", "chainName": "Mantle Sepolia", "tokenAddress": "0x964EC0899Aa702485A2e9FCC3C4832b320319d38", "poolAddress": "0x7C4A71b282d7483EcEB858517d608354286605f1", "poolType": "burnMint", "decimals": 18}}, "seeds": {"11155111": [["0x058b56D4AAaAEb1Fe6Dd192425D7672a7584fa0B", "ours:POM"], ["0x60dF5C229afF442dbe94C0E1a87c40036FCca242", "ours:pool"], ["0x49bB57DFdc349eb56CD0a4e2dBfE5cC330980952", "ours:hooks"], ["0x03EA7F67bDE498c989b22628b5DFCeeeb4cA9434", "ours:token"], ["0xC570c5949c0cC7460f29fdbFA8c1151e282Ce879", "ours:verifier"], ["0x160162c04296A96E44296604f4EF3Ab313Dc39e0", "ours:resolver"], ["0x765D0Dd043f61DcBE0DCcdAe8ce868c105993B25", "ours:lockbox"]], "5003": [["0x7075aF66b3A71ddeA8cB0ac19e96eEB119F1e8DF", "ours:POM"], ["0x7C4A71b282d7483EcEB858517d608354286605f1", "ours:pool"], ["0xb073066923aC6C4F20975B7f8C63d7e84dd84DE8", "ours:hooks"], ["0x964EC0899Aa702485A2e9FCC3C4832b320319d38", "ours:token"], ["0xE4Fc4eBd1BE17D77C4792AA9E72fC1A0b706F300", "ours:verifier"], ["0x073198c3e239e064764825380eDc4A5f4B5A7B7e", "ours:resolver"]]}}, "networks": [{"chainId": 42161, "name": "Arbitrum One", "group": "supported", "bridge": "Lido gateway \u00b7 Arbitrum canonical", "token": "0x5979D7b546E38E414F7E9822514be443A4800529", "escrow": "0x0F25c1DC2a9922304f2eac71DCa9B07E310e8E5a", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 10, "name": "Optimism", "group": "supported", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb", "escrow": "0x76943C0D61395d8F2edF9060e1533529cAe05dE6", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 8453, "name": "Base", "group": "supported", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452", "escrow": "0x9de443AdC5A411E83F1878Ef24C3F52C61571e72", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 59144, "name": "Linea", "group": "supported", "bridge": "Linea canonical TokenBridge", "token": "0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F", "escrow": "0x051f1d88f0af5763fb888ec4378b4d8b29ea3319", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 56, "name": "BNB Chain", "group": "supported", "bridge": "Wormhole NTT + Axelar", "token": "0x26c5e01524d2E6280A48F2c50fF6De7e52E9611C", "escrow": "0xb948a93827d68a82F6513Ad178964Da487fe2BD9", "escrowLabel": "NttManager", "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 130, "name": "Unichain", "group": "supported", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xc02fE7317D4eb8753a02c35fe019786854A92001", "escrow": "0x755610f5Be536Ad7afBAa7c10F3E938Ea3aa1877", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 324, "name": "ZKsync Era", "group": "legacy", "bridge": "Lido bridge \u00b7 ZK Stack", "token": "0x703b52F2b28fEbcB60E1372858AF5b18849FE867", "escrow": "0x41527B2d03844dB6b0945f25702cB958b6d55989", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 34443, "name": "Mode", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x98f96A4B34D03a2E6f225B28b8f8Cb1279562d81", "escrow": "0xD0DeA0a3bd8E4D55170943129c025d3fe0493F2A", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 534352, "name": "Scroll", "group": "legacy", "bridge": "Lido gateway \u00b7 Scroll", "token": "0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32", "escrow": "0x6625c6332c9f91f2d27c304e729b86db87a3f504", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 5000, "name": "Mantle", "group": "legacy", "bridge": "Lido bridge \u00b7 Mantle", "token": "0x458ed78EB972a369799fb278c0243b25e5242A83", "escrow": "0x2D001d79E5aF5F65a939781FE228B267a8Ed468B", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 1923, "name": "Swellchain", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x7c98E0779EB5924b3ba8cE3B17648539ed5b0Ecc", "escrow": "0xecf3376512EDAcA4FBB63d2c67d12a0397d24121", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 48900, "name": "Zircuit", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xf0e673Bc224A8Ca3ff67a61605814666b1234833", "escrow": "0x912C7271a6A3622dfb8B218eb46a6122aB046C79", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 1868, "name": "Soneium", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xaA9BD8c957D803466FA92504BDd728cC140f8941", "escrow": "0x2F543A7C9cc80Cc2427c892B96263098d23ee55a", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 137, "name": "Polygon PoS", "group": "legacy", "bridge": "Polygon PoS canonical", "token": "0x03b54A6e9a984069379fae1a4fC4dBAE93B3bCCD", "escrow": "0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf", "escrowLabel": "ERC20Predicate", "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 1135, "name": "Lisk", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x76D8de471F54aAA87784119c60Df1bbFc852C415", "escrow": "0x9348AF23B01F2B517AFE8f29B3183d2Bb7d69Fcf", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}], "ldo": {"takenAt": "2026-10-01", "l1Token": "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32", "l1Source": "https://docs.lido.fi/lido-dao/", "networks": [{"chainId": 42161, "name": "Arbitrum One", "token": "0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60", "decimals": 18, "bridge": "Arbitrum canonical", "source": "https://arbiscan.io/token/0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60#code"}, {"chainId": 10, "name": "Optimism", "token": "0xFdb794692724153d1488CcdBE0C56c252596735F", "decimals": 18, "bridge": "OP Stack canonical", "source": "https://github.com/ethereum-optimism/ethereum-optimism.github.io/blob/d2065d3c28ea4a3006d147bd16508a9bb1e016ad/data/LDO/data.json"}, {"chainId": 137, "name": "Polygon PoS", "token": "0xC3C7d422809852031b44ab29EEC9F1EfF2A58756", "decimals": 18, "bridge": "Polygon PoS canonical", "source": "https://github.com/maticnetwork/polygon-token-list/blob/ba9ffe887764cccdf5a0fc437011ec4eb8511dab/src/tokens/mappedTokens.json"}, {"chainId": 56, "name": "BNB Chain", "token": "0x986854779804799C1d68867F5E03e601E781e41b", "decimals": 18, "bridge": "Wormhole Portal", "source": "https://github.com/wormhole-foundation/wormhole-token-list/blob/31d6cbc6e072d03731d7cd43997d0363b5339809/content/by_source.csv"}, {"chainId": 130, "name": "Unichain", "token": "0x68A6dbc7214a0F2b0d875963663F1613814E8829", "decimals": 18, "bridge": "OP Stack canonical", "source": "https://github.com/ethereum-optimism/ethereum-optimism.github.io/blob/d2065d3c28ea4a3006d147bd16508a9bb1e016ad/data/LDO/data.json"}, {"chainId": 42220, "name": "Celo", "token": "0x6981f932c2ec5f9e15d44d7ef46859a133f544dd", "decimals": 18, "bridge": "OP Stack canonical", "source": "https://github.com/ethereum-optimism/ethereum-optimism.github.io/blob/d2065d3c28ea4a3006d147bd16508a9bb1e016ad/data/LDO/data.json"}], "priceFeeds": [{"pair": "LDO / ETH", "address": "0x4e844125952D32AcdF339BE976c98E22F6F318dB", "decimals": 18, "maxAgeSeconds": 86400, "source": "https://data.chain.link/feeds/ethereum/mainnet/ldo-eth"}, {"pair": "ETH / USD", "address": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419", "decimals": 8, "maxAgeSeconds": 3600, "source": "https://data.chain.link/feeds/ethereum/mainnet/eth-usd"}]}, "steth": {"takenAt": "2026-10-01", "docsUrl": "https://docs.lido.fi/deployed-contracts/", "rateSource": "https://github.com/lidofinance/lido-l2-with-steth/blob/8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c/contracts/optimism/TokenRateOracle.sol", "priceFeed": {"pair": "stETH / USD", "address": "0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8", "decimals": 8, "maxAgeSeconds": 3600, "source": "https://data.chain.link/feeds/ethereum/mainnet/steth-usd"}, "l1Token": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", "networks": [{"chainId": 10, "name": "Optimism", "bridge": "Lido / OP Stack", "token": "0x76A50b8c7349cCDDb7578c6627e79b5d99D24138", "decimals": 18, "oracle": "0x294ED1f214F4e0ecAE31C3Eae4F04EBB3b36C9d0", "rateDecimals": 27, "pusher": "0xd54c1c6413caac3477AC14b2a80D5398E3c32FfE", "source": "https://docs.lido.fi/deployed-contracts/#optimism-part", "oracleSource": "ledger"}, {"chainId": 130, "name": "Unichain", "bridge": "Lido / OP Stack", "token": "0x81f2508AAC59757EF7425DDc9717AB5c2AA0A84F", "decimals": 18, "oracle": "0xD835fAC9080396CCE95bDf9EcC7cc27Bab12c9f8", "rateDecimals": 27, "pusher": "0x3F9600439Ad97fC6f55C2AC7C118f8Fd0595eB74", "source": "https://docs.lido.fi/deployed-contracts/#unichain", "oracleSource": "ledger"}, {"chainId": 1868, "name": "Soneium", "bridge": "Lido / OP Stack \u00b7 legacy", "token": "0x0Ce031AEd457C870D74914eCAA7971dd3176cDAF", "decimals": 18, "oracle": "0xDff6f372e8c16b2b9e95c55bDfe74C0bA3F90265", "rateDecimals": 27, "pusher": "0x927C99fC46226bd5131420B16aF0b0371165C3FC", "source": "https://docs.lido.fi/deployed-contracts/#legacy-contracts", "oracleSource": "docs"}]}, "l1Token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0", "provenance": {"takenAt": "2026-08-27", "docsUrl": "https://docs.lido.fi/deployed-contracts/", "ledgerUpdatedAt": "2026-09-17", "ledgerUrl": "https://github.com/lidofinance/multichain/blob/1429b8866810394d050d640870a1a1f8389f515d/ledger.json"}, "sources": {"upstreamRepository": "https://github.com/lidofinance/wsteth-ccip", "upstreamCommit": null, "upstreamMode": "reused-build", "upstreamFiles": {"docs/CURRENT-DEPLOYMENT.md": "27b8680582f6d3403568e1b1120faeecb6bb7ee2ae902ee39126bfa940da74c0", "docs/deployment-2026-09-15.md": "af91dad2dd610e96065e7b318fb3f69496536a7b9eae433f66ae1463acc53e76", "config/chains.live-mantle-2026-09-15/mantle_sepolia.json": "285ef3ecbd92e6d4de8932d0576a300cb39c71321451ac6cb59925a189d7d111", "config/chains.live-mantle-2026-09-15/sepolia.json": "081c53bf7a884eb6d2a4a0c7bec4a3b9cd2fdac2ee2072e038e5f401a0fc1978"}, "ledgerCommit": "1429b8866810394d050d640870a1a1f8389f515d", "ledgerSha256": "1e294ff4cf2620c71be68d1fcab85fcdbf96ac8ffdebbf09dd61002308156edf", "metadataSha256": "170205bc9114098667804bec2401d6e67fdd2d156e1437e107575bde04ac6153", "ldoMetadataSha256": "44839d38ef45e42003f547009dcc6581b538cd7d001e3236ab6df300dc39e49b", "stethMetadataSha256": "4a0ea96ff75bbf0c70e6a152654f9743adf90eb69b118dad7c281ea19b005bd7", "upstreamBuildSha256": "c62cb8488e7aa73864b974939ae8ff0b8d991ad6a1504afbd89d114366052966", "upstreamBuildFile": "upstream/dashboard-build.json"}, "identity": "a9a8d774b66e1d462b7550114c0565ee1ad622cf6cf908a23e65b651403054df"}</script>
+<script type="application/json" id="dashboard-data">{"live": {"record": "config/chains.live-mantle-2026-09-15", "deployedAt": "2026-09-15", "env": "testnet", "lane": [11155111, 5003], "tokens": {"11155111": {"chainId": "11155111", "chainName": "Sepolia", "tokenAddress": "0x03EA7F67bDE498c989b22628b5DFCeeeb4cA9434", "poolAddress": "0x60dF5C229afF442dbe94C0E1a87c40036FCca242", "poolType": "lockRelease", "decimals": 18}, "5003": {"chainId": "5003", "chainName": "Mantle Sepolia", "tokenAddress": "0x964EC0899Aa702485A2e9FCC3C4832b320319d38", "poolAddress": "0x7C4A71b282d7483EcEB858517d608354286605f1", "poolType": "burnMint", "decimals": 18}}, "seeds": {"11155111": [["0x058b56D4AAaAEb1Fe6Dd192425D7672a7584fa0B", "ours:POM"], ["0x60dF5C229afF442dbe94C0E1a87c40036FCca242", "ours:pool"], ["0x49bB57DFdc349eb56CD0a4e2dBfE5cC330980952", "ours:hooks"], ["0x03EA7F67bDE498c989b22628b5DFCeeeb4cA9434", "ours:token"], ["0xC570c5949c0cC7460f29fdbFA8c1151e282Ce879", "ours:verifier"], ["0x160162c04296A96E44296604f4EF3Ab313Dc39e0", "ours:resolver"], ["0x765D0Dd043f61DcBE0DCcdAe8ce868c105993B25", "ours:lockbox"]], "5003": [["0x7075aF66b3A71ddeA8cB0ac19e96eEB119F1e8DF", "ours:POM"], ["0x7C4A71b282d7483EcEB858517d608354286605f1", "ours:pool"], ["0xb073066923aC6C4F20975B7f8C63d7e84dd84DE8", "ours:hooks"], ["0x964EC0899Aa702485A2e9FCC3C4832b320319d38", "ours:token"], ["0xE4Fc4eBd1BE17D77C4792AA9E72fC1A0b706F300", "ours:verifier"], ["0x073198c3e239e064764825380eDc4A5f4B5A7B7e", "ours:resolver"]]}}, "networks": [{"chainId": 42161, "name": "Arbitrum One", "group": "supported", "bridge": "Lido gateway \u00b7 Arbitrum canonical", "token": "0x5979D7b546E38E414F7E9822514be443A4800529", "escrow": "0x0F25c1DC2a9922304f2eac71DCa9B07E310e8E5a", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 10, "name": "Optimism", "group": "supported", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb", "escrow": "0x76943C0D61395d8F2edF9060e1533529cAe05dE6", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 8453, "name": "Base", "group": "supported", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452", "escrow": "0x9de443AdC5A411E83F1878Ef24C3F52C61571e72", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 59144, "name": "Linea", "group": "supported", "bridge": "Linea canonical TokenBridge", "token": "0xB5beDd42000b71FddE22D3eE8a79Bd49A568fC8F", "escrow": "0x051f1d88f0af5763fb888ec4378b4d8b29ea3319", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 56, "name": "BNB Chain", "group": "supported", "bridge": "Wormhole NTT + Axelar", "token": "0x26c5e01524d2E6280A48F2c50fF6De7e52E9611C", "escrow": "0xb948a93827d68a82F6513Ad178964Da487fe2BD9", "escrowLabel": "NttManager", "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 130, "name": "Unichain", "group": "supported", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xc02fE7317D4eb8753a02c35fe019786854A92001", "escrow": "0x755610f5Be536Ad7afBAa7c10F3E938Ea3aa1877", "escrowLabel": null, "src": {"token": "ledger", "escrow": "ledger"}}, {"chainId": 324, "name": "ZKsync Era", "group": "legacy", "bridge": "Lido bridge \u00b7 ZK Stack", "token": "0x703b52F2b28fEbcB60E1372858AF5b18849FE867", "escrow": "0x41527B2d03844dB6b0945f25702cB958b6d55989", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 34443, "name": "Mode", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x98f96A4B34D03a2E6f225B28b8f8Cb1279562d81", "escrow": "0xD0DeA0a3bd8E4D55170943129c025d3fe0493F2A", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 534352, "name": "Scroll", "group": "legacy", "bridge": "Lido gateway \u00b7 Scroll", "token": "0xf610A9dfB7C89644979b4A0f27063E9e7d7Cda32", "escrow": "0x6625c6332c9f91f2d27c304e729b86db87a3f504", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 5000, "name": "Mantle", "group": "legacy", "bridge": "Lido bridge \u00b7 Mantle", "token": "0x458ed78EB972a369799fb278c0243b25e5242A83", "escrow": "0x2D001d79E5aF5F65a939781FE228B267a8Ed468B", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 1923, "name": "Swellchain", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x7c98E0779EB5924b3ba8cE3B17648539ed5b0Ecc", "escrow": "0xecf3376512EDAcA4FBB63d2c67d12a0397d24121", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 48900, "name": "Zircuit", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xf0e673Bc224A8Ca3ff67a61605814666b1234833", "escrow": "0x912C7271a6A3622dfb8B218eb46a6122aB046C79", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 1868, "name": "Soneium", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0xaA9BD8c957D803466FA92504BDd728cC140f8941", "escrow": "0x2F543A7C9cc80Cc2427c892B96263098d23ee55a", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 137, "name": "Polygon PoS", "group": "legacy", "bridge": "Polygon PoS canonical", "token": "0x03b54A6e9a984069379fae1a4fC4dBAE93B3bCCD", "escrow": "0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf", "escrowLabel": "ERC20Predicate", "src": {"token": "ledger", "escrow": "docs"}}, {"chainId": 1135, "name": "Lisk", "group": "legacy", "bridge": "Lido bridge \u00b7 OP Stack", "token": "0x76D8de471F54aAA87784119c60Df1bbFc852C415", "escrow": "0x9348AF23B01F2B517AFE8f29B3183d2Bb7d69Fcf", "escrowLabel": null, "src": {"token": "ledger", "escrow": "docs"}}], "ldo": {"takenAt": "2026-10-01", "l1Token": "0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32", "l1Source": "https://docs.lido.fi/lido-dao/", "networks": [{"chainId": 42161, "name": "Arbitrum One", "token": "0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60", "decimals": 18, "bridge": "Arbitrum canonical", "source": "https://arbiscan.io/token/0x13Ad51ed4F1B7e9Dc168d8a00cB3f4dDD85EfA60#code"}, {"chainId": 10, "name": "Optimism", "token": "0xFdb794692724153d1488CcdBE0C56c252596735F", "decimals": 18, "bridge": "OP Stack canonical", "source": "https://github.com/ethereum-optimism/ethereum-optimism.github.io/blob/d2065d3c28ea4a3006d147bd16508a9bb1e016ad/data/LDO/data.json"}, {"chainId": 137, "name": "Polygon PoS", "token": "0xC3C7d422809852031b44ab29EEC9F1EfF2A58756", "decimals": 18, "bridge": "Polygon PoS canonical", "source": "https://github.com/maticnetwork/polygon-token-list/blob/ba9ffe887764cccdf5a0fc437011ec4eb8511dab/src/tokens/mappedTokens.json"}, {"chainId": 56, "name": "BNB Chain", "token": "0x986854779804799C1d68867F5E03e601E781e41b", "decimals": 18, "bridge": "Wormhole Portal", "source": "https://github.com/wormhole-foundation/wormhole-token-list/blob/31d6cbc6e072d03731d7cd43997d0363b5339809/content/by_source.csv"}, {"chainId": 130, "name": "Unichain", "token": "0x68A6dbc7214a0F2b0d875963663F1613814E8829", "decimals": 18, "bridge": "OP Stack canonical", "source": "https://github.com/ethereum-optimism/ethereum-optimism.github.io/blob/d2065d3c28ea4a3006d147bd16508a9bb1e016ad/data/LDO/data.json"}, {"chainId": 42220, "name": "Celo", "token": "0x6981f932c2ec5f9e15d44d7ef46859a133f544dd", "decimals": 18, "bridge": "OP Stack canonical", "source": "https://github.com/ethereum-optimism/ethereum-optimism.github.io/blob/d2065d3c28ea4a3006d147bd16508a9bb1e016ad/data/LDO/data.json"}], "priceFeeds": [{"pair": "LDO / ETH", "address": "0x4e844125952D32AcdF339BE976c98E22F6F318dB", "decimals": 18, "maxAgeSeconds": 86400, "source": "https://data.chain.link/feeds/ethereum/mainnet/ldo-eth"}, {"pair": "ETH / USD", "address": "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419", "decimals": 8, "maxAgeSeconds": 3600, "source": "https://data.chain.link/feeds/ethereum/mainnet/eth-usd"}]}, "steth": {"takenAt": "2026-10-01", "docsUrl": "https://docs.lido.fi/deployed-contracts/", "rateSource": "https://github.com/lidofinance/lido-l2-with-steth/blob/8f19e1101a211c8f3d42af7ffcb87ab0ebcf750c/contracts/optimism/TokenRateOracle.sol", "priceFeed": {"pair": "stETH / USD", "address": "0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8", "decimals": 8, "maxAgeSeconds": 3600, "source": "https://data.chain.link/feeds/ethereum/mainnet/steth-usd"}, "l1Token": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", "networks": [{"chainId": 10, "name": "Optimism", "bridge": "Lido / OP Stack", "token": "0x76A50b8c7349cCDDb7578c6627e79b5d99D24138", "decimals": 18, "oracle": "0x294ED1f214F4e0ecAE31C3Eae4F04EBB3b36C9d0", "rateDecimals": 27, "pusher": "0xd54c1c6413caac3477AC14b2a80D5398E3c32FfE", "source": "https://docs.lido.fi/deployed-contracts/#optimism-part", "oracleSource": "ledger"}, {"chainId": 130, "name": "Unichain", "bridge": "Lido / OP Stack", "token": "0x81f2508AAC59757EF7425DDc9717AB5c2AA0A84F", "decimals": 18, "oracle": "0xD835fAC9080396CCE95bDf9EcC7cc27Bab12c9f8", "rateDecimals": 27, "pusher": "0x3F9600439Ad97fC6f55C2AC7C118f8Fd0595eB74", "source": "https://docs.lido.fi/deployed-contracts/#unichain", "oracleSource": "ledger"}, {"chainId": 1868, "name": "Soneium", "bridge": "Lido / OP Stack \u00b7 legacy", "token": "0x0Ce031AEd457C870D74914eCAA7971dd3176cDAF", "decimals": 18, "oracle": "0xDff6f372e8c16b2b9e95c55bDfe74C0bA3F90265", "rateDecimals": 27, "pusher": "0x927C99fC46226bd5131420B16aF0b0371165C3FC", "source": "https://docs.lido.fi/deployed-contracts/#legacy-contracts", "oracleSource": "docs"}]}, "l1Token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0", "provenance": {"takenAt": "2026-08-27", "docsUrl": "https://docs.lido.fi/deployed-contracts/", "ledgerUpdatedAt": "2026-09-17", "ledgerUrl": "https://github.com/lidofinance/multichain/blob/527cfbdd1ca624d6709da5ce0f7253f990fe5890/ledger.json"}, "sources": {"upstreamRepository": "https://github.com/lidofinance/wsteth-ccip", "upstreamCommit": null, "upstreamMode": "reused-build", "upstreamFiles": {"docs/CURRENT-DEPLOYMENT.md": "27b8680582f6d3403568e1b1120faeecb6bb7ee2ae902ee39126bfa940da74c0", "docs/deployment-2026-09-15.md": "af91dad2dd610e96065e7b318fb3f69496536a7b9eae433f66ae1463acc53e76", "config/chains.live-mantle-2026-09-15/mantle_sepolia.json": "285ef3ecbd92e6d4de8932d0576a300cb39c71321451ac6cb59925a189d7d111", "config/chains.live-mantle-2026-09-15/sepolia.json": "081c53bf7a884eb6d2a4a0c7bec4a3b9cd2fdac2ee2072e038e5f401a0fc1978"}, "ledgerCommit": "527cfbdd1ca624d6709da5ce0f7253f990fe5890", "ledgerSha256": "1e294ff4cf2620c71be68d1fcab85fcdbf96ac8ffdebbf09dd61002308156edf", "metadataSha256": "170205bc9114098667804bec2401d6e67fdd2d156e1437e107575bde04ac6153", "ldoMetadataSha256": "44839d38ef45e42003f547009dcc6581b538cd7d001e3236ab6df300dc39e49b", "stethMetadataSha256": "4a0ea96ff75bbf0c70e6a152654f9743adf90eb69b118dad7c281ea19b005bd7", "upstreamBuildSha256": "c62cb8488e7aa73864b974939ae8ff0b8d991ad6a1504afbd89d114366052966", "upstreamBuildFile": "upstream/dashboard-build.json"}, "identity": "622e763f1070c0fde02b51ddbaf7eab47f0d54f211ec981df80faad47c2d3ba2"}</script>
 <script type="application/json" id="snapshot"></script>
 
 <script>
@@ -1224,6 +1228,7 @@ function ldoPaintNumbers() {
     `USD estimate: LDO/ETH × ETH/USD · $${fmtUnits(ldoUsd(10n ** 18n), 18, 4)} per LDO · oracle updates ${
       ldo.quote.rounds.map((r, i) => `${esc(LDO.priceFeeds[i].pair)} ${esc(minuteTime(r.updatedAt))}`).join(" · ")}`);
   ovUpdateStatus();
+  ovPaintSummary();
 }
 
 function ldoCard() {
@@ -1342,6 +1347,7 @@ function stethPaintPrice() {
 }
 function stethPaintNumbers() {
   stethPaintPrice(); paintStethRates(); ovUpdateStatus();
+  ovPaintSummary();
 }
 
 function stethCard() {
@@ -1395,7 +1401,7 @@ function stethCard() {
 // CCIP pool, its per-destination silos and the price — enough to paint the whole table at once.
 // The per-network supplies then stream in from up to 24 other chains, each row filling itself
 // as its chain answers. A row whose chain never answers says so; it never quietly reads zero.
-const OV_KEY = "ov-l1|mainnet|v3";
+const OV_KEY = "ov-l1|mainnet|v4";
 const ovStr = (v) => (v === null || v === undefined ? null : v.toString());
 const ovBig = (v) => (v === null || v === undefined ? null : BigInt(v));
 
@@ -1434,16 +1440,17 @@ function overviewRows() {
 async function overviewL1(rows, force) {
   const url = rpcFor(1);
   const hub = (((registry.mainnet || {}).tokens || {}).wstETH || {})["1"] || null;
-  const out = { url, at: null, err: null, rate: null, supply: null,
+  const out = { url, at: null, err: null, rate: null, supply: null, stethSupply: null, stethSupplyError: null,
                 stethQuote: null, ldoQuote: null, escrow: {}, silo: {}, pool: { addr: hub ? hub.poolAddress : null, held: null, unsiloed: null } };
   if (!url) { out.err = "no RPC configured for Ethereum"; return out; }
 
   const quotes = Promise.all([stethPrice(force), ldoPrice(force)]);
   const applyQuotes = async () => { [out.stethQuote, out.ldoQuote] = await quotes; };
   let c = force ? null : metaCache.get(OV_KEY);
-  if (c && c.url !== url) c = null;
+  if (c && (c.url !== url || c.stethSupply == null)) c = null;
   if (c) {
     out.at = c.at; out.rate = ovBig(c.rate); out.supply = ovBig(c.supply);
+    out.stethSupply = ovBig(c.stethSupply);
     for (const [k, v] of Object.entries(c.escrow)) out.escrow[k] = ovBig(v);
     for (const [k, v] of Object.entries(c.silo)) out.silo[k] = { siloed: v.siloed, available: ovBig(v.available) };
     out.pool.held = ovBig(c.pool.held); out.pool.unsiloed = ovBig(c.pool.unsiloed);
@@ -1467,6 +1474,9 @@ async function overviewL1(rows, force) {
     }
   }
 
+  // Append the stETH denominator checks without coupling them to escrow reads.
+  calls.push({ method: "eth_chainId", params: [] },
+    call(STETH.l1Token, SEL.decimals), call(STETH.l1Token, SEL.totalSupply));
   try {
     const r = await rpcRead(url, calls);
     let k = 0;
@@ -1481,14 +1491,24 @@ async function overviewL1(rows, force) {
         out.silo[s.key] = { siloed, available };
       }
     }
+    if (!chainMatches(r[k++], 1)) out.stethSupplyError = "Ethereum chain ID unavailable or mismatched";
+    else if (strictUint(r[k]) !== 18n) out.stethSupplyError = "stETH decimals unavailable or mismatched";
+    else {
+      out.stethSupply = strictUint(r[k + 1]);
+      if (out.stethSupply === null) out.stethSupplyError = "Ethereum stETH supply unavailable";
+    }
     out.at = Date.now();
-    metaCache.set(OV_KEY, {
-      url, at: out.at, rate: ovStr(out.rate), supply: ovStr(out.supply),
-      escrow: Object.fromEntries(Object.entries(out.escrow).map(([a, b]) => [a, ovStr(b)])),
-      silo: Object.fromEntries(Object.entries(out.silo).map(([a, b]) => [a, { siloed: b.siloed, available: ovStr(b.available) }])),
-      pool: { held: ovStr(out.pool.held), unsiloed: ovStr(out.pool.unsiloed) },
-    });
-    saveCache();
+    // Keep valid observations visible, but retry an incomplete batch on the next load.
+    if (out.stethSupply !== null) {
+      metaCache.set(OV_KEY, {
+        url, at: out.at, rate: ovStr(out.rate), supply: ovStr(out.supply),
+        stethSupply: ovStr(out.stethSupply),
+        escrow: Object.fromEntries(Object.entries(out.escrow).map(([a, b]) => [a, ovStr(b)])),
+        silo: Object.fromEntries(Object.entries(out.silo).map(([a, b]) => [a, { siloed: b.siloed, available: ovStr(b.available) }])),
+        pool: { held: ovStr(out.pool.held), unsiloed: ovStr(out.pool.unsiloed) },
+      });
+      saveCache();
+    }
   } catch (e) { out.err = e.message; }
   await applyQuotes();
   return out;
@@ -1608,6 +1628,7 @@ function readTime(at) {
 function ovUpdateStatus() {
   const t = ovTotals();
   tabStatus.set("overview", t.read === ov.rows.length && !ov.registryError && registry.mainnet && ov.l1 && !ov.l1.err
+    && ov.l1.stethSupply != null
     && ov.rows.every((r) => { const b = ovBacking(r); return b.kind === "pooled" || b.v !== null; })
     && ldo.rows.every((r) => !r.token || ldo.supply.get(r.key)?.v != null)
     && !ldoPriceError(ldo.quote)
@@ -1649,16 +1670,70 @@ function ovPaintNumbers() {
     el2.innerHTML = `<b>${fmtUnits(agg.sum, dec, 2)}</b> wstETH${p === null ? "" : ` · ${p.toFixed(2)}%`}${
       agg.read < agg.total ? ` · <span class="muted">${agg.read}/${agg.total} networks read</span>` : ""}`;
   }
-  const tot = document.querySelector("[data-ov-total]");
-  if (tot) {
-    const usd = ovUsd(t.all);
-    tot.innerHTML = `<span class="chip c-cl">${t.read === ov.rows.length ? "supply on listed networks" : "partial supply · networks read"}
-        <b style="margin-left:4px">${fmtUnits(t.all, dec, 2)}</b></span>
-      ${usd === null ? "" : `<span class="chip c-cl" title="Estimate: stEthPerToken() × Chainlink STETH/USD">≈ <b style="margin-left:4px">$${fmtUnits(usd, dec, 0)}</b></span>`}
-      ${ov.l1 && ov.l1.supply !== null
-        ? `<span class="chip c-mute">of ${fmtUnits(ov.l1.supply, dec, 0)} wstETH on Ethereum</span>` : ""}
-      <span class="chip ${t.read === ov.rows.length ? "c-ok" : "c-warn"}">${t.read}/${ov.rows.length} networks read</span>`;
+  ovPaintSummary();
+}
+
+function summarySupply(rows, supply) {
+  const tokens = new Map(rows.filter(r => r.token).map(r => [rowKey(r.chainId, r.token), r]));
+  let sum = 0n, read = 0, pending = 0;
+  for (const row of tokens.values()) {
+    const s = supply.get(row.key);
+    if (s?.v != null) { sum += s.v; read++; }
+    else if (!s) pending++;
   }
+  return { sum, read, pending, total: tokens.size };
+}
+
+// Round USD upward to one decimal in thousands/millions; keep small values in dollars.
+function summaryUsd(value) {
+  const dollar = 10n ** 18n;
+  const ceil = (v, unit) => (v + unit - 1n) / unit;
+  if (value < 1000n * dollar && ceil(value, dollar) < 1000n) return '$' + ceil(value, dollar);
+  let unit = 1000n * dollar, suffix = 'k';
+  if (ceil(value * 10n, unit) >= 10000n) { unit *= 1000n; suffix = 'kk'; }
+  const tenths = ceil(value * 10n, unit);
+  return `$${tenths / 10n}${tenths % 10n ? '.' + tenths % 10n : ''}${suffix}`;
+}
+
+function summaryToken(symbol, model, denominator, usdValue, denominatorError) {
+  const { sum, read, pending, total } = summarySupply(model.rows, model.supply);
+  const partial = read < total;
+  const title = `${symbol} outstanding on listed destination tokens; ${read}/${total} deployments read. `
+    + (denominator === undefined ? '' : `% = destination supply / Ethereum ${symbol} totalSupply. `)
+    + (denominatorError ? `${denominatorError}. ` : '')
+    + 'Reads may be from different blocks; this is not a backing check.';
+  let value = read ? `<b>${formatAmount(sum)}</b>` : pending ? 'loading…' : 'unavailable';
+  if (read && denominator !== undefined) {
+    const pct = ovPct(sum, denominator);
+    value += ` · ${pct === null ? '% unavailable' : sum > 0n && pct === 0 ? '&lt;0.01%' : pct.toFixed(2) + '%'}`;
+  }
+  if (read && usdValue) {
+    const usd = usdValue(sum);
+    value += usd === null ? ' · USD unavailable' : ` · ≈ ${summaryUsd(usd)}`;
+  }
+  if (read && partial) value += ` · partial ${read}/${total}`;
+  const tone = !total || (pending && !read) ? 'c-mute' : partial ? 'c-warn' : 'c-cl';
+  return `<span class="chip ${tone}" title="${esc(title)}">${symbol} ${value}</span>`;
+}
+
+function ovPaintSummary() {
+  const tot = document.querySelector('[data-ov-total]');
+  if (!tot) return;
+  tot.innerHTML = `<span class="muted" style="font-size:var(--fs-sm)">Bridged</span>`
+    + summaryToken('wstETH', ov, ov.l1?.supply ?? null, ovUsd)
+    + summaryToken('stETH', steth, ov.l1?.stethSupply ?? null, undefined, ov.l1?.stethSupplyError || ov.l1?.err)
+    + summaryToken('LDO', ldo, undefined, ldoUsd);
+  const counts = document.querySelector('[data-ov-networks]');
+  if (!counts) return;
+  const count = rows => new Set(rows.map(r => String(r.chainId))).size;
+  const labels = { supported: 'endorsed', legacy: 'deendorsed', ccip: 'CCIP', unclassified: 'unclassified' };
+  counts.innerHTML = `<span><b>${count(ov.rows)}</b> networks</span>`
+    + Object.entries(labels).map(([group, label]) => {
+      const n = count(ov.rows.filter(r => r.group === group));
+      return n || group !== 'unclassified' ? `<span><b>${n}</b> ${label}</span>` : '';
+    }).join('')
+    + (ov.registryError || !registry.mainnet ? '<span class="chip c-warn">CCIP registry unavailable</span>' : '')
+    + `<span style="margin-left:auto" title="Total stETH supply on Ethereum, including stETH held in the wstETH wrapper and bridge backing. Wrapped and bridged amounts are already included in this total.">Total stETH <b>${ov.l1?.stethSupply == null ? 'unavailable' : formatAmount(ov.l1.stethSupply)}</b></span>`;
 }
 
 // ── overview: render ─────────────────────────────────────────────────────────
@@ -1762,16 +1837,16 @@ async function viewOverview(force) {
     <section class="card">
       <div class="card-head">
         <span class="eyebrow">overview</span>
-        <h2>wstETH across mainnets</h2>
+        <h2>Lido tokens across mainnets</h2>
         <span class="stamp">mainnet</span>
       </div>
       <div class="card-body">
         ${registryError ? `<div class="banner">CCIP registry unavailable; showing configured networks and any cached registry entries. ${esc(registryError)}</div>` : ""}
         ${ov.l1.err ? `<div class="banner">${esc(ov.l1.err)}</div>` : ""}
-        <div class="strip" data-ov-total></div>
-        <p class="muted" style="margin:var(--sp-3) 0 0; font-size:var(--fs-sm)">
-          Network supply vs. Ethereum backing. Reads may be from different blocks.
-        </p>
+        <div class="ov-summary">
+          <div class="strip" data-ov-total></div>
+          <div class="strip ov-networks" data-ov-networks title="Unique wstETH destination networks per category; a network can appear in more than one category. CCIP does not imply Lido endorsement. Percentages above use each token's Ethereum total supply; coverage is limited to listed deployments."></div>
+        </div>
       </div>
     </section>
 

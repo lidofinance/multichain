@@ -408,7 +408,7 @@
     "takenAt": "2026-08-27",
     "docsUrl": "https://docs.lido.fi/deployed-contracts/",
     "ledgerUpdatedAt": "2026-09-17",
-    "ledgerUrl": "https://github.com/lidofinance/multichain/blob/1429b8866810394d050d640870a1a1f8389f515d/ledger.json"
+    "ledgerUrl": "https://github.com/lidofinance/multichain/blob/527cfbdd1ca624d6709da5ce0f7253f990fe5890/ledger.json"
   },
   "sources": {
     "upstreamRepository": "https://github.com/lidofinance/wsteth-ccip",
@@ -420,7 +420,7 @@
       "config/chains.live-mantle-2026-09-15/mantle_sepolia.json": "285ef3ecbd92e6d4de8932d0576a300cb39c71321451ac6cb59925a189d7d111",
       "config/chains.live-mantle-2026-09-15/sepolia.json": "081c53bf7a884eb6d2a4a0c7bec4a3b9cd2fdac2ee2072e038e5f401a0fc1978"
     },
-    "ledgerCommit": "1429b8866810394d050d640870a1a1f8389f515d",
+    "ledgerCommit": "527cfbdd1ca624d6709da5ce0f7253f990fe5890",
     "ledgerSha256": "1e294ff4cf2620c71be68d1fcab85fcdbf96ac8ffdebbf09dd61002308156edf",
     "metadataSha256": "170205bc9114098667804bec2401d6e67fdd2d156e1437e107575bde04ac6153",
     "ldoMetadataSha256": "44839d38ef45e42003f547009dcc6581b538cd7d001e3236ab6df300dc39e49b",
@@ -428,5 +428,5 @@
     "upstreamBuildSha256": "c62cb8488e7aa73864b974939ae8ff0b8d991ad6a1504afbd89d114366052966",
     "upstreamBuildFile": "upstream/dashboard-build.json"
   },
-  "identity": "a9a8d774b66e1d462b7550114c0565ee1ad622cf6cf908a23e65b651403054df"
+  "identity": "622e763f1070c0fde02b51ddbaf7eab47f0d54f211ec981df80faad47c2d3ba2"
 }

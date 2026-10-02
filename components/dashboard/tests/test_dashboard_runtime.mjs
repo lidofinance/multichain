@@ -15,7 +15,7 @@ const ldoMetadata = JSON.parse(readFileSync(new URL('../config/ldo-networks.json
 const stethMetadata = JSON.parse(readFileSync(new URL('../config/steth-networks.json', import.meta.url), 'utf8'));
 const build = { identity: 'test', networks: [], provenance: {}, l1Token: address(1),
   ldo: ldoMetadata,
-  steth: { priceFeed: stethMetadata.priceFeed, networks: [{ chainId: 10, name: 'Optimism',
+  steth: { l1Token: address(4), priceFeed: stethMetadata.priceFeed, networks: [{ chainId: 10, name: 'Optimism',
     token: address(10), oracle: address(11), decimals: 18, rateDecimals: 27 }] },
   live: { lane: [2, 3], env: 'testnet', tokens: {}, seeds: {} } };
 function page() {
@@ -38,7 +38,8 @@ test('same-chain escrow rows retain distinct balances through cache and renderin
   const p = page();
   p.ctx.rows = [10, 20].map(n => ({ chainId: '5000', token: address(n),
     escrow: address(n + 1), group: 'supported', key: `5000:${address(n)}` }));
-  p.run('rpcRead = async () => [1n, 2n, 10n, 20n].map(n => "0x" + n.toString(16).padStart(64, "0"))');
+  p.ctx.response = [abi(1), abi(2), abi(10), abi(20), '0x1', abi(18), abi(100)];
+  p.run('rpcRead = async () => response');
   await p.run('overviewL1(rows, true).then(result => { ov.l1 = result; })');
   assert.equal(p.run('ovBacking(rows[0]).v'), 10n);
   assert.equal(p.run('ovBacking(rows[1]).v'), 20n);
@@ -50,6 +51,124 @@ test('same-chain escrow rows retain distinct balances through cache and renderin
 const abi = n => '0x' + BigInt.asUintN(256, BigInt(n)).toString(16).padStart(64, '0');
 const round = (answer, updatedAt = Math.floor(Date.now() / 1000), id = 2, answered = id) =>
   '0x' + [id, answer, updatedAt, updatedAt, answered].map(n => abi(n).slice(2)).join('');
+
+test('summary keeps token units separate and counts unique networks within overlapping groups', () => {
+  const p = page(), total = {innerHTML: ''}, counts = {innerHTML: ''};
+  p.ctx.document.querySelector = s => s === '[data-ov-total]' ? total : s === '[data-ov-networks]' ? counts : null;
+  p.ctx.rows = [
+    {chainId: '10', token: address(10), key: 'a', group: 'supported'},
+    {chainId: '10', token: address(11), key: 'b', group: 'ccip'},
+    {chainId: '20', token: address(20), key: 'c', group: 'legacy'},
+  ];
+  p.run(`ov.rows = rows; registry.mainnet = {}; ov.l1 = {supply: 1000n * 10n ** 18n, stethSupply: 2000n * 10n ** 18n, rate: null, escrow: {}};
+    for (const r of rows) ov.supply.set(r.key, {v: 10n * 10n ** 18n});
+    steth.rows = [rows[0]]; steth.supply.set('a', {v: 5n * 10n ** 18n});
+    ldo.rows = [rows[2]]; ldo.supply.set('c', {v: 7n * 10n ** 18n}); ovPaintSummary();`);
+  assert.match(total.innerHTML, /wstETH <b>30<\/b> · 3.00%/);
+  assert.match(total.innerHTML, /stETH <b>5<\/b> · 0.25%/);
+  assert.match(total.innerHTML, /LDO <b>7<\/b>/);
+  assert.match(counts.innerHTML, /<b>2<\/b> networks/);
+  assert.match(counts.innerHTML, /Total stETH <b>2,000<\/b>/);
+  for (const label of ['endorsed', 'deendorsed', 'CCIP']) assert.ok(counts.innerHTML.includes(`<b>1</b> ${label}`));
+  p.run('ov.rows.push(rows[0]); ovPaintSummary();');
+  assert.match(total.innerHTML, /wstETH <b>30<\/b> · 3.00%/);
+  p.run("steth.supply.set('a', {v: 8n * 10n ** 18n}); stethPaintNumbers();");
+  assert.match(total.innerHTML, /stETH <b>8<\/b> · 0.40%/);
+  p.run("ldo.supply.set('c', {v: 9n * 10n ** 18n}); ldoPaintNumbers();");
+  assert.match(total.innerHTML, /LDO <b>9<\/b>/);
+});
+
+test('summary USD rounds upward with k and kk suffixes, including unit boundaries', () => {
+  const p = page();
+  for (const [cents, expected] of [
+    [0n, '$0'], [1n, '$1'], [99900n, '$999'], [99901n, '$1k'],
+    [100000n, '$1k'], [123401n, '$1.3k'], [99990000n, '$999.9k'],
+    [99990001n, '$1kk'], [100000000n, '$1kk'], [45454558800n, '$454.6kk'],
+  ]) {
+    p.ctx.value = cents * 10n ** 16n;
+    assert.equal(p.run('summaryUsd(value)'), expected);
+  }
+});
+
+test('summary shows USD for wstETH and LDO and retains supply when prices expire', () => {
+  const p = page(), total = {innerHTML: ''};
+  p.ctx.document.querySelector = s => s === '[data-ov-total]' ? total : null;
+  p.ctx.row = {chainId: 10, token: address(10), key: 'a'};
+  p.run(`ov.rows = [row]; ldo.rows = [row];
+    ov.supply.set('a', {v: 1000n * 10n ** 18n}); ldo.supply.set('a', {v: 1000n * 10n ** 18n});
+    ov.l1 = {supply: 10000n * 10n ** 18n, rate: 12n * 10n ** 17n};
+    steth.quote = {rounds: [{answer: String(2500n * 10n ** 8n), updatedAt: Date.now()}]};
+    ldo.quote = {rounds: [{answer: String(2n * 10n ** 14n), updatedAt: Date.now()},
+      {answer: String(2500n * 10n ** 8n), updatedAt: Date.now()}]}; ovPaintSummary();`);
+  assert.match(total.innerHTML, /wstETH <b>1,000<\/b> · 10.00% · ≈ \$3kk/);
+  assert.match(total.innerHTML, /LDO <b>1,000<\/b> · ≈ \$500/);
+  p.run('steth.quote.rounds[0].updatedAt -= 3601000; ldo.quote.rounds[1].updatedAt -= 3601000; ovPaintSummary();');
+  assert.match(total.innerHTML, /wstETH <b>1,000<\/b> · 10.00% · USD unavailable/);
+  assert.match(total.innerHTML, /LDO <b>1,000<\/b> · USD unavailable/);
+});
+
+test('summary distinguishes pending, failed, partial, zero and missing denominators', () => {
+  const p = page();
+  p.ctx.rows = [1, 2].map(n => ({chainId: n, token: address(n), key: String(n)}));
+  p.run('steth.rows = rows;');
+  const chip = () => p.run("summaryToken('stETH', steth, ov.l1?.stethSupply ?? null)");
+  assert.match(chip(), /loading/);
+  assert.ok(!chip().includes('<b>0</b>'));
+  p.run("steth.supply.set('1', {v: 1n});");
+  assert.match(chip(), /&lt;0.01.*% unavailable.*partial 1\/2/);
+  p.run('ov.l1 = {stethSupply: 10n ** 18n}');
+  assert.match(chip(), /&lt;0.01%/);
+  p.run("steth.supply.set('1', {v: 0n}); steth.supply.set('2', {v: 0n});");
+  assert.match(chip(), /<b>0<\/b> · 0.00%/);
+  p.run("steth.supply.set('1', {v: null}); steth.supply.set('2', {v: null});");
+  assert.match(chip(), /unavailable/);
+  assert.ok(!chip().includes('<b>0</b>'));
+  p.run('steth.rows = [];');
+  assert.match(chip(), /chip c-mute/);
+  assert.match(chip(), /unavailable/);
+});
+
+test('stETH denominator rejects wrong chain, decimals and malformed supply without hiding wstETH', async () => {
+  const p = page();
+  for (const tail of [['0xa', abi(18), abi(100)], ['0x1', abi(8), abi(100)], ['0x1', abi(18), '0x1'],
+    [null, abi(18), abi(100)], ['0x1', null, abi(100)], ['0x1', abi(18), null]]) {
+    p.ctx.response = [abi(20), abi(1), ...tail];
+    p.run('rpcRead = async () => response');
+    const result = await p.run('overviewL1([], true)');
+    assert.equal(result.supply, 20n);
+    assert.equal(result.stethSupply, null);
+    assert.match(result.stethSupplyError, /Ethereum|decimals|supply/);
+    assert.equal(p.run('metaCache.has(OV_KEY)'), false);
+  }
+});
+
+test('failed stETH denominator retries on ordinary loads and bypasses old incomplete caches', async () => {
+  const p = page();
+  let reads = 0;
+  p.ctx.rpcRead = async (_url, calls) => {
+    if (!calls.some(c => c.params[0]?.data === '0x18160ddd')) return [];
+    reads++;
+    return [abi(20), abi(1), '0x1', abi(18), reads === 1 ? null : abi(100)];
+  };
+  p.ctx.failed = await p.run('overviewL1([], false)');
+  assert.equal(p.ctx.failed.stethSupply, null);
+  assert.equal(p.run('metaCache.has(OV_KEY)'), false);
+  const recovered = await p.run('overviewL1([], false)');
+  assert.equal(reads, 2);
+  assert.equal(recovered.stethSupply, 100n);
+  assert.equal(recovered.stethSupplyError, null);
+  await p.run('overviewL1([], false)');
+  assert.equal(reads, 2, 'successful reads stay cached');
+  p.run('metaCache.get(OV_KEY).stethSupply = null; saveCache();');
+  await p.run('overviewL1([], false)');
+  assert.equal(reads, 3, 'old incomplete entries must not freeze the missing denominator');
+
+  const total = {innerHTML: ''};
+  p.ctx.document.querySelector = s => s === '[data-ov-total]' ? total : null;
+  p.run('ov.l1 = failed; steth.rows = [{chainId: 10, token: STETH.l1Token, key: "a"}]; steth.supply.set("a", {v: 1n}); ovPaintSummary();');
+  assert.match(total.innerHTML, /title="[^"]*stETH supply unavailable/);
+  assert.match(total.innerHTML, /% unavailable/);
+});
 
 test('LDO rows deduplicate wstETH deployments and include LDO-only networks', () => {
   const p = page();
@@ -283,14 +402,18 @@ test('snapshot extraction names missing opening and section rule markers', () =>
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('registry failure prevents a green overview even when all token observations pass', () => {
+test('missing stETH denominator or registry prevents a green overview', () => {
   const p = page(), now = Math.floor(Date.now() / 1000);
   p.ctx.now = now;
   p.run(`registry.mainnet = {chains: {}, tokens: {}};
-    ov.rows = []; ov.l1 = {err: null}; ldo.rows = []; steth.rows = [];
+    ov.rows = []; ov.l1 = {err: null, stethSupply: 100n}; ldo.rows = []; steth.rows = [];
     ldo.quote = {rounds: LDO.priceFeeds.map(() => ({updatedAt: now * 1000}))};
     steth.quote = {rounds: [{updatedAt: now * 1000}]};
     ovUpdateStatus();`);
+  assert.equal(p.run('tabStatus.get("overview")'), 'ok');
+  p.run('ov.l1.stethSupply = null; ovUpdateStatus();');
+  assert.equal(p.run('tabStatus.get("overview")'), 'warn');
+  p.run('ov.l1.stethSupply = 100n; ovUpdateStatus();');
   assert.equal(p.run('tabStatus.get("overview")'), 'ok');
   p.run('ov.registryError = "HTTP 503"; ovUpdateStatus();');
   assert.equal(p.run('tabStatus.get("overview")'), 'warn');
@@ -339,13 +462,14 @@ test('Ethereum reads share one batch and one checked stETH quote across tables',
     return calls.map(c => {
       if (c.method === 'eth_chainId') return '0x1';
       const {to, data} = c.params[0];
-      if (data === '0x313ce567') return abi(to.toLowerCase() === ldoMetadata.priceFeeds[0].address.toLowerCase() ? 18 : 8);
+      if (data === '0x313ce567') return abi(to === build.steth.l1Token || to.toLowerCase() === ldoMetadata.priceFeeds[0].address.toLowerCase() ? 18 : 8);
       if (data === '0xfeaf968c') return round(to.toLowerCase() === ldoMetadata.priceFeeds[0].address.toLowerCase() ? 2n * 10n ** 14n : 2500n * 10n ** 8n);
       if (data === '0x035faf82') return abi(12n * 10n ** 17n);
       return abi(10n ** 18n);
     });
   };
   p.ctx.result = await p.run('overviewL1([], true)');
+  assert.equal(p.ctx.result.stethSupply, 10n ** 18n);
   assert.equal(batches.length, 1);
   assert.equal(batches[0].filter(c => c.method === 'eth_chainId').length, 1);
   assert.equal(batches[0].filter(c => c.params[0]?.to.toLowerCase() === stethMetadata.priceFeed.address.toLowerCase()
@@ -357,6 +481,7 @@ test('Ethereum reads share one batch and one checked stETH quote across tables',
   p.run('rpc = async () => { throw Error("structural cache must remain usable"); }; result.stethQuote.rounds[0].updatedAt = Date.now() - 3601000;');
   p.ctx.cached = await p.run('overviewL1([], false)');
   assert.equal(p.ctx.cached.supply, 10n ** 18n);
+  assert.equal(p.ctx.cached.stethSupply, 10n ** 18n);
   assert.match(p.ctx.cached.stethQuote.err, /structural cache/);
 });
 

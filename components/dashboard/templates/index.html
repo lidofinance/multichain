@@ -174,6 +174,10 @@ main{padding:var(--sp-5) 0 var(--sp-6)}
 .kv dt{font-family:var(--mono); font-size:var(--fs-xs); color:var(--ink-3); text-transform:uppercase; letter-spacing:.06em; padding-top:3px}
 .kv dd{margin:0; min-width:0}
 .strip{display:flex; flex-wrap:wrap; gap:var(--sp-2) var(--sp-3); align-items:center}
+.ov-summary{overflow-x:auto}
+.ov-summary .strip{flex-wrap:nowrap; white-space:nowrap}
+.ov-networks{margin-top:var(--sp-3); font-size:var(--fs-sm); color:var(--ink-3)}
+.ov-networks b{color:var(--ink); font-weight:500}
 
 /* ── tables ─────────────────────────────────────────────────────── */
 .tw{overflow-x:auto}
@@ -1224,6 +1228,7 @@ function ldoPaintNumbers() {
     `USD estimate: LDO/ETH × ETH/USD · $${fmtUnits(ldoUsd(10n ** 18n), 18, 4)} per LDO · oracle updates ${
       ldo.quote.rounds.map((r, i) => `${esc(LDO.priceFeeds[i].pair)} ${esc(minuteTime(r.updatedAt))}`).join(" · ")}`);
   ovUpdateStatus();
+  ovPaintSummary();
 }
 
 function ldoCard() {
@@ -1342,6 +1347,7 @@ function stethPaintPrice() {
 }
 function stethPaintNumbers() {
   stethPaintPrice(); paintStethRates(); ovUpdateStatus();
+  ovPaintSummary();
 }
 
 function stethCard() {
@@ -1395,7 +1401,7 @@ function stethCard() {
 // CCIP pool, its per-destination silos and the price — enough to paint the whole table at once.
 // The per-network supplies then stream in from up to 24 other chains, each row filling itself
 // as its chain answers. A row whose chain never answers says so; it never quietly reads zero.
-const OV_KEY = "ov-l1|mainnet|v3";
+const OV_KEY = "ov-l1|mainnet|v4";
 const ovStr = (v) => (v === null || v === undefined ? null : v.toString());
 const ovBig = (v) => (v === null || v === undefined ? null : BigInt(v));
 
@@ -1434,16 +1440,17 @@ function overviewRows() {
 async function overviewL1(rows, force) {
   const url = rpcFor(1);
   const hub = (((registry.mainnet || {}).tokens || {}).wstETH || {})["1"] || null;
-  const out = { url, at: null, err: null, rate: null, supply: null,
+  const out = { url, at: null, err: null, rate: null, supply: null, stethSupply: null, stethSupplyError: null,
                 stethQuote: null, ldoQuote: null, escrow: {}, silo: {}, pool: { addr: hub ? hub.poolAddress : null, held: null, unsiloed: null } };
   if (!url) { out.err = "no RPC configured for Ethereum"; return out; }
 
   const quotes = Promise.all([stethPrice(force), ldoPrice(force)]);
   const applyQuotes = async () => { [out.stethQuote, out.ldoQuote] = await quotes; };
   let c = force ? null : metaCache.get(OV_KEY);
-  if (c && c.url !== url) c = null;
+  if (c && (c.url !== url || c.stethSupply == null)) c = null;
   if (c) {
     out.at = c.at; out.rate = ovBig(c.rate); out.supply = ovBig(c.supply);
+    out.stethSupply = ovBig(c.stethSupply);
     for (const [k, v] of Object.entries(c.escrow)) out.escrow[k] = ovBig(v);
     for (const [k, v] of Object.entries(c.silo)) out.silo[k] = { siloed: v.siloed, available: ovBig(v.available) };
     out.pool.held = ovBig(c.pool.held); out.pool.unsiloed = ovBig(c.pool.unsiloed);
@@ -1467,6 +1474,9 @@ async function overviewL1(rows, force) {
     }
   }
 
+  // Append the stETH denominator checks without coupling them to escrow reads.
+  calls.push({ method: "eth_chainId", params: [] },
+    call(STETH.l1Token, SEL.decimals), call(STETH.l1Token, SEL.totalSupply));
   try {
     const r = await rpcRead(url, calls);
     let k = 0;
@@ -1481,14 +1491,24 @@ async function overviewL1(rows, force) {
         out.silo[s.key] = { siloed, available };
       }
     }
+    if (!chainMatches(r[k++], 1)) out.stethSupplyError = "Ethereum chain ID unavailable or mismatched";
+    else if (strictUint(r[k]) !== 18n) out.stethSupplyError = "stETH decimals unavailable or mismatched";
+    else {
+      out.stethSupply = strictUint(r[k + 1]);
+      if (out.stethSupply === null) out.stethSupplyError = "Ethereum stETH supply unavailable";
+    }
     out.at = Date.now();
-    metaCache.set(OV_KEY, {
-      url, at: out.at, rate: ovStr(out.rate), supply: ovStr(out.supply),
-      escrow: Object.fromEntries(Object.entries(out.escrow).map(([a, b]) => [a, ovStr(b)])),
-      silo: Object.fromEntries(Object.entries(out.silo).map(([a, b]) => [a, { siloed: b.siloed, available: ovStr(b.available) }])),
-      pool: { held: ovStr(out.pool.held), unsiloed: ovStr(out.pool.unsiloed) },
-    });
-    saveCache();
+    // Keep valid observations visible, but retry an incomplete batch on the next load.
+    if (out.stethSupply !== null) {
+      metaCache.set(OV_KEY, {
+        url, at: out.at, rate: ovStr(out.rate), supply: ovStr(out.supply),
+        stethSupply: ovStr(out.stethSupply),
+        escrow: Object.fromEntries(Object.entries(out.escrow).map(([a, b]) => [a, ovStr(b)])),
+        silo: Object.fromEntries(Object.entries(out.silo).map(([a, b]) => [a, { siloed: b.siloed, available: ovStr(b.available) }])),
+        pool: { held: ovStr(out.pool.held), unsiloed: ovStr(out.pool.unsiloed) },
+      });
+      saveCache();
+    }
   } catch (e) { out.err = e.message; }
   await applyQuotes();
   return out;
@@ -1608,6 +1628,7 @@ function readTime(at) {
 function ovUpdateStatus() {
   const t = ovTotals();
   tabStatus.set("overview", t.read === ov.rows.length && !ov.registryError && registry.mainnet && ov.l1 && !ov.l1.err
+    && ov.l1.stethSupply != null
     && ov.rows.every((r) => { const b = ovBacking(r); return b.kind === "pooled" || b.v !== null; })
     && ldo.rows.every((r) => !r.token || ldo.supply.get(r.key)?.v != null)
     && !ldoPriceError(ldo.quote)
@@ -1649,16 +1670,70 @@ function ovPaintNumbers() {
     el2.innerHTML = `<b>${fmtUnits(agg.sum, dec, 2)}</b> wstETH${p === null ? "" : ` · ${p.toFixed(2)}%`}${
       agg.read < agg.total ? ` · <span class="muted">${agg.read}/${agg.total} networks read</span>` : ""}`;
   }
-  const tot = document.querySelector("[data-ov-total]");
-  if (tot) {
-    const usd = ovUsd(t.all);
-    tot.innerHTML = `<span class="chip c-cl">${t.read === ov.rows.length ? "supply on listed networks" : "partial supply · networks read"}
-        <b style="margin-left:4px">${fmtUnits(t.all, dec, 2)}</b></span>
-      ${usd === null ? "" : `<span class="chip c-cl" title="Estimate: stEthPerToken() × Chainlink STETH/USD">≈ <b style="margin-left:4px">$${fmtUnits(usd, dec, 0)}</b></span>`}
-      ${ov.l1 && ov.l1.supply !== null
-        ? `<span class="chip c-mute">of ${fmtUnits(ov.l1.supply, dec, 0)} wstETH on Ethereum</span>` : ""}
-      <span class="chip ${t.read === ov.rows.length ? "c-ok" : "c-warn"}">${t.read}/${ov.rows.length} networks read</span>`;
+  ovPaintSummary();
+}
+
+function summarySupply(rows, supply) {
+  const tokens = new Map(rows.filter(r => r.token).map(r => [rowKey(r.chainId, r.token), r]));
+  let sum = 0n, read = 0, pending = 0;
+  for (const row of tokens.values()) {
+    const s = supply.get(row.key);
+    if (s?.v != null) { sum += s.v; read++; }
+    else if (!s) pending++;
   }
+  return { sum, read, pending, total: tokens.size };
+}
+
+// Round USD upward to one decimal in thousands/millions; keep small values in dollars.
+function summaryUsd(value) {
+  const dollar = 10n ** 18n;
+  const ceil = (v, unit) => (v + unit - 1n) / unit;
+  if (value < 1000n * dollar && ceil(value, dollar) < 1000n) return '$' + ceil(value, dollar);
+  let unit = 1000n * dollar, suffix = 'k';
+  if (ceil(value * 10n, unit) >= 10000n) { unit *= 1000n; suffix = 'kk'; }
+  const tenths = ceil(value * 10n, unit);
+  return `$${tenths / 10n}${tenths % 10n ? '.' + tenths % 10n : ''}${suffix}`;
+}
+
+function summaryToken(symbol, model, denominator, usdValue, denominatorError) {
+  const { sum, read, pending, total } = summarySupply(model.rows, model.supply);
+  const partial = read < total;
+  const title = `${symbol} outstanding on listed destination tokens; ${read}/${total} deployments read. `
+    + (denominator === undefined ? '' : `% = destination supply / Ethereum ${symbol} totalSupply. `)
+    + (denominatorError ? `${denominatorError}. ` : '')
+    + 'Reads may be from different blocks; this is not a backing check.';
+  let value = read ? `<b>${formatAmount(sum)}</b>` : pending ? 'loading…' : 'unavailable';
+  if (read && denominator !== undefined) {
+    const pct = ovPct(sum, denominator);
+    value += ` · ${pct === null ? '% unavailable' : sum > 0n && pct === 0 ? '&lt;0.01%' : pct.toFixed(2) + '%'}`;
+  }
+  if (read && usdValue) {
+    const usd = usdValue(sum);
+    value += usd === null ? ' · USD unavailable' : ` · ≈ ${summaryUsd(usd)}`;
+  }
+  if (read && partial) value += ` · partial ${read}/${total}`;
+  const tone = !total || (pending && !read) ? 'c-mute' : partial ? 'c-warn' : 'c-cl';
+  return `<span class="chip ${tone}" title="${esc(title)}">${symbol} ${value}</span>`;
+}
+
+function ovPaintSummary() {
+  const tot = document.querySelector('[data-ov-total]');
+  if (!tot) return;
+  tot.innerHTML = `<span class="muted" style="font-size:var(--fs-sm)">Bridged</span>`
+    + summaryToken('wstETH', ov, ov.l1?.supply ?? null, ovUsd)
+    + summaryToken('stETH', steth, ov.l1?.stethSupply ?? null, undefined, ov.l1?.stethSupplyError || ov.l1?.err)
+    + summaryToken('LDO', ldo, undefined, ldoUsd);
+  const counts = document.querySelector('[data-ov-networks]');
+  if (!counts) return;
+  const count = rows => new Set(rows.map(r => String(r.chainId))).size;
+  const labels = { supported: 'endorsed', legacy: 'deendorsed', ccip: 'CCIP', unclassified: 'unclassified' };
+  counts.innerHTML = `<span><b>${count(ov.rows)}</b> networks</span>`
+    + Object.entries(labels).map(([group, label]) => {
+      const n = count(ov.rows.filter(r => r.group === group));
+      return n || group !== 'unclassified' ? `<span><b>${n}</b> ${label}</span>` : '';
+    }).join('')
+    + (ov.registryError || !registry.mainnet ? '<span class="chip c-warn">CCIP registry unavailable</span>' : '')
+    + `<span style="margin-left:auto" title="Total stETH supply on Ethereum, including stETH held in the wstETH wrapper and bridge backing. Wrapped and bridged amounts are already included in this total.">Total stETH <b>${ov.l1?.stethSupply == null ? 'unavailable' : formatAmount(ov.l1.stethSupply)}</b></span>`;
 }
 
 // ── overview: render ─────────────────────────────────────────────────────────
@@ -1762,16 +1837,16 @@ async function viewOverview(force) {
     <section class="card">
       <div class="card-head">
         <span class="eyebrow">overview</span>
-        <h2>wstETH across mainnets</h2>
+        <h2>Lido tokens across mainnets</h2>
         <span class="stamp">mainnet</span>
       </div>
       <div class="card-body">
         ${registryError ? `<div class="banner">CCIP registry unavailable; showing configured networks and any cached registry entries. ${esc(registryError)}</div>` : ""}
         ${ov.l1.err ? `<div class="banner">${esc(ov.l1.err)}</div>` : ""}
-        <div class="strip" data-ov-total></div>
-        <p class="muted" style="margin:var(--sp-3) 0 0; font-size:var(--fs-sm)">
-          Network supply vs. Ethereum backing. Reads may be from different blocks.
-        </p>
+        <div class="ov-summary">
+          <div class="strip" data-ov-total></div>
+          <div class="strip ov-networks" data-ov-networks title="Unique wstETH destination networks per category; a network can appear in more than one category. CCIP does not imply Lido endorsement. Percentages above use each token's Ethereum total supply; coverage is limited to listed deployments."></div>
+        </div>
       </div>
     </section>
 
