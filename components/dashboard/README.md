@@ -46,6 +46,22 @@ a GitHub commit, and bundles the consumed source files under `upstream/` for
 provenance links. Host filesystem paths are not published. A missing local input
 fails the build; it does not switch to GitHub. Pages continues using GitHub by default.
 
+## Ledger explorer
+
+The **Ledger** tab (`#ledger`) lists every deployment from the build's exact
+ledger input, including implementations and proxy admins. Search matches recorded values in all
+entry fields and network metadata, including source revisions and reference
+URLs; whitespace-separated terms must all match. A network filter narrows the
+list. Expand a row for all recorded fields, audit reports, public posts and
+references, source code, network metadata, and entry JSON. Proxy relationships
+open the related deployment. Empty references and unknown sources remain explicit.
+Coverage notes and known gaps are available above the list.
+Filters and expanded rows are retained when switching tabs.
+
+The tab works entirely from embedded build data, without registry or RPC reads.
+It links to the commit-pinned ledger and raw JSON, which remain the source of
+truth for tools. The explorer adds no verification or audit conclusions.
+
 ## Data inputs
 
 - **Mainnet tokens:** every mainnet EVM `*-wsteth-token` role in `ledger.json`,
@@ -119,14 +135,19 @@ hashes, derived data, and
 build identity. The working ledger must match HEAD; commit ledger edits before
 building so the link identifies the exact input. The move to root `ledger.json`
 must also be committed before a production build can pin that path. Tests use
-controlled Git responses and temporary output directories. No ledger copy is published.
+controlled Git responses and temporary output directories. The full ledger is
+embedded only in the explorer; the compact build manifest pins it with
+`ledgerCommit` and `ledgerSha256` for the original file bytes, plus
+`ledgerContentSha256` for the embedded JSON content. To verify the latter from the
+parsed `ledger-data` payload, hash the UTF-8 bytes of
+`json.dumps(payload, sort_keys=True, separators=(",", ":"))` in Python
+(default ASCII escaping). This content digest participates in the manifest identity;
+changes to values are detectable even though source whitespace is not embedded.
+No separate `ledger.json` copy is published.
 GitHub builds link to that commit; local builds link to their
 bundled source inputs and record a null upstream commit. The identity
 namespaces observation caches and optional offline snapshots, preventing reuse
 when ledger, deployment, or metadata inputs change.
-
-`components/dashboard/docs/FPF-REVIEW.md` remains a historical review of the original dashboard; it does not
-claim to verify this build pipeline.
 
 ## FPF reasoning for the LDO extension
 
@@ -193,38 +214,6 @@ automatically. Companion `roles.html` and `ccv.html` retain their original build
 provenance; the saved projection does not contain the source text needed to
 rebuild those pages. A full source build regenerates all three pages.
 
-## Review validation (2026-10-01)
-
-The nine candidates in `/tmp/review-dashboard-ldo-steth-2026-10-01.md` were
-checked against the source and reproducible local cases. Findings 1–7 describe
-reachable failures and are corrected. Finding 8 establishes redundant concurrent
-request batches; live throttling remains a possible consequence, not an observed
-result. Finding 9 is a maintenance improvement, supported by the duplicated
-price validation and rendering paths rather than a separate user-visible failure.
-
-| Candidate | Implemented improvement | Verification |
-| --- | --- | --- |
-| 1: registry failure masked | Registry errors and absent mainnet registry prevent green overview status. | Complete token observations with failed registry remain warning. |
-| 2: future timestamp error persists | Temporal validity is derived from raw quote timestamps each time; two minutes of future device-clock skew are allowed without extending heartbeats. | Clock moves behind, catches up, then exceeds heartbeat with one RPC read. |
-| 3: different stETH prices | wstETH and stETH use one checked stETH/USD quote from configured metadata. | One latestRoundData read; both estimates disappear when it becomes stale. |
-| 4: unused curated mappings | Unmatched stETH contract IDs fail the build; new unclassified ledger tokens remain supported. | Misspelled curated ID rejected, new ledger token projected. |
-| 5: unreproducible reuse | Explicit `--reuse-build` mode retains saved identity/hash and current input hashes. | Identical outputs from two builds; no upstream fetch; tampered payload rejected before writes. |
-| 6: timer destroys focus | Unchanged tabs retain their DOM; changed tab status restores focus. Minute ticks update ages and rate-status spans only; ticks skip in-flight refreshes. | Browser focus, DOM identity, and busy-refresh checks. |
-| 7: loading appears failed | Pending USD prices and pending totals use neutral loading states. | Amount retained through loading and completed price failure. |
-| 8: redundant batches | Same-turn reads to one endpoint coalesce, deduplicating identical calls; snapshot uses the same batching. | One Ethereum batch and one destination batch; failed supply subcall retains valid rate. |
-| 9: duplicated helpers | Shared quote reader, strict word/round decoding, amount/total renderer, and HTTPS source validator. | Existing token, rate, price, sort, and cache regressions remain covered. |
-
-**FPF A.10** (checklist items 1, 3, 6, 8) governs evidence recovery and provenance:
-code paths and controlled observations support each bounded finding; saved source
-availability is separate from currentness. **C.16** (items 2, 3, 7–9) keeps oracle
-time, device time, observation time, scales, and price validity distinct. The
-two-minute allowance is an explicit dashboard policy, not a feed heartbeat or
-an oracle guarantee. **E.17 CC-MVPK-1, CC-MVPK-4, CC-MVPK-5** govern publication:
-the same price evidence has the same validity in both tables, omissions affect
-status, and the generated page retains a recoverable source carrier. Tests use
-controlled RPC responses; they establish dashboard behavior, not current on-chain
-balances or public endpoint reliability.
-
 ## GitHub Pages
 
 ### Publish the committed build
@@ -274,16 +263,38 @@ in the artifact. Pushes alone do not deploy; rerun the workflow to incorporate
 ledger edits or a newer upstream deployment. A failed download/build prevents
 upload and deployment, leaving the previously published site intact.
 
+## Asynchronous navigation
+
+Navigation does not wait for registry or RPC reads. Newly selected views show a
+loading message; Settings opens immediately and fills registry-dependent names
+and lane options asynchronously, preserving drafts and focus. Refresh keeps the
+current view and timestamp visible during reads and after a failed refresh, with
+one replaceable error banner. Settings refresh reloads its registry.
+Results from an earlier view may fill observation caches, but cannot replace the
+active view, its status, or its displayed read time. One run context guards both
+initial rendering and background supply updates. Matching pending registry, lane,
+and overview phase-one reads are shared, including on refresh; completed caches are bypassed on
+refresh. Crawl sharing includes the RPC endpoint, and failed reads can be retried.
+Overview sharing also distinguishes the Ethereum endpoint, hub pool and row inputs.
+Requests continue in the background; navigation does not cancel shared reads.
+Clearing the cache detaches pending work and invalidates its publication and cache
+writes. New reads can start immediately; late responses cannot restore cleared data.
+The “offline copy” stamp means the displayed registry fell back after a network
+failure. Loading a baked registry initially does not establish a network failure.
+
 ## Optional offline observations
 
 After building, with Node.js 22 or later:
 
 ```sh
-node components/dashboard/scripts/build-lane-watch-snapshot.mjs --inline /tmp/wsteth-dashboard.html
+mkdir -p .workspace/dashboard
+cp docs/index.html .workspace/dashboard/index.html
+node components/dashboard/scripts/build-lane-watch-snapshot.mjs --site .workspace/dashboard --inline .workspace/dashboard/wsteth-dashboard.html
 ```
 
 Use `--site PATH` for a nondefault build directory. The generator writes
 `index.snapshot.json` beside the built page and optionally a standalone HTML copy.
+Both observation files above stay in the ignored workspace, outside the Pages site.
 The JSON file alone is not loaded by the dashboard; use the `--inline` HTML copy
 to view baked observations. Normal builds do not create an empty snapshot file.
 It records the build identity and per-read timestamps. Normal Pages builds do not

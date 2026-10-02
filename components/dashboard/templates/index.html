@@ -115,7 +115,7 @@ button{font:inherit; color:inherit}
 .tab-dot[data-s="busy"]{background:var(--cl); animation:pulse 1.1s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
 .ctl{display:flex; align-items:center; gap:var(--sp-2); flex:none}
-select,input[type=text],input[type=url]{
+select,input[type=text],input[type=url],input[type=search]{
   font:inherit; font-size:var(--fs-sm); padding:5px 8px; background:var(--surface);
   color:var(--ink); border:1px solid var(--rule);
 }
@@ -205,6 +205,41 @@ td.ovshare{white-space:nowrap; min-width:132px}
 .ovbar i{display:block; height:100%; background:var(--cl); min-width:1px}
 .ovpct{font-family:var(--mono); font-size:var(--fs-xs); color:var(--ink-2)}
 
+/* ── ledger explorer ────────────────────────────────────────────── */
+.ledger-intro p{max-width:85ch; margin:0 0 var(--sp-3)}
+.ledger-tools{display:flex; flex-wrap:wrap; gap:var(--sp-3); align-items:end}
+.ledger-tools label{display:grid; gap:var(--sp-1); font-size:var(--fs-sm)}
+.ledger-tools label:first-child{flex:1 1 300px}
+.ledger-tools input,.ledger-tools select{width:100%; padding:9px 10px}
+.ledger-entry{border-top:1px solid var(--rule)}
+.ledger-entry[hidden]{display:none}
+.ledger-entry>summary{display:flex; align-items:center; gap:var(--sp-3); padding:12px var(--sp-4); cursor:pointer; list-style:none}
+.ledger-entry>summary::-webkit-details-marker{display:none}
+.ledger-entry>summary::before{content:'›'; color:var(--ink-3); font-size:20px}
+.ledger-entry[open]>summary::before{transform:rotate(90deg)}
+.ledger-entry>summary:hover,.ledger-entry[open]>summary{background:var(--surface-2)}
+.ledger-entry>summary:focus-visible{outline:2px solid var(--cl); outline-offset:-2px}
+.ledger-title{display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--sp-1) var(--sp-4); flex:1; min-width:0; overflow-wrap:anywhere; font-size:var(--fs-sm)}
+.ledger-title strong{font-weight:500}
+.ledger-title small{color:var(--ink-3); min-width:0}
+.ledger-summary-meta{display:flex; flex-wrap:wrap; justify-content:end; align-items:center; gap:var(--sp-2); font-size:var(--fs-xs)}
+.ledger-detail{padding:var(--sp-4); border-top:1px solid var(--rule); overflow-wrap:anywhere}
+.ledger-fields{display:grid; grid-template-columns:minmax(110px,180px) minmax(0,1fr); gap:10px var(--sp-4); margin:0; font-size:var(--fs-sm)}
+.ledger-fields dt{color:var(--ink-3)}
+.ledger-fields dd{margin:0; min-width:0}
+.ledger-fields .ledger-fields{grid-template-columns:minmax(90px,150px) minmax(0,1fr)}
+.ledger-values{margin:0; padding-left:var(--sp-4)}
+.ledger-values li+li{margin-top:var(--sp-2)}
+.ledger-link{border:0; padding:0; background:none; text-align:left; cursor:pointer; text-decoration:underline; overflow-wrap:anywhere; max-width:100%}
+.ledger-raw{white-space:pre-wrap; font-size:var(--fs-xs); margin-bottom:0}
+@media(max-width:640px){
+  .ledger-entry>summary{flex-wrap:wrap; gap:var(--sp-2)}
+  .ledger-title{flex-basis:85%}
+  .ledger-summary-meta{justify-content:start; margin-left:18px}
+  .ledger-fields,.ledger-fields .ledger-fields{grid-template-columns:1fr; gap:4px}
+  .ledger-fields dd{margin-bottom:10px}
+}
+
 /* ── misc ───────────────────────────────────────────────────────── */
 .banner{
   border-left:3px solid var(--bad); background:var(--bad-soft); color:var(--bad);
@@ -257,6 +292,7 @@ td.ovshare{white-space:nowrap; min-width:132px}
 <!-- Baked snapshot. Empty in the repository; components/dashboard/scripts/build-lane-watch-snapshot.mjs fills it in a
      copy meant to be published somewhere that cannot reach the registry or any RPC. -->
 <script type="application/json" id="dashboard-data">{}</script>
+<script type="application/json" id="ledger-data">{}</script>
 <script type="application/json" id="snapshot"></script>
 
 <script>
@@ -426,7 +462,39 @@ const save = () => localStorage.setItem(LS, JSON.stringify({
 }));
 
 const registry = {};      // env -> {chains, lanes, tokens}
-let busy = false, forceNext = false, runPending = false;
+let busy = false, forceNext = false, runId = 0;
+// One generation owns all publication, including background supply callbacks.
+function viewContext(view, env) {
+  const id = ++runId;
+  const isCurrent = () => id === runId && currentView() === view;
+  const commit = (update) => {
+    if (!isCurrent()) return false;
+    update();
+    return true;
+  };
+  return { ownsRun: () => id === runId, isCurrent, commit, publish: (update) => commit(() => {
+    dataAt = null;
+    offline = registryFallbacks.has(registry[env]);
+    update();
+  }) };
+}
+
+// Refresh shares pending fresh reads, but must not join work using cached inputs.
+// Failures are removed too, so the next attempt can retry.
+const registryReads = new Map(), crawlReads = new Map(), overviewReads = new Map();
+let cacheGeneration = 0;
+function sharedRead(pending, key, read) {
+  if (pending.has(key)) return pending.get(key);
+  const generation = cacheGeneration;
+  const promise = Promise.resolve().then(() => {
+    if (generation !== cacheGeneration) throw Error("Cache cleared; retry the read");
+    return read();
+  }).finally(() => {
+    if (pending.get(key) === promise) pending.delete(key);
+  });
+  pending.set(key, promise);
+  return promise;
+}
 
 // ── cache ────────────────────────────────────────────────────────────────────
 // Nothing here talks to an RPC on its own. Opening a tab renders whatever the cache holds; the
@@ -463,7 +531,8 @@ const SNAPSHOT = (() => {
     return s && s.registry && s.identity === BUILD.identity ? s : null;
   } catch { return null; }
 })();
-let offline = null;   // last network failure, once a snapshot has covered for it
+let offline = false; // displayed registry fell back after a failed network read
+const registryFallbacks = new WeakSet();
 
 (function seedFromSnapshot() {
   if (!SNAPSHOT) return;
@@ -485,9 +554,14 @@ function saveCache() {
   }
 }
 function clearCache() {
+  cacheGeneration++;
+  runId++; // Pending views and supply callbacks must not publish cleared observations.
+  busy = false; el("refresh").disabled = state.view === 'ledger';
+  registryReads.clear(); crawlReads.clear(); overviewReads.clear(); priceReads.clear();
   structCache.clear(); metaCache.clear();
   for (const env of Object.keys(registry)) delete registry[env];
   localStorage.removeItem(CACHE_KEY); localStorage.removeItem(REG_KEY);
+  dataAt = null; offline = false; renderTabs(); tickStamp();
 }
 function cacheAge() {
   const all = [...structCache.values(), ...metaCache.values()].map((v) => v.at).filter(Boolean);
@@ -645,14 +719,18 @@ function overlayOurs(env, data) {
   data.tokens = { ...(data.tokens || {}), wstETH: wst };
   return data;
 }
-async function loadRegistry(env, force) {
+function loadRegistry(env, force) {
+  return sharedRead(registryReads, env, () => readRegistry(env, force));
+}
+async function readRegistry(env, force) {
+  const generation = cacheGeneration;
   if (!force && registry[env]) return registry[env];
   const baked = () => (SNAPSHOT && SNAPSHOT.registry && SNAPSHOT.registry[env]) || null;
   if (!force) {
     const disk = regDisk()[env];
     if (disk && disk.chains) { registry[env] = overlayOurs(env, disk); return registry[env]; }
     const snap = baked();
-    if (snap && snap.chains) { registry[env] = overlayOurs(env, snap); return registry[env]; }
+    if (snap && snap.chains) { registry[env] = overlayOurs(env, {...snap}); return registry[env]; }
   }
   const get = (p) => fetch(`${API}/${p}`).then((r) => {
     if (!r.ok) throw new Error(`registry API ${p}: HTTP ${r.status}`);
@@ -669,11 +747,13 @@ async function loadRegistry(env, force) {
     // Unreachable registry with a snapshot to fall back on is a degraded page, not a broken one.
     const snap = baked();
     if (!snap || !snap.chains) throw e;
-    offline = e.message || String(e);
-    registry[env] = overlayOurs(env, snap);
-    return registry[env];
+    const fallback = overlayOurs(env, {...snap});
+    registryFallbacks.add(fallback);
+    if (generation === cacheGeneration) registry[env] = fallback;
+    return fallback;
   }
   const raw = { chains: chains.data.evm, lanes: lanes.data, tokens: tokens.data, at: Date.now() };
+  if (generation !== cacheGeneration) return overlayOurs(env, raw);
   const disk = regDisk(); disk[env] = raw;
   try { localStorage.setItem(REG_KEY, JSON.stringify(disk)); }
   catch { try { localStorage.setItem(REG_KEY, JSON.stringify({ [env]: raw })); } catch {} }
@@ -873,12 +953,17 @@ const cacheable = (st) => !st.error && st.rows.length && !st.rows.some((r) => r.
 
 // Serves the cache when there is one. Reads from the chain only when there is nothing cached for
 // this chain+peer, or when `force` (the refresh button) says to.
-async function crawl(env, chainId, peerId, force) {
-  const entry = registry[env].chains[String(chainId)];
-  const url = rpcFor(chainId);
+function crawl(env, chainId, peerId, force) {
+  const url = rpcFor(chainId), reg = registry[env];
+  let cached = force ? null : structCache.get(`${env}|${chainId}|${peerId || ""}`);
+  if (cached && cached.url !== url) cached = null;
+  const key = JSON.stringify([env, String(chainId), String(peerId || ''), url, !!cached]);
+  return sharedRead(crawlReads, key, () => readCrawl(env, chainId, peerId, url, reg, cached));
+}
+async function readCrawl(env, chainId, peerId, url, reg, st) {
+  const generation = cacheGeneration, cachedStructure = st;
+  const entry = reg.chains[String(chainId)];
   const key = `${env}|${chainId}|${peerId || ""}`;
-  let st = force ? null : structCache.get(key);
-  if (st && st.url !== url) st = null;        // another endpoint may be another deployment
   let live = st ? st.live : null;
   let ms = 0;
 
@@ -888,12 +973,15 @@ async function crawl(env, chainId, peerId, force) {
     live = null;                              // a new structure needs its own live reading
   }
   if (!live) {
-    const peerSel = peerId && registry[env].chains[String(peerId)]
-      ? registry[env].chains[String(peerId)].selector : null;
+    const peerSel = peerId && reg.chains[String(peerId)]
+      ? reg.chains[String(peerId)].selector : null;
     live = await probeLive(url, st, peerSel);
     live.at = Date.now();
     ms += live.ms;
-    if (cacheable(st)) { st.live = live; structCache.set(key, st); saveCache(); }
+    if (generation === cacheGeneration && cacheable(st) &&
+        (!cachedStructure || structCache.get(key) === cachedStructure)) {
+      st.live = live; structCache.set(key, st); saveCache();
+    }
   }
 
   const res = { ...live, entry, chainId: String(chainId), url, rows: st.rows, ramps: st.ramps,
@@ -901,7 +989,6 @@ async function crawl(env, chainId, peerId, force) {
                 structAt: st.at, liveAt: live.at || null, latency: ms || null,
                 error: st.error || live.liveError };
   res.checks = buildChecks(res, entry);
-  noteDataAge(res.liveAt);
   return res;
 }
 
@@ -1057,11 +1144,14 @@ function laneSummary(env, a, b, ra, rb) {
   </section>`;
 }
 
-async function viewLane(a, b, force) {
-  const [ra, rb] = await Promise.all([crawl(state.env, a, b, force), crawl(state.env, b, a, force)]);
-  const worst = [ra, rb].flatMap((r) => (r.checks || []).map((c) => c.s));
-  tabStatus.set(`lane-${a}-${b}`, worst.includes("bad") || ra.error || rb.error ? "bad" : worst.includes("warn") ? "warn" : "ok");
-  views.innerHTML = laneSummary(state.env, a, b, ra, rb) + `<div class="grid2">${sidePanel(ra)}${sidePanel(rb)}</div>`;
+async function viewLane(a, b, force, env, context) {
+  const [ra, rb] = await Promise.all([crawl(env, a, b, force), crawl(env, b, a, force)]);
+  context.publish(() => {
+    noteDataAge(ra.liveAt); noteDataAge(rb.liveAt);
+    const worst = [ra, rb].flatMap((r) => (r.checks || []).map((c) => c.s));
+    tabStatus.set(`lane-${a}-${b}`, worst.includes("bad") || ra.error || rb.error ? "bad" : worst.includes("warn") ? "warn" : "ok");
+    views.innerHTML = laneSummary(env, a, b, ra, rb) + `<div class="grid2">${sidePanel(ra)}${sidePanel(rb)}</div>`;
+  });
 }
 
 // ── LDO overview ─────────────────────────────────────────────────────────────
@@ -1087,6 +1177,7 @@ function ldoRows(networks) {
 }
 
 async function destinationSupply(row, force, namespace) {
+  const generation = cacheGeneration;
   const url = rpcFor(row.chainId);
   if (!url) return { v: null, at: null, err: "no RPC configured" };
   const key = `${namespace}-supply|${row.key}`;
@@ -1100,8 +1191,7 @@ async function destinationSupply(row, force, namespace) {
     const raw = strictUint(r[2]);
     if (raw === null) throw Error("supply unavailable");
     const v = scaleAmount(raw, row.decimals), at = Date.now();
-    metaCache.set(key, { url, at, supply: v.toString() });
-    saveCache();
+    if (generation === cacheGeneration) { metaCache.set(key, { url, at, supply: v.toString() }); saveCache(); }
     return { v, at, err: null };
   } catch (e) { return { v: null, at: null, err: e.message }; }
 }
@@ -1140,24 +1230,22 @@ function feedPriceError(quote, feeds) {
 const ldoPriceError = (quote) => feedPriceError(quote, LDO.priceFeeds);
 const priceReads = new Map();
 async function feedQuote(namespace, feeds, force) {
+  const generation = cacheGeneration;
   const url = rpcFor(1), key = `${namespace}-price|ethereum|v2`;
   if (!url) return { err: "USD unavailable: no Ethereum RPC", at: null };
   const cached = force ? null : metaCache.get(key);
   if (cached?.url === url && !feedPriceError(cached, feeds)) return cached;
-  const pendingKey = `${key}|${url}|${Boolean(force)}`;
-  if (priceReads.has(pendingKey)) return priceReads.get(pendingKey);
-  const read = (async () => {
+  const pendingKey = JSON.stringify([key, url, feeds]);
+  return sharedRead(priceReads, pendingKey, async () => {
     try {
       const r = await rpcRead(url, [{ method: "eth_chainId", params: [] }, ...feeds.flatMap((f) =>
         [call(f.address, SEL.decimals), call(f.address, SEL.latestRoundData)])]);
       if (!chainMatches(r[0], 1)) throw Error("USD unavailable: RPC is not Ethereum mainnet");
       const quote = { url, at: Date.now(), rounds: feeds.map((f, i) => feedRound(r[2 + i * 2], r[1 + i * 2], f)), err: null };
-      metaCache.set(key, quote); saveCache();
+      if (generation === cacheGeneration) { metaCache.set(key, quote); saveCache(); }
       return quote;
     } catch (e) { return { err: e.message, at: null }; }
-  })();
-  priceReads.set(pendingKey, read);
-  try { return await read; } finally { priceReads.delete(pendingKey); }
+  });
 }
 const ldoPrice = (force) => feedQuote('ldo', LDO.priceFeeds, force);
 
@@ -1282,6 +1370,7 @@ function stethUsd(amount) {
 const stethRateRound = (hex, decimals, row) => oracleRound(hex, decimals, row.rateDecimals, 'Rate', true);
 
 async function stethRate(row, force) {
+  const generation = cacheGeneration;
   const url = rpcFor(row.chainId), key = `steth-rate|${row.key}`;
   if (!url || !row.oracle) return { err: !url ? 'No RPC configured' : 'Rate oracle not identified', at: null };
   const cached = force ? null : metaCache.get(key);
@@ -1298,7 +1387,7 @@ async function stethRate(row, force) {
     const observation = { ...stethRateRound(r[3], r[2], row), url, at: Date.now(), err: null,
       outdatedDelay: delay !== null && delay <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(delay) : null,
       paused: paused === 0n ? false : paused === 1n ? true : null };
-    metaCache.set(key, observation); saveCache();
+    if (generation === cacheGeneration) { metaCache.set(key, observation); saveCache(); }
     return observation;
   } catch (e) { return { err: e.message, at: null }; }
 }
@@ -1437,24 +1526,30 @@ function overviewRows() {
 }
 
 // Everything Ethereum can answer about the whole picture, in one batch.
-async function overviewL1(rows, force) {
+function overviewL1(rows, force) {
+  // Registry refresh can change the hub or row inputs even at the same endpoint.
   const url = rpcFor(1);
-  const hub = (((registry.mainnet || {}).tokens || {}).wstETH || {})["1"] || null;
+  const hub = registry.mainnet?.tokens?.wstETH?.["1"]?.poolAddress;
+  const key = JSON.stringify([url, hub, rows.map(({key, escrow, group, selector}) => [key, escrow, group, selector])]);
+  let cached = force ? null : metaCache.get(OV_KEY);
+  if (cached && (cached.inputs !== key || cached.stethSupply == null)) cached = null;
+  return Promise.all([
+    sharedRead(overviewReads, JSON.stringify([key, !!cached]), () => readOverviewL1(rows, url, hub, key, cached)),
+    stethPrice(force), ldoPrice(force),
+  ]).then(([out, stethQuote, ldoQuote]) => ({ ...out, stethQuote, ldoQuote }));
+}
+async function readOverviewL1(rows, url, hub, inputs, c) {
+  const generation = cacheGeneration;
   const out = { url, at: null, err: null, rate: null, supply: null, stethSupply: null, stethSupplyError: null,
-                stethQuote: null, ldoQuote: null, escrow: {}, silo: {}, pool: { addr: hub ? hub.poolAddress : null, held: null, unsiloed: null } };
+                stethQuote: null, ldoQuote: null, escrow: {}, silo: {}, pool: { addr: hub || null, held: null, unsiloed: null } };
   if (!url) { out.err = "no RPC configured for Ethereum"; return out; }
 
-  const quotes = Promise.all([stethPrice(force), ldoPrice(force)]);
-  const applyQuotes = async () => { [out.stethQuote, out.ldoQuote] = await quotes; };
-  let c = force ? null : metaCache.get(OV_KEY);
-  if (c && (c.url !== url || c.stethSupply == null)) c = null;
   if (c) {
     out.at = c.at; out.rate = ovBig(c.rate); out.supply = ovBig(c.supply);
     out.stethSupply = ovBig(c.stethSupply);
     for (const [k, v] of Object.entries(c.escrow)) out.escrow[k] = ovBig(v);
     for (const [k, v] of Object.entries(c.silo)) out.silo[k] = { siloed: v.siloed, available: ovBig(v.available) };
     out.pool.held = ovBig(c.pool.held); out.pool.unsiloed = ovBig(c.pool.unsiloed);
-    await applyQuotes();
     return out;
   }
 
@@ -1499,9 +1594,9 @@ async function overviewL1(rows, force) {
     }
     out.at = Date.now();
     // Keep valid observations visible, but retry an incomplete batch on the next load.
-    if (out.stethSupply !== null) {
+    if (generation === cacheGeneration && out.stethSupply !== null) {
       metaCache.set(OV_KEY, {
-        url, at: out.at, rate: ovStr(out.rate), supply: ovStr(out.supply),
+        inputs, url, at: out.at, rate: ovStr(out.rate), supply: ovStr(out.supply),
         stethSupply: ovStr(out.stethSupply),
         escrow: Object.fromEntries(Object.entries(out.escrow).map(([a, b]) => [a, ovStr(b)])),
         silo: Object.fromEntries(Object.entries(out.silo).map(([a, b]) => [a, { siloed: b.siloed, available: ovStr(b.available) }])),
@@ -1510,13 +1605,13 @@ async function overviewL1(rows, force) {
       saveCache();
     }
   } catch (e) { out.err = e.message; }
-  await applyQuotes();
   return out;
 }
 
 // One network's own wstETH supply. Cached next to everything else, keyed by the RPC that
 // produced it so pointing a chain at a different endpoint drops the old figure.
 async function overviewSupply(row, force) {
+  const generation = cacheGeneration;
   const url = rpcFor(row.chainId);
   if (!url) return { v: null, at: null, err: "no RPC" };
   const key = `ov|${row.chainId}|${row.token.toLowerCase()}`;
@@ -1528,16 +1623,14 @@ async function overviewSupply(row, force) {
     const v = decUint(r[0]);
     if (v === null) return { v: null, at: null, err: "no answer" };
     const at = Date.now();
-    metaCache.set(key, { url, at, supply: ovStr(v) });
-    saveCache();
+    if (generation === cacheGeneration) { metaCache.set(key, { url, at, supply: ovStr(v) }); saveCache(); }
     return { v, at, err: null };
   } catch (e) { return { v: null, at: null, err: e.message }; }
 }
 
 // ── overview: numbers ────────────────────────────────────────────────────────
-// Live view state. `epoch` guards against a fill from a previous render landing in a table
-// that is no longer on screen.
-const ov = { epoch: 0, rows: [], l1: null, registryError: null, supply: new Map() };
+// Live view state. The current view context also guards background fills.
+const ov = { rows: [], l1: null, registryError: null, supply: new Map() };
 
 const ovUsd = (amount) => {
   if (amount === null || !ov.l1 || ov.l1.rate === null) return null;
@@ -1797,23 +1890,45 @@ function ovGroupCard(group, rows) {
   </section>`;
 }
 
-async function viewOverview(force) {
+async function viewOverview(force, context) {
   let registryError = null;
   try { await loadRegistry("mainnet", force); }
   catch (e) { registryError = e.message; } // Sourced token and ledger reads can proceed independently.
-  const epoch = ++ov.epoch;
+  if (!context.isCurrent()) return;
+  const rows = overviewRows();
+  const l1 = await overviewL1(rows, force);
+  if (!context.publish(() => renderOverview(rows, l1, registryError))) return;
+
+  // Phase two: each completion publishes through the same generation guard.
+  const paint = (update, at, render) => context.commit(() => {
+    update(); noteDataAge(at); render(); renderTabs(); tickStamp();
+  });
+  for (const row of steth.rows) {
+    stethSupply(row, force).then((s) =>
+      paint(() => steth.supply.set(row.key, s), s.at, stethPaintNumbers));
+    stethRate(row, force).then((rate) =>
+      paint(() => steth.rates.set(row.key, rate), rate.at, stethPaintNumbers));
+  }
+  for (const row of ldo.rows.filter((r) => r.token)) {
+    ldoSupply(row, force).then((s) =>
+      paint(() => ldo.supply.set(row.key, s), s.at, ldoPaintNumbers));
+  }
+  for (const row of ov.rows) {
+    overviewSupply(row, force).then((s) =>
+      paint(() => ov.supply.set(row.key, s), s.at, ovPaintNumbers));
+  }
+}
+
+function renderOverview(rows, l1, registryError) {
   ov.registryError = registryError;
-  ov.l1 = null;
-  ov.rows = overviewRows();
-  ldo.rows = ldoRows(ov.rows);
+  ov.rows = rows;
+  ldo.rows = ldoRows(rows);
   ldo.supply = new Map();
-  ldo.quote = null;
   steth.rows = stethRows();
   steth.supply = new Map();
   steth.rates = new Map();
-  steth.quote = null;
   ov.supply = new Map();
-  ov.l1 = await overviewL1(ov.rows, force);
+  ov.l1 = l1;
   steth.quote = ov.l1.stethQuote || {err: ov.l1.err || "USD price unavailable", at: null};
   ldo.quote = ov.l1.ldoQuote || {err: ov.l1.err || "USD price unavailable", at: null};
   noteDataAge(ov.l1.at);
@@ -1904,46 +2019,123 @@ async function viewOverview(force) {
   ovPaintNumbers();
   ldoPaintNumbers();
   stethPaintNumbers();
-  const paintSteth = (at) => {
-    if (ov.epoch !== epoch || currentView() !== 'overview') return;
-    noteDataAge(at); stethPaintNumbers(); renderTabs(); tickStamp();
-  };
-  for (const row of steth.rows) {
-    stethSupply(row, force).then((s) => {
-      if (ov.epoch !== epoch || currentView() !== 'overview') return;
-      steth.supply.set(row.key, s); paintSteth(s.at);
-    });
-    stethRate(row, force).then((rate) => {
-      if (ov.epoch !== epoch || currentView() !== 'overview') return;
-      steth.rates.set(row.key, rate); paintSteth(rate.at);
-    });
-  }
-  const paintLdo = (at) => {
-    if (ov.epoch !== epoch || currentView() !== "overview") return;
-    noteDataAge(at); ldoPaintNumbers(); renderTabs(); tickStamp();
-  };
-  for (const row of ldo.rows.filter((r) => r.token)) {
-    ldoSupply(row, force).then((s) => {
-      if (ov.epoch !== epoch || currentView() !== "overview") return;
-      ldo.supply.set(row.key, s); paintLdo(s.at);
-    });
-  }
+}
 
-  // Phase two. Deliberately not awaited: the table is already usable, and one hung endpoint
-  // must not hold the other 23 hostage.
-  for (const r of ov.rows) {
-    overviewSupply(r, force).then((s) => {
-      if (ov.epoch !== epoch || currentView() !== "overview") return;             // the view moved on; this answer is stale
-      ov.supply.set(r.key, s);
-      noteDataAge(s.at);
-      ovPaintNumbers();
-      renderTabs(); tickStamp();
-    });
+// ── ledger explorer ──────────────────────────────────────────────────────────
+let LEDGER = null;
+function ledgerSearchValues(value) {
+  if (value == null) return '';
+  if (typeof value === 'object') return Object.values(value).map(ledgerSearchValues).join(' ');
+  return String(value);
+}
+let ledgerEntries = null, ledgerIds = null;
+function indexLedger() {
+  if (ledgerEntries) return;
+  LEDGER = JSON.parse(el("ledger-data").textContent);
+  ledgerEntries = LEDGER.deployments.map((entry) => ({ entry,
+    search: ledgerSearchValues([entry, LEDGER.networks[entry.networkId]]).toLowerCase()
+  })).sort((a, b) => a.entry.networkId.localeCompare(b.entry.networkId, undefined, { numeric: true })
+    || a.entry.contractId.localeCompare(b.entry.contractId) || a.entry.deploymentId.localeCompare(b.entry.deploymentId));
+  ledgerIds = new Map(ledgerEntries.map(({entry}, i) => [entry.deploymentId, i]));
+}
+let ledgerQuery = '', ledgerNetwork = '', ledgerNodes = null;
+const ledgerLabels = { deploymentId: 'Deployment ID', contractId: 'Contract role', contractName: 'Contract name',
+  deploymentKind: 'Deployment kind', networkId: 'Network ID', source: 'Source code', proxy: 'Proxy relationships',
+  auditReportRefs: 'Audit reports', publicRefs: 'Public posts & references', repositoryUrl: 'Repository',
+  implementationDeploymentId: 'Implementation', adminDeploymentId: 'Proxy admin', beaconDeploymentId: 'Beacon' };
+function ledgerLabel(key) {
+  return ledgerLabels[key] || key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
+}
+function ledgerValue(value, key = '') {
+  if (value == null) return '<span class="muted">Not recorded</span>';
+  if (Array.isArray(value)) return value.length
+    ? `<ul class="ledger-values">${value.map((v) => `<li>${ledgerValue(v)}</li>`).join('')}</ul>`
+    : '<span class="muted">None recorded</span>';
+  if (typeof value === 'object') return `<dl class="ledger-fields">${Object.entries(value).map(([k, v]) =>
+    `<dt>${esc(ledgerLabel(k))}</dt><dd>${ledgerValue(v, k)}</dd>`).join('')}</dl>`;
+  if (key.endsWith('DeploymentId') && ledgerIds.has(value)) {
+    return `<button class="ledger-link mono" data-ledger-target="${ledgerIds.get(value)}">${esc(value)}</button>`;
   }
+  if (typeof value === 'string' && /^https?:\/\//i.test(value)) {
+    try {
+      const url = new URL(value);
+      if (['https:', 'http:'].includes(url.protocol)) return `<a href="${esc(url.href)}" target="_blank" rel="noopener noreferrer">${esc(value)}</a>`;
+    } catch {}
+  }
+  return esc(String(value));
+}
+function ledgerMatches(item, query = ledgerQuery, network = ledgerNetwork) {
+  return (!network || item.entry.networkId === network)
+    && query.toLowerCase().trim().split(/\s+/).filter(Boolean).every((term) => item.search.includes(term));
+}
+function ledgerDetails(entry) {
+  indexLedger();
+  return `${ledgerValue({ ...entry, network: LEDGER.networks[entry.networkId],
+    publicRefs: entry.publicRefs ?? null })}
+    <details style="margin-top:var(--sp-4)"><summary>Entry JSON</summary><pre class="ledger-raw">${esc(JSON.stringify(entry, null, 2))}</pre></details>`;
+}
+function fillLedgerEntry(row) {
+  const detail = row.querySelector('.ledger-detail');
+  if (!detail.dataset.loaded) {
+    detail.innerHTML = ledgerDetails(ledgerEntries[Number(row.dataset.ledgerEntry)].entry);
+    detail.dataset.loaded = 'true';
+  }
+}
+function filterLedger() {
+  let count = 0;
+  views.querySelectorAll('[data-ledger-entry]').forEach((row) => {
+    const match = ledgerMatches(ledgerEntries[Number(row.dataset.ledgerEntry)]);
+    row.hidden = !match;
+    if (match) count++;
+  });
+  el('ledger-count').textContent = `${count} of ${ledgerEntries.length} deployments`;
+  el('ledger-empty').hidden = count !== 0;
+}
+function viewLedger() {
+  if (ledgerNodes) {
+    if (!ledgerNodes[0]?.isConnected) views.replaceChildren(...ledgerNodes);
+    return;
+  }
+  indexLedger();
+  const { deployments, networks, ...metadata } = LEDGER;
+  views.innerHTML = `<section class="card">
+    <div class="card-head"><h2>Ledger explorer</h2><span class="eyebrow">${deployments.length} deployments · ${Object.keys(networks).length} networks</span></div>
+    <div class="card-body ledger-intro">
+      <p>The ledger is the single source of truth for Lido Multichain addresses and deployed contracts.
+        This explorer is for people; tools should use <a href="${esc(LIDO_SNAPSHOT.ledgerUrl)}" target="_blank" rel="noopener">ledger.json ↗</a> directly
+        (<a href="${esc(LIDO_SNAPSHOT.ledgerUrl.replace('github.com/', 'raw.githubusercontent.com/').replace('/blob/', '/'))}" target="_blank" rel="noopener">raw JSON ↗</a>).</p>
+      <p class="muted">Snapshot updated ${esc(LEDGER.updatedAt)} · The linked JSON is the exact revision used by this build.</p>
+      <details><summary>Coverage, known gaps & ledger metadata</summary><div class="ledger-detail">${ledgerValue(metadata)}</div></details>
+    </div>
+  </section>
+  <section class="card" aria-label="Ledger deployments">
+    <div class="card-body ledger-tools">
+      <label for="ledger-search">Search deployments<input id="ledger-search" type="search" value="${esc(ledgerQuery)}" placeholder="Address, contract, network, audit, reference…" aria-controls="ledger-list"></label>
+      <label for="ledger-network">Network<select id="ledger-network"><option value="">All networks</option>${Object.entries(networks).map(([id, n]) =>
+        `<option value="${esc(id)}"${id === ledgerNetwork ? ' selected' : ''}>${esc(n.networkName)} (${esc(id)})</option>`).join('')}</select></label>
+      <button class="btn" id="ledger-clear">Clear filters</button>
+      <span id="ledger-count" class="muted" role="status" aria-live="polite"></span>
+    </div>
+    <div id="ledger-list">${ledgerEntries.map(({entry: d}, i) => `<details class="ledger-entry" data-ledger-entry="${i}">
+      <summary><span class="ledger-title"><strong>${esc(d.contractId)}</strong><small>${esc(d.contractName)} · <span class="mono">${esc(d.address)}</span></small></span>
+        <span class="ledger-summary-meta"><span>${esc(networks[d.networkId]?.networkName || d.networkId)}</span><span class="chip c-mute">${esc(d.deploymentKind)}</span></span></summary>
+      <div class="ledger-detail"></div></details>`).join('')}</div>
+    <p id="ledger-empty" class="card-body" hidden>No deployments match these filters. Try another address or keyword, or clear the filters.</p>
+  </section>`;
+  filterLedger();
+  ledgerNodes = [...views.childNodes];
 }
 
 // ── settings tab ─────────────────────────────────────────────────────────────
-function viewSettings() {
+const rpcDrafts = new Map();
+let renderingSettings = false;
+function viewSettings(preserveDrafts = false) {
+  const drafts = preserveDrafts ? [...views.querySelectorAll('input, select')].map((input) => ({
+    selector: input.id ? `#${input.id}` : `[data-rpc="${input.dataset.rpc}"]`,
+    value: input.value, focused: input === document.activeElement,
+    start: input.selectionStart, end: input.selectionEnd
+  })) : [];
+
   const reg = registry[state.env] || { chains: {}, tokens: {} };
   // Lido's own networks are not in Chainlink's registry, so their names come from the snapshot.
   // "1" is spelled out because on testnet the registry has no mainnet chains to name it from,
@@ -1964,7 +2156,7 @@ function viewSettings() {
   const order = [...used].sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
   const rows = order.map((id) => {
     const nm = nameOf(id);
-    const v = state.rpc[id] || "";
+    const v = rpcDrafts.get(id) ?? state.rpc[id] ?? "";
     return `<div class="rpcrow">
       <span class="nm">${esc(nm)}<small>${esc(id)}</small></span>
       <input type="url" data-rpc="${esc(id)}" value="${esc(v)}" placeholder="${esc(DEFAULT_RPC[id] || "no RPC — paste a URL")}">
@@ -1978,7 +2170,7 @@ function viewSettings() {
   const chainOpts = Object.entries(reg.chains)
     .sort((x, y) => x[1].displayName.localeCompare(y[1].displayName))
     .map(([id, c]) => `<option value="${esc(id)}">${esc(c.displayName)} · ${esc(id)}</option>`).join("");
-  views.innerHTML = `
+  const markup = `
     <section class="card">
       <div class="card-head"><span class="eyebrow">Live · mainnet lanes</span></div>
       <div class="card-body">
@@ -2006,13 +2198,27 @@ function viewSettings() {
         <span class="stamp">empty = the built-in public endpoint shown as placeholder</span></div>
       <div class="card-body">${rows}</div>
     </section>`;
+  // Removing the active input emits blur/change in browsers; that is not a user commit.
+  renderingSettings = true;
+  try { views.innerHTML = markup; }
+  finally { renderingSettings = false; }
   tabStatus.set("settings", null);
+  for (const draft of drafts) {
+    const input = views.querySelector(draft.selector);
+    if (!input) continue;
+    if (input.tagName !== 'SELECT' || [...input.options].some((o) => o.value === draft.value)) input.value = draft.value;
+    if (draft.focused) {
+      input.focus({ preventScroll: true });
+      if (draft.start != null) input.setSelectionRange(draft.start, draft.end);
+    }
+  }
 }
 
 // ── tabs and routing ─────────────────────────────────────────────────────────
 function tabsModel() {
   return [{ id: "overview", label: "Live" },
-    { id: `lane-${LIVE.lane[0]}-${LIVE.lane[1]}`, label: "Dev (testnet)" }];
+    { id: `lane-${LIVE.lane[0]}-${LIVE.lane[1]}`, label: "Dev (testnet)" },
+    { id: "ledger", label: "Ledger" }];
 }
 function liveViews() {
   const t = [{ id: "overview", label: "Overview" }];
@@ -2054,41 +2260,69 @@ function currentView() {
 function setStamp(text) { el("stamp").textContent = text; }
 // Refresh is manual only, so the header reports the age of the DATA, not of the last render.
 function tickStamp() {
+  if (state.view === 'ledger') return setStamp(`ledger updated ${LIDO_SNAPSHOT.ledgerUpdatedAt}`);
   if (busy) return setStamp("reading…");
   const age = dataAt ? `oldest read ${minuteTime(dataAt)}` : "—";
   setStamp(offline ? `${age} · offline copy` : age);
 }
 
+function showReadError(message, preserve) {
+  views.querySelector('[data-read-error]')?.remove();
+  const banner = `<div class="banner" data-read-error role="alert">${esc(message)}</div>`;
+  if (preserve) views.insertAdjacentHTML('afterbegin', banner);
+  else views.innerHTML = banner;
+}
+
 async function run() {
-  if (busy) { runPending = true; return; }
-  ++ov.epoch; // Ignore background supply reads from the previous view.
+  const view = currentView();
+  // Repeated events for the current load need no duplicate work. A different view
+  // starts immediately, even while the previous view is waiting on an endpoint.
+  if (busy && state.view === view && !forceNext) return;
+  if (state.view === 'settings' && view !== 'settings') {
+    for (const [id, value] of rpcDrafts) commitRpc(id, value);
+  }
+  const sameView = state.view === view && !!views.innerHTML;
   const force = forceNext; forceNext = false;
-  dataAt = null;
+  const env = view === `lane-${LIVE.lane[0]}-${LIVE.lane[1]}` ? LIVE.env : "mainnet";
+  const context = viewContext(view, env);
+  state.view = view;
+  state.env = env;
+  if (!sameView) { dataAt = null; offline = false; }
   busy = true; el("refresh").disabled = true; renderTabs(); tickStamp();
+  if (!sameView) views.innerHTML = '<p class="sub" role="status">Loading… You can switch tabs while reads finish.</p>';
   try {
-    state.view = currentView();
-    state.env = state.view === `lane-${LIVE.lane[0]}-${LIVE.lane[1]}` ? LIVE.env : "mainnet";
-    if (state.view !== "overview") await loadRegistry(state.env, force);
-    renderTabs();
-    if (state.view === "overview") {
-      await viewOverview(force);
-    } else if (state.view === "settings") {
-      viewSettings();
-    } else {
-      const [, a, b] = state.view.split("-");
-      await viewLane(a, b, force);
-      if (state.env === LIVE.env) {
-        views.insertAdjacentHTML("afterbegin", '<p class="sub" style="margin-bottom:var(--sp-3)"><a href="roles.html">who may change it ↗</a></p>');
+    if (view === "overview") {
+      await viewOverview(force, context);
+    } else if (view === "settings") {
+      if (!sameView) context.publish(() => viewSettings());
+      if (force || !registry[env] || registryReads.has(env)) {
+        try {
+          await loadRegistry(env, force);
+          context.publish(() => viewSettings(true));
+        } catch (e) {
+          context.commit(() => showReadError(`Registry unavailable: ${e.message || e}`, true));
+        }
       }
-    }
-    if (state.env === "mainnet" && state.view.startsWith("lane-")) {
-      views.insertAdjacentHTML("afterbegin", '<p class="sub" style="margin-bottom:var(--sp-3)"><a href="#overview">← Live overview</a></p>');
+    } else if (view === "ledger") {
+      context.publish(viewLedger);
+    } else {
+      await loadRegistry(env, force);
+      if (!context.isCurrent()) return;
+      const [, a, b] = view.split("-");
+      await viewLane(a, b, force, env, context);
+      context.commit(() => {
+        const link = env === LIVE.env
+          ? '<a href="roles.html">who may change it ↗</a>'
+          : '<a href="#overview">← Live overview</a>';
+        views.insertAdjacentHTML("afterbegin", `<p class="sub" style="margin-bottom:var(--sp-3)">${link}</p>`);
+      });
     }
   } catch (e) {
-    views.innerHTML = `<div class="banner">${esc(e && e.message || e)}</div>`;
+    context.commit(() => showReadError(e && e.message || e, sameView));
   } finally {
-    busy = false; el("refresh").disabled = false; renderTabs(); tickStamp();
-    if (runPending) { runPending = false; void run(); }
+    if (context.ownsRun()) {
+      busy = false; el("refresh").disabled = view === 'ledger'; renderTabs(); tickStamp();
+    }
   }
 }
 
@@ -2103,7 +2337,36 @@ el("tabs").addEventListener("click", (e) => {
 });
 el("settings").addEventListener("click", () => go("settings"));
 // delegation: tab contents
+views.addEventListener('toggle', (e) => {
+  if (e.target.matches('[data-ledger-entry]') && e.target.open) fillLedgerEntry(e.target);
+}, true);
+views.addEventListener('input', (e) => {
+  if (e.target.id === 'ledger-search') { ledgerQuery = e.target.value; filterLedger(); }
+  const input = e.target.closest("[data-rpc]");
+  if (input) rpcDrafts.set(input.dataset.rpc, input.value);
+});
+views.addEventListener("focusout", (e) => saveRpcInput(e.target));
 views.addEventListener("click", async (e) => {
+  const target = e.target.closest('[data-ledger-target]');
+  if (target) {
+    const row = views.querySelector(`[data-ledger-entry="${Number(target.dataset.ledgerTarget)}"]`);
+    if (!row) return;
+    filterLedger(); // Remove any earlier relationship exception, retaining the filters.
+    if (row.hidden) {
+      row.hidden = false;
+      el('ledger-count').textContent += ' + 1 linked deployment outside filters';
+      el('ledger-empty').hidden = true;
+    }
+    row.open = true; fillLedgerEntry(row);
+    row.querySelector('summary').focus(); row.scrollIntoView({ block: 'center' });
+    return;
+  }
+  if (e.target.id === 'ledger-clear') {
+    ledgerQuery = ''; ledgerNetwork = '';
+    el('ledger-search').value = ''; el('ledger-network').value = '';
+    filterLedger(); el('ledger-search').focus();
+    return;
+  }
   const view = e.target.closest("[data-view]");
   if (view) { go(view.dataset.view); return; }
   const copy = e.target.closest("[data-copy]");
@@ -2122,16 +2385,23 @@ views.addEventListener("click", async (e) => {
     save(); renderTabs(); viewSettings(); return;
   }
   const clr = e.target.closest("[data-rpcclear]");
-  if (clr) { delete state.rpc[clr.dataset.rpcclear]; save(); viewSettings(); return; }
+  if (clr) { rpcDrafts.delete(clr.dataset.rpcclear); delete state.rpc[clr.dataset.rpcclear]; save(); viewSettings(); return; }
   if (e.target.id === "cacheclear") { clearCache(); viewSettings(); return; }
 });
+function commitRpc(id, value) {
+  const v = value.trim();
+  if (v) state.rpc[id] = v; else delete state.rpc[id];
+  rpcDrafts.delete(id);
+  save();
+}
+function saveRpcInput(target) {
+  if (renderingSettings) return;
+  const input = target.closest("[data-rpc]");
+  if (input && rpcDrafts.has(input.dataset.rpc)) commitRpc(input.dataset.rpc, input.value);
+}
 views.addEventListener("change", (e) => {
-  const rpcIn = e.target.closest("[data-rpc]");
-  if (rpcIn) {
-    const id = rpcIn.dataset.rpc, v = rpcIn.value.trim();
-    if (v) state.rpc[id] = v; else delete state.rpc[id];
-    save();
-  }
+  if (e.target.id === 'ledger-network') { ledgerNetwork = e.target.value; filterLedger(); return; }
+  saveRpcInput(e.target);
 });
 
 el("refresh").addEventListener("click", () => { forceNext = true; run(); });   // only the button re-crawls

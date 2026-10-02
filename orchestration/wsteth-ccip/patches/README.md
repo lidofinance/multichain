@@ -25,7 +25,7 @@ touches, and a `WHY` block. Read the header before touching the patch.
 | `core/0001-wsteth-getccipadmin.patch` | `contracts/0.6.12/WstETH.sol` | **Changes deployed bytecode.** Testnet-only. |
 | `core/0002-hardhat-live-rpc.patch` | `hardhat.config.ts` | Deploy mechanics over a public RPC. |
 | `ccip/0001-token-admin-handover.patch` | Three deployment scripts | Finish token CCIP authority before DAO token-admin acceptance; share configuration loading with rehearsals and allow POM handover retries. POM bytecode is unchanged. |
-| `ccip/0002-handover-test-fixtures.patch` | Existing upstream test fixture setup | Seed the script-2 end-state required by the updated script-3 preflight. No new regressions or docs in the vendor patch. |
+| `ccip/0002-handover-test-fixtures.patch` | Deployment-script tests | Verify script-2 registration, script-3 preconditions, legacy flows, and handover retries. |
 
 Keep this set as small as it can be. Three things do **not** belong in a patch:
 
@@ -121,7 +121,8 @@ do not paper over it by pinning the value in a patch.
 ## Regenerating after editing a submodule by hand
 
 ```bash
-git -C lib/<name> diff -- <paths for that patch> > /tmp/new.diff
+mkdir -p ../../.workspace/patches
+git -C lib/<name> diff HEAD -- <paths for that patch> > ../../.workspace/patches/new.diff
 # keep the existing header block, replace the diff body below it
 ```
 
@@ -132,7 +133,8 @@ git -C lib/<name> apply --check -R "$PWD/patches/<name>/<patch>.patch"   # must 
 ```
 
 If a submodule gets re-pinned to a newer upstream commit, re-cut its patches against it and update
-each `Base:` line.
+each `Base:` line. Stage the updated gitlink with `git add components/<name>` from the
+repository root so the pin check uses the intended revision.
 
 ## 0001 is not a mainnet solution
 
@@ -155,5 +157,5 @@ CCIP uses the superproject index gitlink as its current pin.
 
 CCIP handover regression suites live under the target's `test/unit`, and its fresh-token fork
 rehearsal uses the same explicit-path loading hooks as the real scripts. The primary CCIP patch contains only deployment
-scripts. A separate small patch adjusts upstream fixtures so the existing suite stays valid; new
-regressions and operator documentation are maintained by this repository.
+scripts. A separate patch carries deployment-script regression tests and full-flow assertions;
+operator documentation remains in this repository.

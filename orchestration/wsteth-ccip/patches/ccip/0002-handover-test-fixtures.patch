@@ -1,64 +1,353 @@
-Subject: [PATCH] Align upstream handover test fixtures with the fresh flow
-Base: ca8a66b2708ddab3022c2041e1beccf7c02bcaac
+Subject: [PATCH] Verify token configuration and registry handover transitions
+Base: components/ccip @ 501bdc31118a16de859985a4ee7cce906edd588f
 
-WHY: The fresh script-3 preflight now expects script 2 to have registered TAR
-and assigned token CCIP administration to the DAO. Seed those inputs in the
-existing upstream tests; behavioral regressions are maintained in the target.
+WHY: Verify script-2 registration and DAO CCIP administration, script-3 authority
+preconditions, legacy flows, acceptance between scripts, and idempotent retries.
+Keep the full-flow assertions aligned with each script's responsibilities.
 This patch touches tests only and changes no deployment code.
 
 diff --git a/chains/evm/contracts/lido-hvmv/test/script/deployment/SetPoolAndTransferOwnership.t.sol b/chains/evm/contracts/lido-hvmv/test/script/deployment/SetPoolAndTransferOwnership.t.sol
-index e4ecbfc..a096dbe 100644
+index e4ecbfc..f518493 100644
 --- a/chains/evm/contracts/lido-hvmv/test/script/deployment/SetPoolAndTransferOwnership.t.sol
 +++ b/chains/evm/contracts/lido-hvmv/test/script/deployment/SetPoolAndTransferOwnership.t.sol
-@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
+@@ -3,19 +3,64 @@ pragma solidity ^0.8.24;
+
  import {PausableAdvancedPoolHooks} from "../../../PausableAdvancedPoolHooks.sol";
  import {PoolOperationManager} from "../../../PoolOperationManager.sol";
++import {ConfigureScript} from "../../../script/deployment/2_Configure.s.sol";
  import {SetPoolAndTransferOwnershipScript} from "../../../script/deployment/3_SetPoolAndTransferOwnership.s.sol";
-+import {TokenAdminRegistry} from "@chainlink/contracts-ccip/tokenAdminRegistry/TokenAdminRegistry.sol";
  import {TokenPool} from "@chainlink/contracts-ccip/pools/TokenPool.sol";
++import {RegistryModuleOwnerCustom} from "@chainlink/contracts-ccip/tokenAdminRegistry/RegistryModuleOwnerCustom.sol";
  import {TokenAdminRegistry} from "@chainlink/contracts-ccip/tokenAdminRegistry/TokenAdminRegistry.sol";
- import {BurnMintERC20Transparent} from
-@@ -16,6 +17,10 @@ import {Test} from "forge-std/Test.sol";
- 
+-import {BurnMintERC20Transparent} from
+-  "@chainlink/contracts/src/v0.8/shared/token/ERC20/upgradeable/BurnMintERC20Transparent.sol";
++import {
++  BurnMintERC20Transparent
++} from "@chainlink/contracts/src/v0.8/shared/token/ERC20/upgradeable/BurnMintERC20Transparent.sol";
+ import {ERC1967Proxy} from "@openzeppelin/contracts@5.3.0/proxy/ERC1967/ERC1967Proxy.sol";
+ import {ERC1967Utils} from "@openzeppelin/contracts@5.3.0/proxy/ERC1967/ERC1967Utils.sol";
+-import {TransparentUpgradeableProxy} from
+-  "@openzeppelin/contracts@5.3.0/proxy/transparent/TransparentUpgradeableProxy.sol";
++import {
++  TransparentUpgradeableProxy
++} from "@openzeppelin/contracts@5.3.0/proxy/transparent/TransparentUpgradeableProxy.sol";
+ import {Test} from "forge-std/Test.sol";
+
++contract ConfigureTokenHarness is ConfigureScript {
++  function configureToken(
++    address token,
++    address pool,
++    address dao,
++    address registry,
++    address registryModule
++  ) external {
++    s_deployer = msg.sender;
++    s_tokenDeployedByScripts = true;
++    s_chainConfig.addresses.token = token;
++    s_chainConfig.governance_addresses.lido_dao_agent = dao;
++    s_deployed.token_pool = pool;
++    s_ccip.token_admin_registry = registry;
++    s_ccip.registry_module_owner = registryModule;
++    vm.startBroadcast(s_deployer);
++    _configureTokenIfNeeded();
++    vm.stopBroadcast();
++  }
++}
++
  // Injects the state that script 3 otherwise loads from the chain JSON.
  contract SetPoolAndTransferOwnershipHarness is SetPoolAndTransferOwnershipScript {
-+  function setRegistry(address registry) external {
++  function setRegistry(
++    address registry
++  ) external {
 +    s_ccip.token_admin_registry = registry;
++  }
++
++  function setRegistryModule(
++    address registryModule
++  ) external {
++    s_ccip.registry_module_owner = registryModule;
++  }
++
++  function exposed_completeHandover() external {
++    _checkDeployedTokenHandoverToDao();
++    vm.startBroadcast(s_deployer);
++    _tryRegisterPoolAndTransferAdmin();
++    _transferManagerAdminToDao();
++    vm.stopBroadcast();
 +  }
 +
    function setTokenState(
      address deployer,
      address lidoDao,
-@@ -95,6 +100,10 @@ contract SetPoolAndTransferOwnershipTest is Test {
+@@ -90,11 +135,16 @@ contract SetPoolAndTransferOwnershipTest is Test {
+   SetPoolAndTransferOwnershipHarness internal s_script;
+   BurnMintERC20Transparent internal s_token;
+   address internal s_proxyAdmin;
++  TokenAdminRegistry internal s_registry;
+
+   function setUp() public {
      (s_token, s_proxyAdmin) = _deployToken(s_dao);
      s_script = new SetPoolAndTransferOwnershipHarness();
      s_script.setTokenState(address(this), s_dao, true, address(s_token), s_pool, s_proxyAdmin);
-+    TokenAdminRegistry registry = new TokenAdminRegistry();
-+    registry.proposeAdministrator(address(s_token), address(this));
-+    registry.acceptAdminRole(address(s_token));
-+    s_script.setRegistry(address(registry));
++    s_registry = new TokenAdminRegistry();
++    s_registry.proposeAdministrator(address(s_token), address(this));
++    s_registry.acceptAdminRole(address(s_token));
++    s_script.setRegistry(address(s_registry));
    }
- 
+
    function _deployToken(
-@@ -119,11 +128,13 @@ contract SetPoolAndTransferOwnershipTest is Test {
+@@ -119,16 +169,163 @@ contract SetPoolAndTransferOwnershipTest is Test {
    }
- 
+
    function test_checkDeployedTokenHandoverToDao_PassesWhilePending() public {
 +    s_token.setCCIPAdmin(s_dao);
      s_token.beginDefaultAdminTransfer(s_dao);
      s_script.exposed_checkDeployedTokenHandoverToDao();
    }
- 
+
    function test_checkDeployedTokenHandoverToDao_PassesAfterDaoAccepted() public {
 +    s_token.setCCIPAdmin(s_dao);
++    s_token.beginDefaultAdminTransfer(s_dao);
++    vm.warp(block.timestamp + 1);
++    vm.prank(s_dao);
++    s_token.acceptDefaultAdminTransfer();
++
++    s_script.exposed_checkDeployedTokenHandoverToDao();
++  }
++
++  function _completeHandover(
++    bool registered,
++    bool proposed,
++    bool configureFirst
++  ) internal {
++    s_registry = new TokenAdminRegistry();
++    RegistryModuleOwnerCustom registryModule = new RegistryModuleOwnerCustom(address(s_registry));
++    s_registry.addRegistryModule(address(registryModule));
++    s_script.setRegistry(address(s_registry));
++    s_script.setRegistryModule(address(registryModule));
++    if (registered || proposed) s_registry.proposeAdministrator(address(s_token), address(this));
++    if (registered) s_registry.acceptAdminRole(address(s_token));
++    PoolOperationManager manager = _deployManager(s_pool);
++    s_script.setManagedContracts(address(manager), s_pool, address(0), address(0), address(0));
++    vm.etch(s_pool, hex"00");
++    vm.mockCall(s_pool, abi.encodeWithSignature("isSupportedToken(address)", address(s_token)), abi.encode(true));
++    if (configureFirst) {
++      new ConfigureTokenHarness()
++        .configureToken(address(s_token), s_pool, s_dao, address(s_registry), address(registryModule));
++      assertEq(s_token.getCCIPAdmin(), s_dao);
++      assertEq(s_registry.getTokenConfig(address(s_token)).administrator, address(this));
++      assertTrue(s_token.hasRole(s_token.MINTER_ROLE(), s_pool));
++      assertTrue(s_token.hasRole(s_token.BURNER_ROLE(), s_pool));
++      vm.warp(block.timestamp + 1);
++      vm.prank(s_dao);
++      s_token.acceptDefaultAdminTransfer();
++    } else {
++      s_token.beginDefaultAdminTransfer(s_dao);
++    }
++    (, uint48 schedule) = s_token.pendingDefaultAdmin();
++
++    s_script.exposed_completeHandover();
++
++    assertEq(s_token.getCCIPAdmin(), s_dao);
++    (address pendingAdmin, uint48 afterSchedule) = s_token.pendingDefaultAdmin();
++    assertEq(pendingAdmin, configureFirst ? address(0) : s_dao);
++    assertEq(s_token.defaultAdmin(), configureFirst ? s_dao : address(this));
++    assertEq(afterSchedule, schedule, "default admin transfer must not restart");
++    TokenAdminRegistry.TokenConfig memory config = s_registry.getTokenConfig(address(s_token));
++    assertEq(config.administrator, address(manager));
++    assertEq(config.tokenPool, s_pool);
++    assertTrue(manager.hasRole(bytes32(0), s_dao));
++    assertFalse(manager.hasRole(bytes32(0), address(this)));
++    // Completed handovers remain safe to re-run after the deployer relinquishes POM administration.
++    s_script.exposed_completeHandover();
++  }
++
++  function test_configureRejectsUnexpectedAdministrator() public {
++    s_registry.transferAdminRole(address(s_token), s_dao);
++    vm.prank(s_dao);
++    s_registry.acceptAdminRole(address(s_token));
++    ConfigureTokenHarness configure = new ConfigureTokenHarness();
++    vm.expectRevert(abi.encodeWithSelector(ConfigureScript.UnexpectedTokenAdministrator.selector, s_dao));
++    configure.configureToken(address(s_token), s_pool, s_dao, address(s_registry), address(0));
++    assertEq(s_token.getCCIPAdmin(), address(this));
++    assertFalse(s_token.hasRole(MINTER_ROLE, s_pool));
++  }
++
++  function test_configureRejectsUnexpectedPendingAdministrator() public {
++    s_registry.transferAdminRole(address(s_token), s_dao);
++    ConfigureTokenHarness configure = new ConfigureTokenHarness();
++    vm.expectRevert(abi.encodeWithSelector(ConfigureScript.UnexpectedPendingTokenAdministrator.selector, s_dao));
++    configure.configureToken(address(s_token), s_pool, s_dao, address(s_registry), address(0));
++    assertEq(s_token.getCCIPAdmin(), address(this));
++    assertFalse(s_token.hasRole(MINTER_ROLE, s_pool));
++  }
++
++  function test_completeLegacyHandover_Unregistered() public {
++    _completeHandover(false, false, false);
++  }
++
++  function test_completeLegacyHandover_AlreadyRegistered() public {
++    _completeHandover(true, false, false);
++  }
++
++  function test_completeLegacyHandover_AlreadyProposed() public {
++    _completeHandover(false, true, false);
++  }
++
++  function test_configureThenHandover_Unregistered() public {
++    _completeHandover(false, false, true);
++  }
++
++  function test_configureThenHandover_AlreadyRegistered() public {
++    _completeHandover(true, false, true);
++  }
++
++  function test_configureThenHandover_AlreadyProposed() public {
++    _completeHandover(false, true, true);
++  }
++
++  function test_RevertWhen_LegacyHandoverDaoAlreadyAccepted() public {
      s_token.beginDefaultAdminTransfer(s_dao);
      vm.warp(block.timestamp + 1);
      vm.prank(s_dao);
-@@ -143,6 +154,7 @@ contract SetPoolAndTransferOwnershipTest is Test {
- 
+     s_token.acceptDefaultAdminTransfer();
++    vm.expectRevert(
++      abi.encodeWithSelector(SetPoolAndTransferOwnershipScript.TokenCCIPAdminNotDao.selector, address(this))
++    );
++    s_script.exposed_checkDeployedTokenHandoverToDao();
++  }
++
++  function test_RevertWhen_UnexpectedCCIPAdmin() public {
++    address other = makeAddr("OtherAdmin");
++    s_token.setCCIPAdmin(other);
++    s_token.beginDefaultAdminTransfer(s_dao);
++    vm.expectRevert(abi.encodeWithSelector(SetPoolAndTransferOwnershipScript.TokenCCIPAdminNotDao.selector, other));
++    s_script.exposed_checkDeployedTokenHandoverToDao();
++  }
+
++  function test_RevertWhen_UnexpectedTokenAdministrator() public {
++    s_token.beginDefaultAdminTransfer(s_dao);
++    address other = makeAddr("OtherAdmin");
++    s_registry.transferAdminRole(address(s_token), other);
++    vm.prank(other);
++    s_registry.acceptAdminRole(address(s_token));
++    vm.expectRevert(
++      abi.encodeWithSelector(SetPoolAndTransferOwnershipScript.UnexpectedTokenAdministrator.selector, other)
++    );
++    s_script.exposed_checkDeployedTokenHandoverToDao();
++  }
++
++  function test_RevertWhen_UnexpectedPendingTokenAdministrator() public {
++    s_token.beginDefaultAdminTransfer(s_dao);
++    s_registry = new TokenAdminRegistry();
++    address other = makeAddr("OtherAdmin");
++    s_registry.proposeAdministrator(address(s_token), other);
++    s_script.setRegistry(address(s_registry));
++    vm.expectRevert(
++      abi.encodeWithSelector(SetPoolAndTransferOwnershipScript.UnexpectedPendingTokenAdministrator.selector, other)
++    );
++    s_script.exposed_checkDeployedTokenHandoverToDao();
++  }
++
++  function test_RevertWhen_UnexpectedTokenPool() public {
++    s_token.setCCIPAdmin(s_dao);
++    s_token.beginDefaultAdminTransfer(s_dao);
++    PoolOperationManager manager = _deployManager(s_pool);
++    s_script.setManagedContracts(address(manager), s_pool, address(0), address(0), address(0));
++    s_registry.transferAdminRole(address(s_token), address(manager));
++    manager.directCall(address(s_registry), 0, abi.encodeCall(TokenAdminRegistry.acceptAdminRole, (address(s_token))));
++    vm.expectRevert(abi.encodeWithSelector(SetPoolAndTransferOwnershipScript.UnexpectedTokenPool.selector, address(0)));
+     s_script.exposed_checkDeployedTokenHandoverToDao();
+   }
+
+@@ -143,6 +340,7 @@ contract SetPoolAndTransferOwnershipTest is Test {
+
    function test_RevertWhen_checkDeployedTokenHandoverToDao_ProxyAdminNotOwnedByDao() public {
      (BurnMintERC20Transparent token, address proxyAdmin) = _deployToken(address(this));
 +    token.setCCIPAdmin(s_dao);
      token.beginDefaultAdminTransfer(s_dao);
      s_script.setTokenState(address(this), s_dao, true, address(token), s_pool, proxyAdmin);
- 
+
+diff --git a/chains/evm/contracts/lido-hvmv/test/script/deployment/TestFullFlow.t.sol b/chains/evm/contracts/lido-hvmv/test/script/deployment/TestFullFlow.t.sol
+index b450370..65d0e1b 100644
+--- a/chains/evm/contracts/lido-hvmv/test/script/deployment/TestFullFlow.t.sol
++++ b/chains/evm/contracts/lido-hvmv/test/script/deployment/TestFullFlow.t.sol
+@@ -9,8 +9,9 @@ import {ERC20LockBox} from "@chainlink/contracts-ccip/pools/ERC20LockBox.sol";
+ import {TokenPool} from "@chainlink/contracts-ccip/pools/TokenPool.sol";
+ import {TokenAdminRegistry} from "@chainlink/contracts-ccip/tokenAdminRegistry/TokenAdminRegistry.sol";
+ import {Ownable2Step} from "@chainlink/contracts/src/v0.8/shared/access/Ownable2Step.sol";
+-import {BurnMintERC20Transparent} from
+-  "@chainlink/contracts/src/v0.8/shared/token/ERC20/upgradeable/BurnMintERC20Transparent.sol";
++import {
++  BurnMintERC20Transparent
++} from "@chainlink/contracts/src/v0.8/shared/token/ERC20/upgradeable/BurnMintERC20Transparent.sol";
+ import {ProxyAdmin} from "@openzeppelin/contracts@5.3.0/proxy/transparent/ProxyAdmin.sol";
+ import {StdChains, Test} from "forge-std/Test.sol";
+
+@@ -31,7 +32,8 @@ contract TestFullFlowScript is Test, ConfigParser {
+
+   string internal constant SEPOLIA_CONFIG_PATH = "contracts/lido-hvmv/test/script/deployment/sepolia.json";
+   string internal constant BASE_SEPOLIA_CONFIG_PATH = "contracts/lido-hvmv/test/script/deployment/base_sepolia.json";
+-  string internal constant AVALANCHE_FUJI_CONFIG_PATH = "contracts/lido-hvmv/test/script/deployment/avalanche_fuji.json";
++  string internal constant AVALANCHE_FUJI_CONFIG_PATH =
++    "contracts/lido-hvmv/test/script/deployment/avalanche_fuji.json";
+
+   uint256 internal s_forkIdSepolia;
+   uint256 internal s_forkIdBaseSepolia;
+@@ -129,8 +131,8 @@ contract TestFullFlowScript is Test, ConfigParser {
+     vm.deal(deployer, 1e32);
+     TokenAdminRegistry.TokenConfig memory config =
+       TokenAdminRegistry(s_ccip.token_admin_registry).getTokenConfig(s_chainConfig.addresses.token);
+-    // A token whose CCIP admin is the deployer (the Base Sepolia token from 1_Deploy) stays unregistered, so script 3
+-    // exercises its registerAdminViaGetCCIPAdmin path. Otherwise propose the deployer as the administrator.
++    // Script 2 self-registers fresh tokens while the deployer still holds CCIP administration.
++    // Existing tokens need the registry administrator to propose the deployer first.
+     bool selfRegisters = _getCCIPAdmin(s_chainConfig.addresses.token) == deployer;
+     if (!selfRegisters && config.administrator != deployer && config.pendingAdministrator != deployer) {
+       if (config.administrator != address(0)) {
+@@ -185,7 +187,10 @@ contract TestFullFlowScript is Test, ConfigParser {
+     _loadCCVDeployment(configPath);
+   }
+
+-  function _verifyDeployment(string memory configPath, address deployer) internal {
++  function _verifyDeployment(
++    string memory configPath,
++    address deployer
++  ) internal {
+     _loadAllConfigs(configPath);
+
+     // Core contracts deployed
+@@ -223,12 +228,20 @@ contract TestFullFlowScript is Test, ConfigParser {
+     }
+   }
+
+-  function _verifyConfigure(string memory configPath, address deployer) internal {
++  function _verifyConfigure(
++    string memory configPath,
++    address deployer
++  ) internal {
+     _loadAllConfigs(configPath);
+     address pom = s_deployed.pool_operation_manager;
+
+     if (s_tokenDeployedByScripts) {
+       BurnMintERC20Transparent token = BurnMintERC20Transparent(s_chainConfig.addresses.token);
++      TokenAdminRegistry.TokenConfig memory config =
++        TokenAdminRegistry(s_ccip.token_admin_registry).getTokenConfig(address(token));
++      assertEq(config.administrator, deployer, "TAR administrator != deployer after configure");
++      assertEq(config.pendingAdministrator, address(0), "TAR administrator transfer still pending");
++      assertEq(token.getCCIPAdmin(), s_chainConfig.governance_addresses.lido_dao_agent, "CCIP admin != DAO");
+       assertTrue(token.hasRole(token.MINTER_ROLE(), s_deployed.token_pool), "Pool lacks MINTER_ROLE");
+       assertTrue(token.hasRole(token.BURNER_ROLE(), s_deployed.token_pool), "Pool lacks BURNER_ROLE");
+       (address pendingAdmin,) = token.pendingDefaultAdmin();
+@@ -317,7 +330,10 @@ contract TestFullFlowScript is Test, ConfigParser {
+     );
+   }
+
+-  function _verifySetPoolAndTransferOwnership(string memory configPath, address deployer) internal {
++  function _verifySetPoolAndTransferOwnership(
++    string memory configPath,
++    address deployer
++  ) internal {
+     _loadAllConfigs(configPath);
+     address pom = s_deployed.pool_operation_manager;
+

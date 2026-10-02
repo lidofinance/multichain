@@ -103,7 +103,7 @@ def test_recipe_cannot_bypass_selected_run(layout):
     with pytest.raises(ValueError, match='one build/setup'):
         workspace.execute(['build', 'all'])
     with pytest.raises(ValueError, match='recipe name'):
-        workspace.execute(['--justfile', '/tmp/other'])
+        workspace.execute(['--justfile', '/unselected/justfile'])
 
 
 def test_run_identifier_cannot_escape_workspace(layout):

@@ -9,30 +9,362 @@ import test from 'node:test';
 
 const html = readFileSync(new URL('../templates/index.html', import.meta.url), 'utf8');
 const script = html.split('<script>\n')[1].split('</script>')[0];
-const source = script.slice(0, script.indexOf('// 8. Refresh cycle and events'));
+const refreshStart = script.indexOf('// 8. Refresh cycle and events');
+const eventsStart = script.indexOf('// delegation: tabs');
+assert.ok(refreshStart > 0 && eventsStart > refreshStart, 'runtime harness section markers must exist in order');
+const source = script.slice(0, refreshStart);
 const address = n => '0x' + n.toString(16).padStart(40, '0');
 const ldoMetadata = JSON.parse(readFileSync(new URL('../config/ldo-networks.json', import.meta.url), 'utf8'));
 const stethMetadata = JSON.parse(readFileSync(new URL('../config/steth-networks.json', import.meta.url), 'utf8'));
 const build = { identity: 'test', networks: [], provenance: {}, l1Token: address(1),
+  ledger: JSON.parse(readFileSync(new URL('../../../ledger.json', import.meta.url), 'utf8')),
   ldo: ldoMetadata,
   steth: { l1Token: address(4), priceFeed: stethMetadata.priceFeed, networks: [{ chainId: 10, name: 'Optimism',
     token: address(10), oracle: address(11), decimals: 18, rateDecimals: 27 }] },
   live: { lane: [2, 3], env: 'testnet', tokens: {}, seeds: {} } };
-function page() {
+function page(snapshot = null) {
   const store = new Map();
-  const views = { innerHTML: '' };
+  const views = { innerHTML: '', childNodes: [], replaceChildren(...nodes) { this.childNodes = nodes; },
+    querySelectorAll: () => [], querySelector: () => null };
   const ctx = vm.createContext({ console, performance, setTimeout, clearTimeout, URL, tickStamp: () => {},
     location: { hash: '#token' },
     fetch: async () => { throw Error('Unexpected network'); },
     localStorage: { getItem: k => store.get(k) ?? null,
       setItem: (k, v) => store.set(k, v), removeItem: k => store.delete(k) },
     document: { getElementById: id => id === 'dashboard-data'
-      ? { textContent: JSON.stringify(build) } : id === 'views' ? views : {},
+      ? { textContent: JSON.stringify({...build, ledger: undefined}) } : id === 'ledger-data' ? { textContent: JSON.stringify(build.ledger) } : id === 'snapshot' ? { textContent: JSON.stringify(snapshot) } : id === 'views' ? views : {},
       querySelector: () => null, querySelectorAll: () => [] } });
   vm.runInContext(source, ctx);
   vm.runInContext('renderTabs = () => {};', ctx);
   return { ctx, store, views, run: s => vm.runInContext(s, ctx) };
 }
+
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+  return { promise, resolve, reject };
+}
+
+test('ledger search covers every deployment and its nested evidence, with network-scoped identity', () => {
+  const p = page();
+  assert.equal(p.run('ledgerEntries'), null, 'ledger indexing is deferred until needed');
+  p.run('indexLedger()');
+  assert.equal(p.run('ledgerEntries.length'), build.ledger.deployments.length);
+  const entry = build.ledger.deployments.find(d => d.auditReportRefs.length && d.source?.commit);
+  p.ctx.entry = entry;
+  for (const query of [entry.address.toUpperCase(), entry.contractId, entry.source.commit,
+    entry.auditReportRefs[0], `${entry.contractName} ${build.ledger.networks[entry.networkId].networkName}`]) {
+    p.ctx.query = query;
+    assert.equal(p.run('ledgerEntries.filter(x => ledgerMatches(x, query, entry.networkId)).some(x => x.entry.deploymentId === entry.deploymentId)'), true);
+  }
+  p.ctx.query = entry.address;
+  assert.equal(p.run('ledgerEntries.filter(x => ledgerMatches(x, query, "nonexistent-network")).length'), 0);
+  assert.equal(p.run('ledgerEntries.filter(x => ledgerMatches(x, "no-such-deployment")).length'), 0);
+  assert.equal(p.run('ledgerEntries.filter(x => ledgerMatches(x, "  ")).length'), build.ledger.deployments.length);
+});
+
+test('ledger details preserve nested fields, missing evidence, safe links, and proxy targets', () => {
+  const p = page();
+  p.ctx.entry = build.ledger.deployments.find(d => d.proxy?.implementationDeploymentId);
+  p.run('indexLedger()');
+  const details = p.run('ledgerDetails(entry)');
+  assert.match(details, /Audit reports/);
+  assert.match(details, /Public posts &amp; references/);
+  assert.match(details, /data-ledger-target=/);
+  assert.match(details, /Entry JSON/);
+  assert.match(p.run('ledgerValue(null)'), /Not recorded/);
+  assert.match(p.run('ledgerValue([])'), /None recorded/);
+  p.ctx.evidence = { evidence: [{ note: '<script>alert(1)</script>', url: 'javascript:alert(1)' }], publicRefs: ['https://example.org/post?a=1&b=2'] };
+  const rendered = p.run('ledgerValue(evidence)');
+  assert.ok(!rendered.includes('<script>'));
+  assert.ok(!rendered.includes('href="javascript:'));
+  assert.match(rendered, /href="https:\/\/example.org\/post\?a=1&amp;b=2"/);
+});
+
+function routedPage(snapshot) {
+  const p = page(snapshot);
+  const handlers = new Map();
+  const eventNode = id => ({ addEventListener(type, listener) { handlers.set(`${id}:${type}`, listener); } });
+  const elements = { refresh: eventNode('refresh'), stamp: {}, tabs: eventNode('tabs'), settings: eventNode('settings') };
+  p.views.addEventListener = eventNode('views').addEventListener;
+  p.ctx.window = eventNode('window');
+  const getElement = p.ctx.document.getElementById;
+  p.ctx.document.getElementById = id => elements[id] || getElement(id);
+  p.views.querySelector = selector => selector === '[data-read-error]' && p.views.innerHTML.includes('data-read-error')
+    ? {remove() { p.views.innerHTML = p.views.innerHTML.replace(/<div[^>]*data-read-error[^>]*>.*?<\/div>/, ''); }} : null;
+  p.views.insertAdjacentHTML = (_where, html) => { p.views.innerHTML = html + p.views.innerHTML; };
+  const pollingStart = script.indexOf('// No RPC polling:', eventsStart);
+  assert.ok(pollingStart > eventsStart);
+  p.run(script.slice(refreshStart, pollingStart));
+  p.emit = (id, type, target = {}) => handlers.get(`${id}:${type}`)({target});
+  p.navigate = hash => { p.ctx.location.hash = `#${hash}`; return p.run('run()'); };
+  p.elements = elements;
+  return p;
+}
+
+for (const fail of [false, true]) test(`navigation leaves a pending Dev registry; late ${fail ? 'failure' : 'success'} cannot overwrite Live`, async () => {
+  const p = routedPage(), registryRead = deferred();
+  let crawls = 0;
+  p.ctx.loadRegistry = () => registryRead.promise;
+  p.ctx.crawl = async () => { crawls++; };
+  p.ctx.viewOverview = async () => { p.views.innerHTML = 'Live results'; };
+  const dev = p.navigate('lane-2-3');
+  assert.match(p.views.innerHTML, /Loading/);
+  assert.equal(p.run('state.view'), 'lane-2-3');
+  await p.navigate('overview');
+  assert.equal(p.views.innerHTML, 'Live results');
+  assert.equal(p.elements.refresh.disabled, false);
+  if (fail) registryRead.reject(Error('late registry failure'));
+  else registryRead.resolve();
+  await dev;
+  assert.equal(crawls, 0, 'abandoned registry load must not start a crawl');
+  assert.equal(p.views.innerHTML, 'Live results');
+  assert.equal(p.run('state.env'), 'mainnet');
+});
+
+test('separate Dev run generations reject earlier RPC results', async () => {
+  const p = routedPage(), firstRead = deferred(), secondRead = deferred();
+  let calls = 0;
+  p.ctx.loadRegistry = async () => {};
+  p.ctx.crawl = env => {
+    assert.equal(env, 'testnet');
+    return (++calls <= 2 ? firstRead : secondRead).promise;
+  };
+  p.run('laneSummary = (env, a, b, ra) => `${env}: ${ra.label}`; sidePanel = () => "";');
+  const first = p.navigate('lane-2-3');
+  await new Promise(setImmediate);
+  await p.navigate('settings');
+  assert.match(p.views.innerHTML, /RPC/);
+  assert.equal(p.elements.refresh.disabled, false);
+  const second = p.navigate('lane-2-3');
+  await new Promise(setImmediate);
+  await p.run('run()');
+  assert.equal(calls, 4, 'duplicate route events do not start extra crawls');
+  firstRead.resolve({ label: 'old', liveAt: 1, checks: [{s: 'bad'}] });
+  await first;
+  assert.match(p.views.innerHTML, /Loading/);
+  assert.equal(p.run('dataAt'), null);
+  assert.equal(p.run('tabStatus.has("lane-2-3")'), false);
+  assert.equal(p.elements.refresh.disabled, true, 'stale completion must not clear the active loading state');
+  secondRead.resolve({ label: 'new', liveAt: 2000, checks: [] });
+  await second;
+  assert.match(p.views.innerHTML, /testnet: new/);
+  assert.equal(p.run('dataAt'), 2000);
+  assert.equal(p.run('tabStatus.get("lane-2-3")'), 'ok');
+  assert.equal(p.elements.refresh.disabled, false);
+});
+
+for (const stage of ['registry', 'L1']) test(`leaving Live during ${stage} reads cannot overwrite the next view`, async () => {
+  const p = routedPage(), pending = deferred();
+  p.ctx.loadRegistry = () => stage === 'registry' && p.run('state.view') === 'overview' ? pending.promise : Promise.resolve();
+  p.ctx.overviewL1 = () => pending.promise;
+  const live = p.navigate('overview');
+  await new Promise(setImmediate);
+  await p.navigate('settings');
+  const settings = p.views.innerHTML;
+  pending.resolve({ at: 1 });
+  await live;
+  assert.equal(p.views.innerHTML, settings);
+  assert.equal(p.run('ov.l1'), null);
+  assert.equal(p.run('dataAt'), null);
+  assert.equal(p.elements.refresh.disabled, false);
+});
+
+test('Settings loads registry on direct entry, preserves drafts, and refresh bypasses cache', async () => {
+  const p = routedPage(), pending = deferred();
+  let count = 0;
+  p.ctx.fetch = async url => {
+    count++;
+    await pending.promise;
+    return {ok: true, json: async () => ({data: url.includes('/chains?')
+      ? {evm: {'777': {displayName: 'Registry Chain'}, '888': {displayName: 'Peer Chain'}}}
+      : url.includes('/tokens?') ? {wstETH: {'777': {}}} : {}})};
+  };
+  const settings = p.navigate('settings');
+  assert.match(p.views.innerHTML, /RPC/);
+  assert.ok(!p.views.innerHTML.includes('Registry Chain'));
+  const draft = {dataset: {rpc: '1'}, value: 'https://unfinished.example', selectionStart: 5, selectionEnd: 8,
+    closest(selector) { return selector === '[data-rpc]' ? this : null; }};
+  p.emit('views', 'input', draft);
+  const replacement = {focus() { this.focused = true; }, setSelectionRange(start, end) { this.range = [start, end]; }};
+  p.ctx.document.activeElement = draft;
+  p.views.querySelectorAll = () => [draft];
+  p.views.querySelector = () => replacement;
+  pending.resolve();
+  await settings;
+  assert.match(p.views.innerHTML, /value="777">Registry Chain/);
+  assert.match(p.views.innerHTML, /data-rpc="777"/);
+  assert.equal(replacement.value, draft.value);
+  assert.equal(replacement.focused, true);
+  assert.deepEqual(replacement.range, [5, 8]);
+  assert.equal(p.run('state.rpc[1]'), undefined, 'draft must not activate an unfinished endpoint');
+  p.run('renderingSettings = true');
+  p.emit('views', 'focusout', draft);
+  p.run('renderingSettings = false');
+  assert.equal(p.run('state.rpc[1]'), undefined, 'programmatic replacement must not commit drafts');
+  p.emit('views', 'focusout', draft);
+  assert.equal(p.run('state.rpc[1]'), draft.value, 'blur commits the draft even after replacement reset the change baseline');
+  assert.ok([...p.store.values()].some(value => value.includes(draft.value)), 'draft is persisted');
+  assert.equal(count, 3);
+  await p.run('run()');
+  assert.equal(count, 3);
+  await p.run('forceNext = true; run()');
+  assert.equal(count, 6);
+});
+
+test('Settings joins a pending Live registry and cannot repaint after navigation', async () => {
+  const p = routedPage(), pending = deferred();
+  let count = 0;
+  p.ctx.fetch = async url => {
+    count++;
+    await pending.promise;
+    return {ok: true, json: async () => ({data: url.includes('/chains?')
+      ? {evm: {'777': {displayName: 'Registry Chain'}}} : {}})};
+  };
+  const live = p.navigate('overview');
+  const settings = p.navigate('settings');
+  await new Promise(setImmediate);
+  assert.equal(count, 3);
+  p.ctx.viewLedger = () => { p.views.innerHTML = 'Ledger'; };
+  await p.navigate('ledger');
+  pending.resolve();
+  await Promise.all([live, settings]);
+  assert.equal(p.views.innerHTML, 'Ledger');
+});
+
+test('Settings registry failure retains usable controls and a later refresh recovers', async () => {
+  const p = routedPage();
+  await p.navigate('settings');
+  assert.match(p.views.innerHTML, /Registry unavailable/);
+  assert.match(p.views.innerHTML, /data-rpc="1"/);
+  assert.equal(p.elements.refresh.disabled, false);
+  p.ctx.fetch = async () => ({ok: true, json: async () => ({data: {evm: {}}})});
+  await p.run('forceNext = true; run()');
+  assert.ok(!p.views.innerHTML.includes('Registry unavailable'));
+});
+
+test('abandoned snapshot fallback cannot mark Live offline; fallback revisit and recovery are explicit', async () => {
+  const snapshot = {identity: 'test', registry: {testnet: {chains: {}, tokens: {}, lanes: {}}}};
+  const p = routedPage(snapshot), pending = deferred();
+  p.ctx.fetch = async url => {
+    if (url.includes('testnet')) await pending.promise;
+    return {ok: true, json: async () => ({data: {evm: {}}})};
+  };
+  p.ctx.viewOverview = async (_force, context) => context.publish(() => { p.views.innerHTML = 'Live'; });
+  p.ctx.crawl = async () => ({checks: [], liveAt: 1000});
+  p.run('laneSummary = () => "Dev"; sidePanel = () => ""; forceNext = true;');
+  const dev = p.navigate('lane-2-3');
+  await new Promise(setImmediate);
+  await p.navigate('overview');
+  pending.reject(Error('offline'));
+  await dev;
+  p.run('tickStamp()');
+  assert.equal(p.run('offline'), false);
+  assert.ok(!p.elements.stamp.textContent.includes('offline copy'));
+  await p.navigate('lane-2-3');
+  assert.match(p.elements.stamp.textContent, /offline copy/);
+  p.ctx.fetch = async () => ({ok: true, json: async () => ({data: {evm: {}}})});
+  await p.run('forceNext = true; run()');
+  assert.ok(!p.elements.stamp.textContent.includes('offline copy'));
+});
+
+test('same-view refresh retains displayed data until replacement is ready', async () => {
+  const p = routedPage(), pending = deferred();
+  p.ctx.loadRegistry = async () => {};
+  p.ctx.crawl = async () => ({checks: [], liveAt: 1000});
+  p.run('laneSummary = () => "Existing data"; sidePanel = () => "";');
+  await p.navigate('lane-2-3');
+  const displayed = p.views.innerHTML;
+  p.ctx.crawl = () => pending.promise;
+  const refresh = p.run('forceNext = true; run()');
+  await new Promise(setImmediate);
+  assert.equal(p.views.innerHTML, displayed);
+  assert.equal(p.run('dataAt'), 1000);
+  assert.equal(p.elements.stamp.textContent, 'reading…');
+  pending.resolve({checks: [], liveAt: 2000});
+  await refresh;
+  assert.equal(p.run('dataAt'), 2000);
+});
+
+test('Dev revisit shares in-flight crawls, including refresh, without merging different endpoints', async () => {
+  const p = routedPage(), pending = deferred();
+  let structures = 0, probes = 0;
+  p.run('registry.testnet = {chains: {}, lanes: {}, tokens: {}}; registry.mainnet = {chains: {}, tokens: {}}; laneSummary = () => "Dev"; sidePanel = () => ""; buildChecks = () => [];');
+  p.ctx.crawlStructure = async () => { structures++; await pending.promise;
+    return {ms: 1, at: 1, rows: [{type: 'Router'}], ramps: [], nocode: []}; };
+  p.ctx.probeLive = async () => { probes++; return {ms: 1}; };
+  const first = p.navigate('lane-2-3');
+  await new Promise(setImmediate);
+  await p.navigate('settings');
+  const second = p.navigate('lane-2-3');
+  const refresh = p.run('forceNext = true; run()');
+  await new Promise(setImmediate);
+  assert.equal(structures, 2);
+  p.run('state.rpc[2] = "https://other.example"');
+  const otherEndpoint = p.run('crawl("testnet", 2, 3, true)');
+  await new Promise(setImmediate);
+  assert.equal(structures, 3);
+  pending.resolve();
+  await Promise.all([first, second, refresh, otherEndpoint]);
+  assert.equal(probes, 3);
+  assert.match(p.views.innerHTML, /Dev/);
+  assert.equal(p.elements.refresh.disabled, false);
+});
+
+test('failed shared crawls are evicted so a revisit can retry', async () => {
+  const p = page(), pending = deferred();
+  p.run('registry.testnet = {chains: {}, tokens: {}};');
+  let calls = 0;
+  p.ctx.crawlStructure = async () => { calls++; await pending.promise; throw Error('failed crawl'); };
+  const first = p.run('crawl("testnet", 2, 3, false)'), second = p.run('crawl("testnet", 2, 3, true)');
+  const checked = Promise.all([assert.rejects(first, /failed crawl/), assert.rejects(second, /failed crawl/)]);
+  pending.resolve();
+  await checked;
+  assert.equal(calls, 1);
+  await assert.rejects(p.run('crawl("testnet", 2, 3, false)'), /failed crawl/);
+  assert.equal(calls, 2);
+});
+
+test('abandoned overview supply callbacks cannot modify a revisited overview', async () => {
+  const p = routedPage(), oldRead = deferred(), newRead = deferred();
+  p.run(`loadRegistry = async () => {}; overviewRows = () => []; ldoRows = () => [];
+    overviewL1 = async () => ({at: 5000, err: null, escrow: {}, silo: {}, pool: {addr: null, held: null, unsiloed: null}});`);
+  let calls = 0;
+  p.ctx.destinationSupply = () => (++calls === 1 ? oldRead : newRead).promise;
+  p.ctx.stethRate = async () => ({err: 'unavailable', at: null});
+  await p.navigate('overview');
+  await p.navigate('settings');
+  await p.navigate('overview');
+  const displayed = p.views.innerHTML;
+  oldRead.resolve({v: 1n, at: 1});
+  await new Promise(setImmediate);
+  assert.equal(p.views.innerHTML, displayed);
+  assert.equal(p.run('steth.supply.size'), 0);
+  assert.equal(p.run('dataAt'), 5000);
+  newRead.resolve({v: 2n, at: 2000});
+  await new Promise(setImmediate);
+  assert.equal(p.run('steth.supply.get(steth.rows[0].key).v'), 2n);
+  assert.equal(p.run('dataAt'), 2000);
+});
+
+test('ledger search indexes values without matching schema keys', () => {
+  const p = page();
+  p.run('indexLedger()');
+  p.ctx.entry = {networkId: 'unknown', contractId: 'widget', contractName: 'Widget', auditReportRefs: [], source: null};
+  for (const term of ['audit', 'contract', 'network', 'source', 'deployment']) {
+    p.ctx.term = term;
+    assert.equal(p.run('ledgerMatches({entry, search: ledgerSearchValues(entry).toLowerCase()}, term)'), false);
+  }
+  assert.ok(p.run('ledgerEntries.filter(x => ledgerMatches(x, "audit")).length') < build.ledger.deployments.length);
+});
+
+test('ledger details distinguish unrecorded from explicitly empty public references', () => {
+  const p = page();
+  p.ctx.entry = {...build.ledger.deployments[0], publicRefs: null};
+  assert.match(p.run('ledgerDetails(entry)'), /Public posts &amp; references<\/dt><dd><span class="muted">Not recorded/);
+  p.ctx.entry.publicRefs = [];
+  assert.match(p.run('ledgerDetails(entry)'), /Public posts &amp; references<\/dt><dd><span class="muted">None recorded/);
+});
 
 test('same-chain escrow rows retain distinct balances through cache and rendering', async () => {
   const p = page();
@@ -378,7 +710,7 @@ test('overview pool link and copy use the address; token hash falls back to over
   const p = page();
   p.ctx.pool = address(99);
   p.run('loadRegistry = async () => {}; overviewRows = () => []; overviewL1 = async () => ({ at: 1, err: null, escrow: {}, silo: {}, pool: { addr: pool, held: null, unsiloed: null } }); ovUpdateTotals = () => {};');
-  await p.run('viewOverview(false)');
+  await p.run('viewOverview(false, viewContext("overview", "mainnet"))');
   assert.ok(p.views.innerHTML.includes(`https://etherscan.io/address/${p.ctx.pool}`));
   assert.ok(p.views.innerHTML.includes(`data-copy="${p.ctx.pool}"`));
   assert.ok(!p.views.innerHTML.includes('[object Object]'));
@@ -507,4 +839,316 @@ test('stETH supply and rate coalesce without coupling their subcall failures', a
   assert.equal(supply.v, null);
   assert.equal(rate.err, null);
   assert.equal(rate.startedAt, (now - 7200) * 1000);
+});
+
+test('cache clear detaches pending registry reads and prevents late persistence or publication', async () => {
+  const p = routedPage(), pending = deferred();
+  p.ctx.fetch = async url => {
+    await pending.promise;
+    return {ok: true, json: async () => ({data: url.includes('/chains?') ? {evm: {'99': {displayName: 'Obsolete'}}} : {}})};
+  };
+  const first = p.navigate('settings');
+  await new Promise(setImmediate);
+  await p.emit('views', 'click', {id: 'cacheclear', closest: () => null});
+  const clearedView = p.views.innerHTML;
+  assert.equal(p.elements.refresh.disabled, false);
+  pending.resolve();
+  await first;
+  assert.equal(p.views.innerHTML, clearedView);
+  assert.equal(p.run('registry.mainnet'), undefined);
+  assert.equal(p.store.has(p.run('REG_KEY')), false);
+  let calls = 0;
+  p.ctx.fetch = async () => { calls++; return {ok: true, json: async () => ({data: {evm: {}}})}; };
+  await p.run('loadRegistry("mainnet", false)');
+  assert.equal(calls, 3);
+});
+
+test('cleared crawl uses its captured registry without repopulating caches or deleting newer pending work', async () => {
+  const p = page(), old = deferred(), fresh = deferred();
+  let reads = 0;
+  p.run('registry.testnet = {chains: {2: {}, 3: {selector: "123"}}}; buildChecks = () => [];');
+  p.ctx.crawlStructure = async () => {
+    await (++reads === 1 ? old : fresh).promise;
+    return {ms: 0, at: 1, rows: [{type: 'Router'}], ramps: [], nocode: []};
+  };
+  p.ctx.probeLive = async (_url, _st, selector) => { assert.equal(selector, '123'); return {ms: 0}; };
+  const first = p.run('crawl("testnet", 2, 3, true)');
+  await new Promise(setImmediate);
+  p.run('clearCache(); registry.testnet = {chains: {2: {}, 3: {selector: "123"}}};');
+  const second = p.run('crawl("testnet", 2, 3, true)');
+  await new Promise(setImmediate);
+  old.resolve();
+  await first;
+  assert.equal(p.run('structCache.size'), 0);
+  assert.equal(p.store.has(p.run('CACHE_KEY')), false);
+  assert.equal(p.run('crawlReads.size'), 1);
+  assert.equal(p.run('crawl("testnet", 2, 3, true)'), second);
+  fresh.resolve();
+  await second;
+  assert.equal(p.run('structCache.size'), 1);
+});
+
+test('clear cache prevents outstanding overview supplies from restoring persisted observations', async () => {
+  const p = page(), pending = deferred();
+  p.ctx.rpcRead = () => pending.promise;
+  const read = p.run('overviewSupply({chainId: 1, token: L1_WSTETH}, true)');
+  p.run('clearCache()');
+  pending.resolve([abi(100)]);
+  assert.equal((await read).v, 100n);
+  assert.equal(p.run('metaCache.size'), 0);
+  assert.equal(p.store.has(p.run('CACHE_KEY')), false);
+});
+
+test('baked registry startup is not a network failure; failed refresh and recovery are distinguished', async () => {
+  const p = routedPage({identity: 'test', registry: {mainnet: {chains: {}, tokens: {}, lanes: {}}}});
+  let calls = 0;
+  p.ctx.fetch = async () => { calls++; throw Error('offline'); };
+  await p.navigate('settings');
+  assert.equal(calls, 0);
+  assert.equal(p.run('offline'), false);
+  await p.run('forceNext = true; run()');
+  assert.equal(p.run('offline'), true);
+  p.run('clearCache()');
+  await p.run('run()');
+  assert.equal(p.run('offline'), false, 'a reused baked object must not retain earlier failure provenance');
+  p.ctx.fetch = async () => ({ok: true, json: async () => ({data: {evm: {}}})});
+  await p.run('forceNext = true; run()');
+  assert.equal(p.run('offline'), false);
+});
+
+test('failed same-view refresh retains lane data and timestamp with one error, then recovers', async () => {
+  const p = routedPage();
+  p.ctx.loadRegistry = async () => {};
+  p.ctx.crawl = async () => ({checks: [], liveAt: 1000});
+  p.run('laneSummary = () => "Existing lane data"; sidePanel = () => "";');
+  await p.navigate('lane-2-3');
+  p.ctx.loadRegistry = async () => { throw Error('offline registry'); };
+  for (let i = 0; i < 3; i++) await p.run('forceNext = true; run()');
+  assert.match(p.views.innerHTML, /Existing lane data/);
+  assert.equal(p.run('dataAt'), 1000);
+  assert.equal((p.views.innerHTML.match(/data-read-error/g) || []).length, 1);
+  p.ctx.loadRegistry = async () => {};
+  await p.run('forceNext = true; run()');
+  assert.ok(!p.views.innerHTML.includes('data-read-error'));
+});
+
+test('repeated Settings failures keep one banner; a warm Settings entry renders once', async () => {
+  const p = routedPage();
+  await p.navigate('settings');
+  for (let i = 0; i < 3; i++) await p.run('forceNext = true; run()');
+  assert.equal((p.views.innerHTML.match(/Registry unavailable/g) || []).length, 1);
+  p.run('registry.mainnet = {chains: {}, tokens: {}};');
+  await p.navigate('ledger');
+  let renders = 0;
+  p.ctx.viewSettings = () => { renders++; p.views.innerHTML = 'Settings'; };
+  await p.navigate('settings');
+  assert.equal(renders, 1);
+});
+
+test('Live revisit shares phase-one reads; changed endpoint and row inputs remain distinct', async () => {
+  const p = routedPage(), pending = deferred();
+  p.run('registry.mainnet = {chains: {}, tokens: {}}; overviewRows = () => []; renderOverview = () => { views.innerHTML = "Live"; };');
+  let batches = 0;
+  p.ctx.rpcRead = async (_url, calls) => { batches++; await pending.promise; return calls.map(() => null); };
+  const first = p.navigate('overview');
+  await new Promise(setImmediate);
+  await p.navigate('ledger');
+  const second = p.navigate('overview');
+  const refresh = p.run('forceNext = true; run()');
+  await new Promise(setImmediate);
+  assert.equal(batches, 3, 'one L1 batch and two feed quote reads');
+  p.run('state.rpc[1] = "https://other.example"');
+  const changed = p.run('overviewL1([], true)');
+  await new Promise(setImmediate);
+  assert.equal(batches, 6);
+  const rowsChanged = p.run('overviewL1([{key: "new", escrow: L1_WSTETH}], true)');
+  await new Promise(setImmediate);
+  assert.equal(batches, 7, 'new row inputs need their own L1 read, while matching quotes remain shared');
+  pending.resolve();
+  await Promise.all([first, second, refresh, changed, rowsChanged]);
+  assert.equal(p.run('overviewReads.size'), 0);
+});
+
+test('ledger delegated interactions preserve filters on relationship navigation and clear explicitly', async () => {
+  const p = routedPage();
+  assert.equal(p.run('ledgerEntries'), null);
+  // DOM fixture supplies browser node operations; actual registered handlers run unchanged.
+  const input = {id: 'ledger-search', value: '', closest: () => null, focus() { this.focused = true; }};
+  const network = {id: 'ledger-network', value: ''};
+  Object.assign(p.elements, {'ledger-search': input, 'ledger-network': network, 'ledger-count': {}, 'ledger-empty': {}});
+  const rows = [];
+  const originalQuery = p.views.querySelector;
+  p.views.querySelectorAll = selector => selector === '[data-ledger-entry]' ? rows : [];
+  p.views.querySelector = selector => rows.find(row => selector === `[data-ledger-entry="${row.dataset.ledgerEntry}"]`) || originalQuery(selector);
+  await p.navigate('ledger');
+  const entries = p.run('ledgerEntries');
+  for (let i = 0; i < entries.length; i++) {
+    const detail = {dataset: {}, innerHTML: ''};
+    const summary = {focus() { this.focused = true; }};
+    rows.push({dataset: {ledgerEntry: String(i)}, hidden: false, open: false,
+      matches: selector => selector === '[data-ledger-entry]',
+      querySelector: selector => selector === '.ledger-detail' ? detail : summary,
+      scrollIntoView() { this.scrolled = true; }});
+  }
+  input.value = 'no-match-for-this-query';
+  p.emit('views', 'input', input);
+  network.value = 'eip155:1';
+  p.emit('views', 'change', network);
+  assert.ok(rows.every(row => row.hidden));
+  const proxyIndex = entries.findIndex(({entry}) => entry.proxy?.implementationDeploymentId);
+  const proxyRow = rows[proxyIndex]; proxyRow.open = true;
+  p.emit('views', 'toggle', proxyRow);
+  const detail = proxyRow.querySelector('.ledger-detail');
+  assert.equal(detail.dataset.loaded, 'true');
+  const targetIndex = Number(detail.innerHTML.match(/data-ledger-target="(\d+)"/)[1]);
+  await p.emit('views', 'click', {closest: selector => selector === '[data-ledger-target]' ? {dataset: {ledgerTarget: String(targetIndex)}} : null});
+  assert.equal(input.value, 'no-match-for-this-query');
+  assert.equal(network.value, 'eip155:1');
+  assert.equal(rows[targetIndex].hidden, false);
+  assert.equal(rows[targetIndex].open, true);
+  assert.equal(rows[targetIndex].querySelector('summary').focused, true);
+  assert.equal(rows[targetIndex].scrolled, true);
+  assert.match(p.elements['ledger-count'].textContent, /0 of .* \+ 1 linked deployment outside filters/);
+  assert.equal(p.elements['ledger-empty'].hidden, true);
+  p.emit('views', 'input', input);
+  assert.ok(rows.every(row => row.hidden), 'editing filters removes the relationship exception');
+  await p.emit('views', 'click', {closest: selector => selector === '[data-ledger-target]' ? {dataset: {ledgerTarget: '-1'}} : null});
+  await p.emit('views', 'click', {id: 'ledger-clear', closest: () => null});
+  assert.equal(input.value, ''); assert.equal(network.value, '');
+  assert.equal(p.run('ledgerQuery + ledgerNetwork'), '');
+  assert.ok(rows.every(row => !row.hidden));
+  assert.equal(input.focused, true);
+});
+
+test('price refresh joins a pending read and cache clear isolates old completions', async () => {
+  const p = routedPage(), oldRead = deferred(), newRead = deferred();
+  let calls = 0;
+  p.ctx.rpcRead = async () => {
+    await (++calls === 1 ? oldRead.promise : newRead.promise);
+    return ['0x1', abi(18), round(2n * 10n ** 14n), abi(8), round(2500n * 10n ** 8n)];
+  };
+  const first = p.run('ldoPrice(false)'), refresh = p.run('ldoPrice(true)');
+  await new Promise(setImmediate);
+  assert.equal(calls, 1);
+  p.run('clearCache()');
+  const next = p.run('ldoPrice(true)');
+  await new Promise(setImmediate);
+  assert.equal(calls, 2);
+  oldRead.resolve();
+  await Promise.all([first, refresh]);
+  assert.equal(p.run('priceReads.size'), 1, 'old completion cannot remove the new pending read');
+  assert.equal(p.run('metaCache.size'), 0, 'old completion cannot repopulate the cache');
+  newRead.resolve();
+  await next;
+  assert.equal(p.run('priceReads.size'), 0);
+  assert.equal(p.run('metaCache.size'), 1);
+});
+
+test('overview reads retain the endpoint and hub used by their sharing key', async () => {
+  const p = page();
+  p.run(`registry.mainnet = {tokens: {wstETH: {1: {poolAddress: '${address(22)}'}}}};
+    state.rpc[1] = 'https://first.example';`);
+  let observedUrl;
+  p.ctx.rpcRead = async (url, calls) => {
+    if (calls[0].method === 'eth_call') observedUrl = url;
+    return calls.map(() => null);
+  };
+  const read = p.run('overviewL1([], true)');
+  p.run(`registry.mainnet.tokens.wstETH[1].poolAddress = '${address(33)}'; state.rpc[1] = 'https://second.example';`);
+  const result = await read;
+  assert.equal(observedUrl, 'https://first.example');
+  assert.equal(result.pool.addr, address(22));
+});
+
+test('overview cache follows hub and row inputs even when the RPC stays the same', async () => {
+  const p = page();
+  p.ctx.rows = [{key: 'spoke', escrow: address(44), group: 'ccip', selector: '100'}];
+  p.run(`registry.mainnet = {tokens: {wstETH: {1: {poolAddress: '${address(22)}'}}}};`);
+  let reads = 0;
+  p.ctx.rpcRead = async (_url, calls) => {
+    if (calls[0].method !== 'eth_call') return [];
+    reads++;
+    return [...calls.slice(0, -3).map(() => abi(reads)), '0x1', abi(18), abi(100)];
+  };
+  assert.equal((await p.run('overviewL1(rows, false)')).pool.held, 1n);
+  await p.run('overviewL1(rows, false)');
+  assert.equal(reads, 1, 'identical inputs reuse completed observations');
+  p.run(`registry.mainnet.tokens.wstETH[1].poolAddress = '${address(33)}';`);
+  const changedHub = await p.run('overviewL1(rows, false)');
+  assert.equal(changedHub.pool.addr, address(33));
+  assert.equal(changedHub.pool.held, 2n, 'new pool must not inherit old pool balances');
+  p.ctx.rows = [{...p.ctx.rows[0], escrow: address(55), selector: '200'}];
+  assert.equal((await p.run('overviewL1(rows, false)')).escrow.spoke, 3n);
+  p.run('delete metaCache.get(OV_KEY).inputs;');
+  await p.run('overviewL1(rows, false)');
+  assert.equal(reads, 4, 'older caches without input provenance are read again');
+});
+
+test('Refresh bypasses cached overview balances while an expired quote is pending', async () => {
+  const p = page(), quote = deferred();
+  let batches = 0, holdQuote = false;
+  p.ctx.rpcRead = async (_url, calls) => {
+    if (calls[0].method !== "eth_call") {
+      if (holdQuote) await quote.promise;
+      return [];
+    }
+    batches++;
+    return [...calls.slice(0, -3).map(() => abi(batches)), '0x1', abi(18), abi(100)];
+  };
+  await p.run('overviewL1([], false)');
+  holdQuote = true;
+  const cached = p.run('overviewL1([], false)');
+  await new Promise(setImmediate);
+  const fresh = p.run('overviewL1([], true)');
+  await new Promise(setImmediate);
+  assert.equal(batches, 2, 'Refresh must start a new balance batch');
+  quote.resolve(null);
+  assert.equal((await cached).supply, 1n);
+  assert.equal((await fresh).supply, 2n);
+});
+
+test('Refresh recrawls structure while a cached structure is awaiting its live probe', async () => {
+  const p = page(), probe = deferred();
+  p.run(`registry.testnet = {chains: {}, tokens: {}}; buildChecks = () => [];
+    structCache.set('testnet|2|3', {url: rpcFor(2), ms: 0, at: 1,
+      rows: [{type: 'Router'}], ramps: [], nocode: []});`);
+  let structures = 0;
+  p.ctx.crawlStructure = async () => { structures++; return {ms: 0, at: 2, rows: [{type: 'Router'}], ramps: [], nocode: []}; };
+  let probes = 0;
+  p.ctx.probeLive = () => ++probes === 1 ? probe.promise : Promise.resolve({ms: 0});
+  const cached = p.run('crawl("testnet", 2, 3, false)');
+  await new Promise(setImmediate);
+  const fresh = p.run('crawl("testnet", 2, 3, true)');
+  await new Promise(setImmediate);
+  assert.equal(structures, 1);
+  assert.equal((await fresh).structAt, 2);
+  probe.resolve({ms: 0});
+  assert.equal((await cached).structAt, 1);
+  assert.equal(p.run('structCache.get("testnet|2|3").at'), 2, 'late cached probes cannot replace refreshed structure');
+});
+
+test('a read finishing between hash changes cannot leave its loading flag stuck', async () => {
+  const p = routedPage(), pending = deferred();
+  p.ctx.loadRegistry = () => pending.promise;
+  p.ctx.crawl = async () => ({checks: [], liveAt: 1000});
+  p.run('laneSummary = () => "Dev loaded"; sidePanel = () => "";');
+  const first = p.navigate('lane-2-3');
+  p.ctx.location.hash = '#overview'; // hashchange task has not run yet
+  pending.resolve();
+  await first;
+  assert.equal(p.run('busy'), false);
+  p.ctx.location.hash = '#lane-2-3';
+  await p.run('run()');
+  assert.match(p.views.innerHTML, /Dev loaded/);
+  assert.equal(p.elements.refresh.disabled, false);
+});
+
+test('ledger parsing is lazy and a connected ledger is not reattached', () => {
+  const p = page();
+  assert.equal(p.run('LEDGER'), null);
+  p.run('indexLedger()');
+  assert.equal(p.run('LEDGER.deployments.length'), build.ledger.deployments.length);
+  p.run('ledgerNodes = [{isConnected: true}];');
+  p.views.replaceChildren = () => { throw Error('would detach the focused input'); };
+  p.run('viewLedger()');
 });
