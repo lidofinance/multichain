@@ -240,6 +240,20 @@ Set **Settings → Pages → Source** to **Deploy from a branch**, select the br
 containing your build, and choose **/docs**. Push your commit to that branch to
 publish it. No build on GitHub is needed in this mode.
 
+GitHub's automatic Pages workflow checks out submodules even when publishing
+only `docs/`. The private `components/ccip` dependency therefore has
+`update = none` in the root `.gitmodules`; Git skips it during automatic checkout.
+The static dashboard does not consume that checkout. Keep this setting on the
+publishing branch (currently `gh-pages`) when merging source updates. No Pages
+settings, credentials, or workflow changes are needed for this fix. Development
+setup explicitly uses `--checkout` to fetch CCIP with authorized access; see the
+[orchestration setup](../../orchestration/wsteth-ccip/README.md#commands).
+
+GitHub documents the restriction in
+[Using submodules with GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-submodules-with-github-pages),
+and Git documents `update = none` and the `--checkout` override in
+[git submodule](https://git-scm.com/docs/git-submodule).
+
 ### Build and deploy with Actions instead
 
 

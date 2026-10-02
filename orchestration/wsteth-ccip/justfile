@@ -48,7 +48,8 @@ init:
 # but their yarn installs pull third-party npm packages, so those installs live here with the
 # other third-party fetches.
 init-thirdparty:
-    git submodule update --init ../../libs/forge-std ../../components/openzeppelin-contracts-upgradeable-4x ../../components/openzeppelin-contracts-4x ../../components/ccip ../../libs/state-mate
+    # --checkout opts into CCIP, which automatic Pages checkouts skip.
+    git submodule update --init --checkout ../../libs/forge-std ../../components/openzeppelin-contracts-upgradeable-4x ../../components/openzeppelin-contracts-4x ../../components/ccip ../../libs/state-mate
     # pnpm 9 matches the ccip repo's lockfileVersion 9.0 (pnpm 10+ blocks its @zksync git subdep)
     cd ../../components/ccip/chains/evm && corepack pnpm@9 install
     # state-mate (Claim A / step 08) — pins yarn@4.3.1 via packageManager

@@ -29,6 +29,14 @@ Installed dependency packages were copied locally for offline build checks;
 compiler outputs were regenerated. Fresh clones use `init` / `init-thirdparty`
 with the original upstream package managers and access requirements.
 
+CCIP defaults to `update = none` in the root `.gitmodules` so automatic GitHub
+Pages checkouts can skip its private repository. `just wsteth init-thirdparty`
+explicitly opts in with `--checkout`. To fetch only CCIP with authorized access:
+
+```sh
+git submodule update --init --checkout components/ccip
+```
+
 ## Target and run boundary
 
 The Sepolia–Mantle Sepolia development target contains the imported configuration,

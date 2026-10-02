@@ -1,6 +1,8 @@
 [submodule "components/ccip"]
 	path = components/ccip
 	url = git@github.com:smartcontractkit/ccip-contract-examples-internal.git
+	# Branch-based Pages cannot read this private dependency. Developers opt in with --checkout.
+	update = none
 [submodule "components/core"]
 	path = components/core
 	branch = feat/scratch-dg
