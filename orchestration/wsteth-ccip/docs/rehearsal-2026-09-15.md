@@ -50,7 +50,7 @@ bytes4 space is outside that selector sweep.
 
 ## Run conditions
 
-- Fork origins and process details: `/tmp/wsteth-rehearsal-20260915/forks.json`.
+- Fork process metadata was recorded transiently during the run and is not a retained repository artifact.
 - Local transaction endpoints: `http://127.0.0.1:28502` (Sepolia) and
   `http://127.0.0.1:28503` (Mantle Sepolia).
 - EVM: Osaka, 100,000,000 block gas limit; Anvil's default transaction gas-limit

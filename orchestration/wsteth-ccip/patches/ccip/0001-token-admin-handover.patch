@@ -1,12 +1,10 @@
-Subject: [PATCH] Finish fresh token authority, share loaders and retry POM handover
-Base: ca8a66b2708ddab3022c2041e1beccf7c02bcaac
+Subject: [PATCH] Complete token authority and validate registry state before handover
+Base: components/ccip @ 501bdc31118a16de859985a4ee7cce906edd588f
 
-WHY: Register TAR before transferring token CCIP/default administration to the DAO.
-Gate script-3 revocation on fresh token/TAR readiness and guard BurnMint setters by
-DEFAULT_ADMIN_ROLE before broadcasting. Custom setters have explicit host handovers.
-Share config loading with fork rehearsals and skip completed POM role transfers.
-Only deployment scripts are patched; tests/docs live in the host repository.
-PoolOperationManager source and deployed bytecode are unchanged.
+WHY: Register fresh tokens before transferring CCIP administration to the DAO,
+validate token and registry authority before handing pools to POM, and support
+legacy configuration and idempotent handover retries. Share explicit-path
+configuration loading with rehearsals. POM bytecode is unchanged.
 
 diff --git a/chains/evm/contracts/lido-hvmv/script/deployment/1_Deploy.s.sol b/chains/evm/contracts/lido-hvmv/script/deployment/1_Deploy.s.sol
 index 25bf8fd..e136672 100644
@@ -14,7 +12,7 @@ index 25bf8fd..e136672 100644
 +++ b/chains/evm/contracts/lido-hvmv/script/deployment/1_Deploy.s.sol
 @@ -63,16 +63,28 @@ contract DeployScript is ConfigParser {
    }
- 
+
    function _loadConfigs() internal {
 -    string memory defaultConfigPath =
 -      vm.envOr("DEFAULT_CONFIG", string("./contracts/lido-hvmv/config/default_config.json"));
@@ -33,11 +31,11 @@ index 25bf8fd..e136672 100644
 +    s_chainConfigPath = chainConfigPath;
 +    s_deployerPrivateKey = privateKey;
 +    s_deployer = vm.addr(privateKey);
- 
+
      _loadDefaultConfig(defaultConfigPath);
      _loadChainConfig(s_chainConfigPath);
      if (s_tokenDeployedByScripts) s_tokenDeployment = _loadTokenDeployment(s_chainConfigPath);
- 
+
 +    _loadDeploymentInfrastructure();
 +  }
 +
@@ -45,7 +43,7 @@ index 25bf8fd..e136672 100644
 +  function _loadDeploymentInfrastructure() internal virtual {
      s_ccip = _fetchCCIPAddresses(s_chainConfig.chain.chain_id);
    }
- 
+
 diff --git a/chains/evm/contracts/lido-hvmv/script/deployment/2_Configure.s.sol b/chains/evm/contracts/lido-hvmv/script/deployment/2_Configure.s.sol
 index c3d789a..ee22924 100644
 --- a/chains/evm/contracts/lido-hvmv/script/deployment/2_Configure.s.sol
@@ -65,12 +63,12 @@ index c3d789a..ee22924 100644
    error MissingCCVDeployment(address verifier, address resolver);
 +  error UnexpectedTokenAdministrator(address administrator);
 +  error UnexpectedPendingTokenAdministrator(address pendingAdministrator);
- 
+
    uint32 internal constant DUMMY_MESSAGE_ID_GAS_FOR_VERIFICATION = 1;
    uint16 internal constant DUMMY_MESSAGE_ID_PAYLOAD_SIZE_BYTES = 36;
 @@ -79,11 +83,18 @@ contract ConfigureScript is ConfigParser {
    // ═══════════════════════════════════════════════════════════════════════════════
- 
+
    function _loadConfigs() internal {
 -    string memory defaultConfigPath =
 -      vm.envOr("DEFAULT_CONFIG", string("./contracts/lido-hvmv/config/default_config.json"));
@@ -89,19 +87,19 @@ index c3d789a..ee22924 100644
 +    s_chainConfigPath = chainConfigPath;
 +    s_deployerPrivateKey = privateKey;
 +    s_deployer = vm.addr(privateKey);
- 
+
      _loadDefaultConfig(defaultConfigPath);
      _loadChainConfig(s_chainConfigPath);
 @@ -119,12 +130,30 @@ contract ConfigureScript is ConfigParser {
    // CONFIGURE FUNCTIONS
    // ═══════════════════════════════════════════════════════════════════════════════
- 
+
 -  /// @dev Only for a token deployed by 1_Deploy. The admin transfer is two-step: the Lido DAO accepts it itself.
 +  /// @dev Complete token-admin-only work before the DAO can accept its two-step admin transfer.
 +  /// TAR administration stays with the deployer until script 3, independently of token administration.
    function _configureTokenIfNeeded() internal {
      if (!s_tokenDeployedByScripts) return;
- 
+
      BurnMintERC20Transparent token = BurnMintERC20Transparent(s_chainConfig.addresses.token);
 +    TokenAdminRegistry registry = TokenAdminRegistry(s_ccip.token_admin_registry);
 +    TokenAdminRegistry.TokenConfig memory config = registry.getTokenConfig(address(token));
@@ -123,12 +121,24 @@ index c3d789a..ee22924 100644
 +    token.setCCIPAdmin(s_chainConfig.governance_addresses.lido_dao_agent);
      token.beginDefaultAdminTransfer(s_chainConfig.governance_addresses.lido_dao_agent);
    }
- 
+
 diff --git a/chains/evm/contracts/lido-hvmv/script/deployment/3_SetPoolAndTransferOwnership.s.sol b/chains/evm/contracts/lido-hvmv/script/deployment/3_SetPoolAndTransferOwnership.s.sol
-index 6ccd351..5291b8d 100644
+index 6ccd351..23ecb2a 100644
 --- a/chains/evm/contracts/lido-hvmv/script/deployment/3_SetPoolAndTransferOwnership.s.sol
 +++ b/chains/evm/contracts/lido-hvmv/script/deployment/3_SetPoolAndTransferOwnership.s.sol
-@@ -23,7 +23,7 @@ import {PoolOperationManager} from "../../PoolOperationManager.sol";
+@@ -9,8 +9,9 @@ import {RegistryModuleOwnerCustom} from "@chainlink/contracts-ccip/tokenAdminReg
+ import {TokenAdminRegistry} from "@chainlink/contracts-ccip/tokenAdminRegistry/TokenAdminRegistry.sol";
+ import {Ownable2Step} from "@chainlink/contracts/src/v0.8/shared/access/Ownable2Step.sol";
+ import {BurnMintERC20} from "@chainlink/contracts/src/v0.8/shared/token/ERC20/BurnMintERC20.sol";
+-import {BurnMintERC20Transparent} from
+-  "@chainlink/contracts/src/v0.8/shared/token/ERC20/upgradeable/BurnMintERC20Transparent.sol";
++import {
++  BurnMintERC20Transparent
++} from "@chainlink/contracts/src/v0.8/shared/token/ERC20/upgradeable/BurnMintERC20Transparent.sol";
+ import {IAccessControl} from "@openzeppelin/contracts@5.3.0/access/IAccessControl.sol";
+ import {ProxyAdmin} from "@openzeppelin/contracts@5.3.0/proxy/transparent/ProxyAdmin.sol";
+ import {console} from "forge-std/console.sol";
+@@ -23,7 +24,7 @@ import {PoolOperationManager} from "../../PoolOperationManager.sol";
  /// @notice Sets the token pool in the TokenAdminRegistry (whose admin becomes the PoolOperationManager) and transfers
  /// PoolOperationManager DEFAULT_ADMIN_ROLE from the deployer to the Lido DAO.
  /// @dev Run this AFTER 2_Configure has been run on all chains and Lido has verified the deployment. A token deployed
@@ -137,19 +147,20 @@ index 6ccd351..5291b8d 100644
  ///      Env vars: CHAIN_CONFIG (required), DEFAULT_CONFIG (optional), DEPLOYER_PRIVATE_KEY (optional)
  contract SetPoolAndTransferOwnershipScript is ConfigParser {
    error NotOwnedByManager(address target, address owner);
-@@ -34,6 +34,9 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
+@@ -34,6 +35,10 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
    error LidoDaoHasNoCode(address lidoDao);
    error DeployedTokenAdminTransferNotStarted(address pendingAdmin);
    error ProxyAdminNotOwnedByDao(address owner);
 +  error TokenCCIPAdminNotDao(address ccipAdmin);
 +  error UnexpectedTokenAdministrator(address administrator);
++  error UnexpectedPendingTokenAdministrator(address pendingAdministrator);
 +  error UnexpectedTokenPool(address tokenPool);
- 
+
    bytes32 internal constant DEFAULT_ADMIN_ROLE = 0x00;
    bytes32 internal constant MINTER_ROLE = keccak256("MINTER_ROLE");
-@@ -72,11 +75,17 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
+@@ -72,11 +77,21 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
    // ═══════════════════════════════════════════════════════════════════════════════
- 
+
    function _loadConfigs() internal {
 -    string memory defaultConfigPath =
 -      vm.envOr("DEFAULT_CONFIG", string("./contracts/lido-hvmv/config/default_config.json"));
@@ -164,38 +175,62 @@ index 6ccd351..5291b8d 100644
 +  }
 +
 +  /// @dev Shared by environment-based execution and explicit-path fork rehearsals.
-+  function _loadConfigs(string memory defaultConfigPath, string memory chainConfigPath, uint256 privateKey) internal {
++  function _loadConfigs(
++    string memory defaultConfigPath,
++    string memory chainConfigPath,
++    uint256 privateKey
++  ) internal {
 +    s_deployerPrivateKey = privateKey;
 +    s_deployer = vm.addr(privateKey);
- 
+
      _loadDefaultConfig(defaultConfigPath);
      _loadChainConfig(chainConfigPath);
-@@ -163,9 +172,23 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
+@@ -114,7 +129,10 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
+     }
+   }
+
+-  function _checkOwner(address target, address manager) internal view {
++  function _checkOwner(
++    address target,
++    address manager
++  ) internal view {
+     address owner = Ownable2Step(target).owner();
+     if (owner != manager) revert NotOwnedByManager(target, owner);
+   }
+@@ -163,9 +181,31 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
      if (pendingAdmin != lidoDao && token.defaultAdmin() != lidoDao) {
        revert DeployedTokenAdminTransferNotStarted(pendingAdmin);
      }
 +    address ccipAdmin = token.getCCIPAdmin();
-+    if (ccipAdmin != lidoDao) revert TokenCCIPAdminNotDao(ccipAdmin);
- 
++    // Older script-2 deployments leave this handover for script 3. It is repairable
++    // only while the deployer still holds the token's default admin role.
++    if (ccipAdmin != lidoDao && !(ccipAdmin == s_deployer && token.hasRole(DEFAULT_ADMIN_ROLE, s_deployer))) {
++      revert TokenCCIPAdminNotDao(ccipAdmin);
++    }
+
      address proxyAdminOwner = ProxyAdmin(s_deployed.proxy_admin).owner();
      if (proxyAdminOwner != lidoDao) revert ProxyAdminNotOwnedByDao(proxyAdminOwner);
 +
 +    TokenAdminRegistry.TokenConfig memory config =
 +      TokenAdminRegistry(s_ccip.token_admin_registry).getTokenConfig(address(token));
-+    if (
-+      config.administrator == address(0)
-+        || (config.administrator != s_deployer && config.administrator != s_deployed.pool_operation_manager)
-+    ) {
++    if (config.administrator == address(0)) {
++      if (config.pendingAdministrator != address(0) && config.pendingAdministrator != s_deployer) {
++        revert UnexpectedPendingTokenAdministrator(config.pendingAdministrator);
++      }
++      if (config.pendingAdministrator != s_deployer && ccipAdmin != s_deployer) {
++        revert UnexpectedTokenAdministrator(config.administrator);
++      }
++    } else if (config.administrator != s_deployer && config.administrator != s_deployed.pool_operation_manager) {
 +      revert UnexpectedTokenAdministrator(config.administrator);
 +    }
 +    if (config.administrator == s_deployed.pool_operation_manager && config.tokenPool != s_deployed.token_pool) {
 +      revert UnexpectedTokenPool(config.tokenPool);
 +    }
    }
- 
+
    /// @dev setPool makes the pool live, so flag a BurnMint pool that cannot mint or burn. Log-only: an existing
-@@ -206,10 +229,9 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
- 
+@@ -206,10 +246,25 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
+
      if (config.pendingAdministrator == s_deployer) {
        TokenAdminRegistry(s_ccip.token_admin_registry).acceptAdminRole(token);
 -    } else if (config.administrator != s_deployer && ccipAdmin == s_deployer) {
@@ -203,17 +238,11 @@ index 6ccd351..5291b8d 100644
        RegistryModuleOwnerCustom(s_ccip.registry_module_owner).registerAdminViaGetCCIPAdmin(token);
        TokenAdminRegistry(s_ccip.token_admin_registry).acceptAdminRole(token);
 -      BurnMintERC20(token).setCCIPAdmin(s_chainConfig.governance_addresses.lido_dao_agent);
-     }
- 
-     config = TokenAdminRegistry(s_ccip.token_admin_registry).getTokenConfig(token);
-@@ -225,6 +247,22 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
-     } else {
-       console.log("Deployer is not the token admin, the TAR registration must be set up manually by the admin");
-     }
++    }
 +
 +    // Registration and token CCIP administration are independent: also hand over an existing
 +    // token when the deployer was already proposed or registered in TAR. Script-deployed tokens
-+    // have completed this token-admin-only call in script 2 before starting the DAO admin transfer.
++    // normally complete this in script 2; older deployments can complete it here before pool activation.
 +    if (ccipAdmin == s_deployer) {
 +      // BurnMint tokens authorize the setter through DEFAULT_ADMIN_ROLE, not getCCIPAdmin.
 +      // Guard before broadcasting: catching a revert still records a failing Forge transaction.
@@ -225,14 +254,25 @@ index 6ccd351..5291b8d 100644
 +      } else {
 +        console.log(unicode"⚠️", "WARNING: token CCIP admin must be transferred separately by its authorized admin");
 +      }
-+    }
-   }
- 
-   function _transferManagerAdminToDao() internal {
-@@ -233,7 +271,11 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
- 
+     }
+
+     config = TokenAdminRegistry(s_ccip.token_admin_registry).getTokenConfig(token);
+@@ -217,9 +272,8 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
+     if (config.administrator == s_deployer) {
+       TokenAdminRegistry(s_ccip.token_admin_registry).setPool(token, s_deployed.token_pool);
+       TokenAdminRegistry(s_ccip.token_admin_registry).transferAdminRole(token, s_deployed.pool_operation_manager);
+-      PoolOperationManager(s_deployed.pool_operation_manager).directCall(
+-        s_ccip.token_admin_registry, 0, abi.encodeCall(TokenAdminRegistry.acceptAdminRole, (token))
+-      );
++      PoolOperationManager(s_deployed.pool_operation_manager)
++        .directCall(s_ccip.token_admin_registry, 0, abi.encodeCall(TokenAdminRegistry.acceptAdminRole, (token)));
+     } else if (config.administrator == s_deployed.pool_operation_manager) {
+       console.log("TAR admin is already the POM");
+     } else {
+@@ -233,7 +287,11 @@ contract SetPoolAndTransferOwnershipScript is ConfigParser {
+
      require(lidoDao != s_deployer, "Lido DAO agent cannot be the deployer (admin would be irrecoverably lost)");
- 
+
 -    manager.grantRole(DEFAULT_ADMIN_ROLE, lidoDao);
 +    if (!manager.hasRole(DEFAULT_ADMIN_ROLE, s_deployer)) {
 +      require(manager.hasRole(DEFAULT_ADMIN_ROLE, lidoDao), "POM admin handover incomplete: deployer lacks authority");
@@ -241,4 +281,4 @@ index 6ccd351..5291b8d 100644
 +    if (!manager.hasRole(DEFAULT_ADMIN_ROLE, lidoDao)) manager.grantRole(DEFAULT_ADMIN_ROLE, lidoDao);
      manager.revokeRole(DEFAULT_ADMIN_ROLE, s_deployer);
    }
- 
+

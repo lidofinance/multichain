@@ -471,11 +471,13 @@ def build(root, output, upstream_path=None, reuse_build=None):
                              upstreamMode="github" if sha else "local",
                              upstreamFiles=inputs,
                              ledgerCommit=ledger_commit, ledgerSha256=digest(ledger_bytes),
+                             ledgerContentSha256=digest(json.dumps(ledger, sort_keys=True, separators=(',', ':')).encode()),
                              metadataSha256=digest(metadata_bytes), ldoMetadataSha256=digest(ldo_bytes),
                              stethMetadataSha256=digest(steth_bytes)))
     if reuse_build is not None:
         data['sources'].update(upstreamMode='reused-build', upstreamBuildSha256=digest(reused_raw),
                                upstreamBuildFile='upstream/dashboard-build.json')
+    # The manifest pins both source bytes and the canonical JSON content embedded in HTML.
     data['identity'] = digest(json.dumps(data, sort_keys=True).encode())
     base = f'{UPSTREAM}/blob/{sha}/' if sha else 'upstream/'
     source_label = sha[:12] if sha else 'LOCAL DIRECTORY · unpublished changes may be included'
@@ -503,11 +505,12 @@ def build(root, output, upstream_path=None, reuse_build=None):
         text = (root / f'components/dashboard/templates/{name}.html').read_text()
         text = text.replace('<!-- BUILD_PROVENANCE -->', provenance)
         if name == 'index':
-            payload = json.dumps(data).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
-            marker = '<script type="application/json" id="dashboard-data">{}</script>'
-            if text.count(marker) != 1:
-                raise ValueError('Dashboard data placeholder missing or duplicated')
-            text = text.replace(marker, '<script type="application/json" id="dashboard-data">' + payload + '</script>')
+            for element_id, value in (("dashboard-data", data), ("ledger-data", ledger)):
+                payload = json.dumps(value).replace('<', '\\u003c').replace('>', '\\u003e').replace('&', '\\u0026')
+                marker = f'<script type="application/json" id="{element_id}">{{}}</script>'
+                if text.count(marker) != 1:
+                    raise ValueError(f'{element_id} placeholder missing or duplicated')
+                text = text.replace(marker, f'<script type="application/json" id="{element_id}">' + payload + '</script>')
         else:
             content = roles if name == 'roles' else ccv
             content = ('<p class="stamp">Public testnet · record ' + html.escape(live['deployedAt']) +

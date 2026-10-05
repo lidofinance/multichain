@@ -1,5 +1,6 @@
 """Regression checks for dashboard source projection; no network or Git writes."""
 import copy
+import hashlib
 import base64
 import io
 import json
@@ -77,6 +78,7 @@ class DashboardBuildTests(unittest.TestCase):
             self.assertEqual(data['sources']['upstreamMode'], 'reused-build')
             self.assertIn('REUSED BUILD DATA', (first / 'index.html').read_text())
             self.assertEqual(data['steth'], steth_metadata(self.ledger, self.steth))
+            self.assertNotIn('ledger', data)
             with self.assertRaisesRegex(ValueError, 'mutually exclusive'):
                 build(ROOT, second, upstream_path=Path(tmp), reuse_build=saved)
             bad = json.loads(saved.read_text())
@@ -279,7 +281,7 @@ One resolver; no delivery claim.
     def test_build_fetches_main_once_and_pins_files_and_cache(self):
         record = self.upstream()
         with tempfile.TemporaryDirectory() as tmp, patch('build_dashboard.urlopen', side_effect=self.response), \
-                patch('build_dashboard.subprocess.check_output', side_effect=[b'c' * 40, (ROOT / 'ledger.json').read_bytes()] * 2):
+                patch('build_dashboard.subprocess.check_output', side_effect=[b'c' * 40, (ROOT / 'ledger.json').read_bytes()] * 3):
             output = Path(tmp) / 'site'
             before = build(ROOT, output)
             self.assertFalse((output / 'ledger.json').exists())
@@ -294,6 +296,21 @@ One resolver; no delivery claim.
             self.assertIn('ldoMetadataSha256', payload['sources'])
             self.assertIn('stethMetadataSha256', payload['sources'])
             self.assertEqual(payload['steth'], steth_metadata(self.ledger, self.steth))
+            self.assertNotIn('ledger', payload)
+            embedded_ledger = json.loads(re.search(r'id="ledger-data">(.*?)</script>', page).group(1))
+            self.assertEqual(embedded_ledger, self.ledger)
+            content_hash = lambda value: hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+            self.assertEqual(payload['sources']['ledgerContentSha256'], content_hash(embedded_ledger))
+            tampered = copy.deepcopy(embedded_ledger)
+            tampered['deployments'][0]['address'] = '0x' + '0' * 40
+            self.assertNotEqual(payload['sources']['ledgerContentSha256'], content_hash(tampered))
+            manifest = json.loads((output / 'dashboard-build.json').read_text())
+            self.assertNotIn('ledger', manifest)
+            identity = manifest.pop('identity')
+            self.assertEqual(identity, hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest())
+            # A compact original manifest remains a valid source for explicit reuse.
+            reused = build(ROOT, Path(tmp) / 'reused', reuse_build=output / 'dashboard-build.json')
+            self.assertEqual(reused['live'], before['live'])
             self.assertIn(self.sha, (output / 'roles.html').read_text())
             self.assertIn('New evidence', (output / 'ccv.html').read_text())
             self.assertNotIn('431', (output / 'ccv.html').read_text())

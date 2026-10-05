@@ -1,6 +1,6 @@
 # Verification of the uncommitted-change review — 2026-09-15
 
-Review source: `/tmp/wsteth-2.0-review-uncommitted-2026-09-15.md`.
+Source: the 2026-09-15 uncommitted deployment review; findings and dispositions are recorded below.
 Scope: the current uncommitted deployment changes; no commits or public transactions.
 
 ## FPF assurance scope
@@ -33,13 +33,11 @@ Also include `out-token` and `cache-token` in `just clean` for build-output symm
 - Temporary fixture checks: skipped/missing broadcasts, strict fresh-deploy failure, CREATE-derived pins, recorder idempotency, missing/legacy state diagnostics, external state-mate dependency resolution, separate proxy bindings, preservation and cleanup after simulated upstream artifact pruning.
 - Configuration lint, changed shell/Node syntax, Solidity formatting, dependency-order inspection, and `git diff --check`: passed.
 
-Evidence:
+The build, simulation and temporary-fixture results above are historical run
+summaries; their transient logs and fixture script are not repository artifacts.
 
-- `/tmp/wsteth-review-fixes-build.log`
-- `/tmp/wsteth-review-gov-simulation.log`
-- `/tmp/wsteth-review-token-simulation.log`
-- `/tmp/wsteth-review-fixes-leaf.log`
-- `/tmp/wsteth-review-regressions.py` (executable fixture reproduction)
+Retained evidence:
+
 - State-verification archive: `deployments/forks/sepolia-mantle_sepolia/2026-09-15_19-33-review/`
 
 No full fresh deployment was repeated for this review pass. The earlier fresh rehearsal remains separate evidence; this pass exercised modified deployment scripts through local simulations and rechecked the existing fork deployment.
