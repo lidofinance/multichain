@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CCIP Lane Watch</title>
 <!--
-  Deployment records and script/ccip-inventory.sh belong to
-  https://github.com/lidofinance/wsteth-ccip (the original source repository).
+  Deployment tooling lives under orchestration/wsteth-ccip/ in this repository.
 
   CCIP Lane Watch — a live inventory of the CCIP system contracts on both sides of a lane.
 
@@ -20,7 +19,7 @@
   for the ramps; RMNRemote / FeeQuoter / NonceManager and the whole 2.0 CCV stack are absent from
   the API altogether — the crawl is what finds them.
 
-  The build reads ledger.json and the active public record from wsteth-ccip main.
+  The build reads ledger.json, local catalogues and a dated testnet snapshot.
   LIVE overlays the testnet contracts that are absent from the Chainlink registry.
 
   Build with components/dashboard/scripts/build_dashboard.py; serve the generated site from any static host.
@@ -404,7 +403,7 @@ const EXPLORER = {
   84532:"https://sepolia.basescan.org/address/", 421614:"https://sepolia.arbiscan.io/address/",
 };
 
-// Build inputs: this checkout's ledger and a single upstream main revision.
+// Build inputs: this checkout's ledger, catalogues and dated testnet snapshot.
 const BUILD = JSON.parse(document.getElementById("dashboard-data").textContent);
 if (!BUILD.live) {
   document.getElementById("views").textContent = "Build the dashboard first: run just dashboard from the repository root.";
@@ -1033,7 +1032,7 @@ function buildChecks(res, entry) {
   else if (res.cursed === false) out.push({ s: "ok", t: "RMN: not cursed (isCursed = false)" });
   if (res.hidden) out.push({ s: "mute", t: `${res.hidden} address(es) hidden: token pools, plus everything that did not answer typeAndVersion — fee aggregators, admins, peer-chain ramps read out of lane configs` });
   const oursN = (res.rows || []).filter((r) => r.ours).length;
-  if (oursN) out.push({ s: "mute", t: `${oursN} testnet ${LIVE.deployedAt} contract(s) overlaid from ${LIVE.record} — not in Chainlink's registry` });
+  if (oursN) out.push({ s: "mute", t: `${oursN} testnet ${LIVE.deployedAt} contract(s) overlaid from testnet-deployment.json (linked in the footer) — not in Chainlink's registry` });
   return out;
 }
 

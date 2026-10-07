@@ -31,12 +31,12 @@ wsteth-prepare target run *args:
 wsteth-use run:
     python3 orchestration/wsteth-ccip/workspace.py use "$1"
 
-# Build using this ledger and the latest wsteth-ccip main (requires repository read access)
+# Build using this checkout's ledger, catalogues and dated testnet snapshot
 [positional-arguments]
 dashboard-build *args:
     uv run --locked python components/dashboard/scripts/build_dashboard.py "$@"
 
-# Build and preview Lane Watch; --upstream PATH selects a local source directory
+# Build and preview Lane Watch from repository inputs
 [positional-arguments]
 dashboard *args:
     uv run --locked python components/dashboard/scripts/build_dashboard.py --serve "$@"

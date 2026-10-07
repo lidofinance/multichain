@@ -5,15 +5,13 @@ and tests. Run every command below from the repository root.
 
 ## Build inputs and output
 
-The builder writes a static site to `docs/`, which is committed and served by
-branch-based GitHub Pages. It reads:
+The builder writes a static site to `docs/` by default. It reads only this
+checkout's `ledger.json`, `components/dashboard/config/`, `content/`, and
+`templates/`. It needs no network access, submodules, external repository, or
+read token. CI builds the same site into a fresh temporary directory.
 
-- `ledger.json` from this checkout;
-- `lidofinance/wsteth-ccip` at the current `main` commit, or a local source
-  directory passed with `--upstream`.
-
-To change a page, edit `components/dashboard/templates/` and rebuild; a build
-regenerates the HTML in `docs/`. Other documentation in `docs/` is left intact.
+To change a page, edit `components/dashboard/templates/` and rebuild. Other
+documentation in `docs/` is left intact.
 
 ## Commands
 
@@ -24,19 +22,11 @@ just dashboard-build    # build only
 
 Both recipes run the builder in the repository's locked Python environment
 through `uv` (Python 3.9+) and accept `--output PATH`; the preview serves that
-directory.
+directory. The builder also runs directly with Python's standard library:
 
-By default the builder resolves `main` to a commit through the GitHub API and
-downloads only the files it needs, over HTTPS, at that commit. It never clones
-upstream, and if GitHub fails, the build fails; it does not fall back to a
-local copy.
-
-If upstream is private, set a read token in `WSTETH_CCIP_READ_TOKEN`, `GH_TOKEN`,
-or `GITHUB_TOKEN` (checked in that order). The token is sent only with API
-requests and is never embedded in the site. The builder uses GitHub's
-[commit resolution](https://docs.github.com/en/rest/commits/commits#get-a-commit)
-and [repository contents at a revision](https://docs.github.com/en/rest/repos/contents#get-repository-content)
-endpoints.
+```sh
+python3 components/dashboard/scripts/build_dashboard.py --output /tmp/dashboard-site
+```
 
 Run the tests:
 
@@ -45,36 +35,18 @@ uv run --locked python -m unittest discover -s components/dashboard/tests
 node --test components/dashboard/tests/test_dashboard_runtime.mjs
 ```
 
-Build tests use controlled Git responses and temporary output directories.
-
-## Building from a local source directory
-
-```sh
-just dashboard --upstream /path/to/wsteth-ccip
-just dashboard-build --upstream /path/to/wsteth-ccip
-```
-
-The builder reads the directory as it is, including uncommitted and untracked
-files, without Git or GitHub. A missing input fails the build; it does not
-switch to GitHub. The resulting site:
-
-- is marked **LOCAL DIRECTORY**;
-- records input hashes and a null upstream commit;
-- bundles the consumed source files under `upstream/` for provenance links,
-  without host filesystem paths.
-
-The Pages workflow always builds from GitHub.
+Build tests block network connections and verify that a checkout without
+`docs/` or submodules can generate the complete site in an empty directory.
 
 ## Build manifest and identity
 
 Every page links to `ledger.json` on GitHub at this checkout's HEAD commit. The
 build fails if the working `ledger.json` differs from HEAD, so commit ledger
-edits before building. GitHub builds link to the upstream commit; local builds
-link to their bundled inputs.
+edits before building. All pages link to the bundled dated testnet snapshot.
 
-The build also writes `dashboard-build.json` with the ledger commit, upstream
-commit, input hashes, derived data, and build identity. The full ledger is
-embedded only in the Ledger explorer; no separate `ledger.json` copy is
+The build also writes `dashboard-build.json` with the ledger commit, input hashes,
+derived data, and build identity. The full ledger is embedded only in the Ledger
+explorer; no separate `ledger.json` copy is
 published. The manifest pins it with:
 
 - `ledgerCommit`;
@@ -86,8 +58,8 @@ published. The manifest pins it with:
   whitespace does not.
 
 The build identity is a digest of the whole manifest, so it changes with the
-ledger, the upstream deployment, and every metadata catalogue. Browser
-observation caches and offline snapshots are keyed by it and are not reused
+ledger, the testnet snapshot, evidence content, templates, and every metadata
+catalogue. Browser observation caches and offline snapshots are keyed by it and are not reused
 across builds with different inputs.
 
 ## Ledger explorer
@@ -132,17 +104,46 @@ Paths under `config/` are relative to `components/dashboard/`.
 
 ### Testnet and companion pages
 
-- **Testnet:** upstream `docs/CURRENT-DEPLOYMENT.md` names exactly one dated
-  `config/chains.live-YYYY-MM-DD` record (the name may carry a lane suffix). Its
-  two chain JSON files supply tokens, pools, POMs, hooks, lockboxes, verifiers,
-  resolvers, and governance holders. The builder checks the lane and the
-  required addresses. Other pool types or more than two chains require changes
-  to the builder's testnet adapter.
-- **Companion pages** (`roles.html`, `ccv.html`): built from the
-  `Evidence and limits`, `Current POM permissions`, and `CCV configuration`
-  sections of the same document. The matching upstream
-  `docs/deployment-YYYY-MM-DD.md` must also exist. The pages republish dated
-  source statements and add no verification results; source HTML is escaped.
+- `config/testnet-deployment.json` retains the already-published testnet
+  deployment dated **2026-09-15**: its original record identifier, two chains,
+  token and pool addresses, crawl seeds, and governance holders. The record
+  identifier is historical metadata, not a filesystem path to fetch.
+- `content/evidence.html`, `content/permissions.html`, and `content/ccv.html`
+  retain the corresponding already-published statements. These are
+  repository-maintained HTML fragments, checked for balanced markup from a small
+  inert tag/attribute allowlist (no scripts, styles, event handlers or embeds).
+  They are dated evidence, not new
+  verification results. No ignored operator records are publication inputs.
+- All three pages are regenerated on every build. Address tables in
+  `roles.html` and `ccv.html` use the same validated snapshot as the dashboard;
+  their recorded statements are marked as archived. Rebuilding does not refresh
+  this evidence. Review snapshot and evidence changes together.
+- The builder validates JSON types, chain IDs, dates, addresses, seed roles,
+  distinct seed addresses within each chain, and agreement
+  between token/pool addresses and crawl seeds. Missing or invalid inputs fail
+  the build before output is written.
+- The snapshot is published as `testnet-deployment.json`. Its hash, the evidence
+  hashes, and template hashes participate in the build identity.
+
+The initial local snapshot and evidence were extracted from the tracked
+`docs/upstream/dashboard-build.json`, `docs/roles.html`, and `docs/ccv.html` at
+repository commit `e754dba96653877fdaa25e9b3cd2701ed90945b7`. The original files
+remain in Git history. The snapshot's `origin` retains that archive commit,
+the hashes of the three archived artifacts, the original source-file hashes,
+and the original local source mode with no source commit. All pages retain the
+original qualification: **LOCAL DIRECTORY · unpublished changes may be included**.
+This is an archive of statements, not renewed verification of the deployment.
+The companion pages link to the deployment report at the archive commit; its
+bytes match the original report hash. Some raw records cited by that report
+are unavailable; hashes alone cannot recover or verify their contents.
+The external source repository has been deleted; the
+builder no longer supports `--upstream` or `--reuse-build`.
+
+The builder rejects reused output directories containing legacy `upstream/`
+files or symlinks before writing any output. Move those files outside the
+publication directory, or select a fresh `--output` directory. It does not
+delete unrelated files in the destination. For branch publication, also commit
+the removal of the obsolete tracked `docs/upstream/dashboard-build.json`.
 
 ### Browser observations
 
@@ -342,77 +343,40 @@ behaviour described above.
   heartbeat. The stETH catalogue is part of build identity and cache
   invalidation.
 
-## Upstream deployment record
-
-The default GitHub build reads the active deployment record, its report, and
-`docs/CURRENT-DEPLOYMENT.md` from `wsteth-ccip/main`, so publish them there
-first; a local directory build can use unpublished inputs. If the selected
-record is missing, a GitHub build fails; it never falls back to an older
-deployment or copies data embedded in the previous dashboard. The builder never
-commits or publishes anything.
-
-### Reused build data
-
-The published `docs/index.html` reuses the previous dated testnet projection
-because upstream was unavailable when it was built. Reproduce it with:
-
-```sh
-.venv/bin/python components/dashboard/scripts/build_dashboard.py --reuse-build docs/upstream/dashboard-build.json
-```
-
-`--reuse-build` is never selected automatically and cannot be combined with
-`--upstream`. It verifies the saved manifest's identity, keeps the saved
-upstream projection and source hashes, and regenerates the overview and
-manifest from the current ledger, wstETH metadata, LDO and stETH catalogues,
-and template. The new manifest records the reused file and its SHA-256, and the
-footer reads **REUSED BUILD DATA**.
-
-`roles.html` and `ccv.html` keep their original build provenance, because the
-saved projection lacks the source text needed to rebuild them. A full source
-build regenerates all three pages.
-
 ## GitHub Pages
 
-### Publish a committed build
+Expected site URL: <https://lidofinance.github.io/multichain/>.
 
-1. Run `just dashboard-build` (add `--upstream PATH` for local inputs).
-2. Review and commit `docs/index.html`, `docs/roles.html`, `docs/ccv.html`, and
-   `docs/dashboard-build.json`, plus `docs/upstream/` for a local-source build.
-   A local-source build publishes its consumed inputs, including unpublished
-   changes, and the pages mark that provenance.
+### Build and deploy with Actions
+
+1. Set **Settings → Pages → Source** to **GitHub Actions**.
+2. Push the source changes to the branch to publish.
+3. Run **Deploy dashboard to Pages** manually for that branch.
+
+`.github/workflows/pages.yml` checks out the repository without submodules,
+runs Python build tests and Node.js runtime tests, builds from repository
+inputs, and uploads only the generated site from `$RUNNER_TEMP/dashboard-site`.
+No upstream read secret is needed. The former `WSTETH_CCIP_READ_TOKEN` secret
+is unused and can be removed.
+
+The workflow has only a `workflow_dispatch` trigger: pushes do not deploy.
+Rerun it after changing the ledger, catalogues, testnet snapshot, evidence, or
+templates. A failed test or build stops before upload and leaves the published
+site unchanged.
+
+### Publish a committed build instead
+
+1. Run `just dashboard-build`.
+2. Review and commit `docs/index.html`, `docs/roles.html`, `docs/ccv.html`,
+   `docs/dashboard-build.json`, and `docs/testnet-deployment.json`.
 3. In **Settings → Pages → Source**, choose **Deploy from a branch**, select
-   the branch with the build, and choose **/docs**.
-4. Push the commit to that branch. GitHub runs no build in this mode.
+   the publishing branch (previously `gh-pages`), and choose **/docs**.
+4. Push the commit to that branch. This mode publishes the prepared site;
+   it does not run the dashboard builder.
 
-GitHub's automatic Pages workflow checks out submodules even when it publishes
-only `docs/`. The private `components/ccip` submodule therefore has
-`update = none` in the root `.gitmodules`, so that checkout skips it; the
-dashboard does not use it. Keep this setting on the publishing branch
-(currently `gh-pages`) when merging source updates. For development, fetch CCIP
-with authorized access using `--checkout`; see the
-[orchestration setup](../../orchestration/wsteth-ccip/README.md#commands).
-References: [Using submodules with GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-submodules-with-github-pages)
-and [git submodule](https://git-scm.com/docs/git-submodule) (`update = none`
-and the `--checkout` override).
-
-### Build and deploy with Actions instead
-
-Expected site URL after deployment: <https://lidofinance.github.io/multichain/>.
-
-1. Set this repository's **Settings → Pages → Source** to **GitHub Actions**.
-2. If upstream is private, add a `WSTETH_CCIP_READ_TOKEN` Actions secret with
-   read-only Contents access to `lidofinance/wsteth-ccip`, plus any required
-   organization authorization. The default repository token generally cannot
-   read another private repository; a public upstream needs no custom token.
-3. Push this repository's changes, publish the required upstream inputs, then
-   run **Deploy dashboard to Pages** manually.
-
-The workflow checks out this repository, runs the builder tests, fetches the
-upstream inputs from GitHub at one resolved `main` commit, and uploads only the
-generated site. It runs no upstream scripts, and credentials are neither
-persisted nor included in the uploaded site. Pushes do not trigger it; rerun it
-after ledger edits or a new upstream deployment. A failed download or build
-stops before upload, so the published site stays as it was.
+For branch-based Pages, keep `update = none` for the private `components/ccip`
+submodule in `.gitmodules`; the dashboard does not use it. The custom Actions
+workflow independently disables all submodules with `submodules: false`.
 
 ## Asynchronous navigation
 

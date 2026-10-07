@@ -29,9 +29,7 @@ jobs:
         run: python3 -m unittest discover -s components/dashboard/tests -p 'test_dashboard_build.py'
       - name: Test dashboard runtime
         run: node --test components/dashboard/tests/test_dashboard_runtime.mjs
-      - name: Build dashboard from GitHub main
-        env:
-          WSTETH_CCIP_READ_TOKEN: ${{ secrets.WSTETH_CCIP_READ_TOKEN || github.token }}
+      - name: Build dashboard from repository inputs
         run: python3 components/dashboard/scripts/build_dashboard.py --output "$RUNNER_TEMP/dashboard-site"
       - name: Setup Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0

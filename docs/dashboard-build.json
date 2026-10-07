@@ -596,27 +596,27 @@
     "takenAt": "2026-08-27",
     "docsUrl": "https://docs.lido.fi/deployed-contracts/",
     "ledgerUpdatedAt": "2026-09-17",
-    "ledgerUrl": "https://github.com/lidofinance/multichain/blob/84c00eadb313093fa1052c3932366e371457e90c/ledger.json"
+    "ledgerUrl": "https://github.com/lidofinance/multichain/blob/e754dba96653877fdaa25e9b3cd2701ed90945b7/ledger.json"
   },
   "sources": {
-    "upstreamRepository": "https://github.com/lidofinance/wsteth-ccip",
-    "upstreamCommit": null,
-    "upstreamMode": "reused-build",
-    "upstreamFiles": {
-      "docs/CURRENT-DEPLOYMENT.md": "27b8680582f6d3403568e1b1120faeecb6bb7ee2ae902ee39126bfa940da74c0",
-      "docs/deployment-2026-09-15.md": "af91dad2dd610e96065e7b318fb3f69496536a7b9eae433f66ae1463acc53e76",
-      "config/chains.live-mantle-2026-09-15/mantle_sepolia.json": "285ef3ecbd92e6d4de8932d0576a300cb39c71321451ac6cb59925a189d7d111",
-      "config/chains.live-mantle-2026-09-15/sepolia.json": "081c53bf7a884eb6d2a4a0c7bec4a3b9cd2fdac2ee2072e038e5f401a0fc1978"
+    "testnetSnapshotSha256": "cfff008f176ee266b2a554b4c08e8510259ad84ff510b13126c8ed033e745fda",
+    "testnetContentSha256": {
+      "evidence": "84d2ee4861130eb8e25f136e3f91ca5b7efc11b42ce350033897edfcbd89e4e0",
+      "permissions": "5162da01b817cae246b82c00ffa62d125d8e456a8d30b1630094dc49cdbd395c",
+      "ccv": "aa1808481c9498addc82b9e9bf618357a565faa9496d79f618ae947a1f043262"
     },
-    "ledgerCommit": "84c00eadb313093fa1052c3932366e371457e90c",
+    "templateSha256": {
+      "index": "49f869ae07050522163ccf40382680092dc93673dbf0132ab0aeb3d8368b9bb4",
+      "roles": "55f6ded922182cd05f076b69d47eb5598672373795bb459a367d411241204157",
+      "ccv": "23aa1c9b0ccc3ac63c1cf256fb2490fd88579fe727da5c7f660eb74887efcfff"
+    },
+    "ledgerCommit": "e754dba96653877fdaa25e9b3cd2701ed90945b7",
     "ledgerSha256": "1e294ff4cf2620c71be68d1fcab85fcdbf96ac8ffdebbf09dd61002308156edf",
     "ledgerContentSha256": "671fdf80ad604949da44bbeb1c912082523bfe162db2365902ba0ec773d7e60e",
     "metadataSha256": "170205bc9114098667804bec2401d6e67fdd2d156e1437e107575bde04ac6153",
     "ldoMetadataSha256": "44839d38ef45e42003f547009dcc6581b538cd7d001e3236ab6df300dc39e49b",
     "stethMetadataSha256": "4a0ea96ff75bbf0c70e6a152654f9743adf90eb69b118dad7c281ea19b005bd7",
-    "networkTypesSha256": "6c4c97d8423c2aeba74dcb6e34e401bcde25f3321f44d9fce002d280b385ece4",
-    "upstreamBuildSha256": "c62cb8488e7aa73864b974939ae8ff0b8d991ad6a1504afbd89d114366052966",
-    "upstreamBuildFile": "upstream/dashboard-build.json"
+    "networkTypesSha256": "6c4c97d8423c2aeba74dcb6e34e401bcde25f3321f44d9fce002d280b385ece4"
   },
-  "identity": "82cbff83aa01ce09901e31926569c46d3708f520a65be9de154c3c1e46d136a0"
+  "identity": "1841cde9f5caab894f6a3099340b30069373831e728ce4025856bf8513c94a6f"
 }
