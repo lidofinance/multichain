@@ -415,6 +415,21 @@ const LIDO_NETWORKS = BUILD.networks;
 const L1_WSTETH = BUILD.l1Token;
 const LDO = BUILD.ldo;
 const STETH = BUILD.steth;
+const NETWORK_TYPES = BUILD.networkTypes;
+const NETWORK_TYPE = new Map(NETWORK_TYPES.networks.map((n) => [String(n.chainId), n]));
+// Chain ID plus the catalogue's relation to Ethereum (L2 or alt-L1); an unlisted chain stays unclassified.
+// A qualifier is visible because it names where the source's own term differs from the label.
+function networkIdLine(chainId) {
+  const t = NETWORK_TYPE.get(String(chainId));
+  const title = t && [NETWORK_TYPES.types[t.type],
+    t.category && `L2BEAT category: ${t.category}.`, t.archived && `Archived by L2BEAT on ${t.archived}.`,
+    t.note && `Note: ${t.note}.`, `Classified ${NETWORK_TYPES.takenAt}.`].filter(Boolean).join(" ");
+  const type = t
+    ? `<a href="${esc(t.source)}" target="_blank" rel="noopener" title="${esc(title)}">${esc(t.type)}${
+        t.qualifier ? ` (${esc(t.qualifier)})` : ""}</a>`
+    : `<span title="Not in the dashboard's network type catalogue">type unclassified</span>`;
+  return `<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(chainId)} · ${type}</span>`;
+}
 const LIVE = BUILD.live;
 const GROUPS = {
   unclassified: { label: "Ledger deployments · support unclassified", eyebrow: "unclassified", tone: "c-mute", note: "Present in the ledger; support status and bridge metadata have not been classified." },
@@ -483,13 +498,14 @@ function viewContext(view, env) {
 // Failures are removed too, so the next attempt can retry.
 const registryReads = new Map(), crawlReads = new Map(), overviewReads = new Map();
 let cacheGeneration = 0;
-function sharedRead(pending, key, read) {
+function sharedRead(pending, key, read, { defer = true } = {}) {
   if (pending.has(key)) return pending.get(key);
   const generation = cacheGeneration;
-  const promise = Promise.resolve().then(() => {
+  const start = async () => {
     if (generation !== cacheGeneration) throw Error("Cache cleared; retry the read");
     return read();
-  }).finally(() => {
+  };
+  const promise = (defer ? Promise.resolve().then(start) : start()).finally(() => {
     if (pending.get(key) === promise) pending.delete(key);
   });
   pending.set(key, promise);
@@ -498,7 +514,7 @@ function sharedRead(pending, key, read) {
 
 // ── cache ────────────────────────────────────────────────────────────────────
 // Nothing here talks to an RPC on its own. Opening a tab renders whatever the cache holds; the
-// network is touched only when a view has no cached entry at all, or when the refresh button is
+// network is touched when observations are missing or incomplete, quotes expire, or Refresh is
 // pressed. Everything a view shows — the crawled contract graph AND the live figures on top of it
 // (block, curse, message counters, balances) — is stored together with the moment it was read, and
 // that moment is what the page displays, so cached numbers can never pass themselves off as
@@ -557,7 +573,7 @@ function clearCache() {
   cacheGeneration++;
   runId++; // Pending views and supply callbacks must not publish cleared observations.
   busy = false; el("refresh").disabled = state.view === 'ledger';
-  registryReads.clear(); crawlReads.clear(); overviewReads.clear(); priceReads.clear();
+  registryReads.clear(); crawlReads.clear(); overviewReads.clear(); priceReads.clear(); supplyReads.clear();
   structCache.clear(); metaCache.clear();
   for (const env of Object.keys(registry)) delete registry[env];
   localStorage.removeItem(CACHE_KEY); localStorage.removeItem(REG_KEY);
@@ -1176,6 +1192,8 @@ function ldoRows(networks) {
   return rows; // One destination token is counted once even if wstETH has several rows.
 }
 
+// Start immediately so supplies join their endpoint's batch with other reads of the same turn.
+const supplyReads = new Map();
 async function destinationSupply(row, force, namespace) {
   const generation = cacheGeneration;
   const url = rpcFor(row.chainId);
@@ -1183,17 +1201,20 @@ async function destinationSupply(row, force, namespace) {
   const key = `${namespace}-supply|${row.key}`;
   const cached = force ? null : metaCache.get(key);
   if (cached?.url === url) return { v: ovBig(cached.supply), at: cached.at, err: null };
-  try {
-    const r = await rpcRead(url, [{ method: "eth_chainId", params: [] },
-      call(row.token, SEL.decimals), call(row.token, SEL.totalSupply)]);
-    if (!chainMatches(r[0], row.chainId)) throw Error("RPC chain does not match this network");
-    if (strictUint(r[1]) !== BigInt(row.decimals)) throw Error("token decimals unavailable or mismatched");
-    const raw = strictUint(r[2]);
-    if (raw === null) throw Error("supply unavailable");
-    const v = scaleAmount(raw, row.decimals), at = Date.now();
-    if (generation === cacheGeneration) { metaCache.set(key, { url, at, supply: v.toString() }); saveCache(); }
-    return { v, at, err: null };
-  } catch (e) { return { v: null, at: null, err: e.message }; }
+  const read = async () => {
+    try {
+      const r = await rpcRead(url, [{ method: "eth_chainId", params: [] },
+        call(row.token, SEL.decimals), call(row.token, SEL.totalSupply)]);
+      if (!chainMatches(r[0], row.chainId)) throw Error("RPC chain does not match this network");
+      if (strictUint(r[1]) !== BigInt(row.decimals)) throw Error("token decimals unavailable or mismatched");
+      const raw = strictUint(r[2]);
+      if (raw === null) throw Error("supply unavailable");
+      const v = scaleAmount(raw, row.decimals), at = Date.now();
+      if (generation === cacheGeneration) { metaCache.set(key, { url, at, supply: v.toString() }); saveCache(); }
+      return { v, at, err: null };
+    } catch (e) { return { v: null, at: null, err: e.message }; }
+  };
+  return sharedRead(supplyReads, JSON.stringify([key, url]), read, { defer: false });
 }
 
 const ldoSupply = (row, force) => destinationSupply(row, force, 'ldo');
@@ -1342,7 +1363,7 @@ function ldoCard() {
     <div class="card-body flush"><div class="tw"><table>
       <thead><tr><th>network</th><th>LDO bridged?</th><th>bridge / source</th><th>LDO token</th><th style="text-align:right">amount on network</th></tr></thead>
       <tbody data-ldo-rows>${known.map((r) => `<tr>
-        <td class="t-name">${esc(r.name)}<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(r.chainId)}</span></td>
+        <td class="t-name">${esc(r.name)}${networkIdLine(r.chainId)}</td>
         <td data-ldo-status="${esc(r.key)}">${bridgeSupplyStatus(r)}</td>
         <td>${esc(r.bridge)}<br><a href="${esc(r.source)}" target="_blank" rel="noopener">Token source</a></td>
         <td>${addrCell(r.chainId, r.token, short(r.token))}</td>
@@ -1467,7 +1488,7 @@ function stethCard() {
       <thead><tr><th>network</th><th>stETH bridged?</th><th>bridge / source</th><th>stETH token</th>
         <th>stETH per wstETH</th><th>rate measured on L1</th><th>rate updated on L2</th><th style="text-align:right">amount on network</th></tr></thead>
       <tbody data-steth-rows>${rows.map((r) => `<tr>
-        <td class="t-name">${esc(r.name)}<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(r.chainId)}</span></td>
+        <td class="t-name">${esc(r.name)}${networkIdLine(r.chainId)}</td>
         <td data-steth-status="${esc(r.key)}">${bridgeSupplyStatus(r)}</td>
         <td>${esc(r.bridge)}<br><a href="${esc(r.source)}" target="_blank" rel="noopener">Token source</a></td>
         <td>${addrCell(r.chainId, r.token, short(r.token))}</td>
@@ -1531,26 +1552,37 @@ function overviewL1(rows, force) {
   const url = rpcFor(1);
   const hub = registry.mainnet?.tokens?.wstETH?.["1"]?.poolAddress;
   const key = JSON.stringify([url, hub, rows.map(({key, escrow, group, selector}) => [key, escrow, group, selector])]);
-  let cached = force ? null : metaCache.get(OV_KEY);
-  if (cached && (cached.inputs !== key || cached.stethSupply == null)) cached = null;
+  let cached = metaCache.get(OV_KEY);
+  if (cached && cached.inputs !== key) cached = null;
+  const useCache = !force && !!cached && !cached.err
+    && overviewComplete({ ...cached, pool: { ...cached.pool, addr: hub } });
   return Promise.all([
-    sharedRead(overviewReads, JSON.stringify([key, !!cached]), () => readOverviewL1(rows, url, hub, key, cached)),
+    sharedRead(overviewReads, JSON.stringify([key, useCache]), () => readOverviewL1(rows, url, hub, key, cached, useCache)),
     stethPrice(force), ldoPrice(force),
   ]).then(([out, stethQuote, ldoQuote]) => ({ ...out, stethQuote, ldoQuote }));
 }
-async function readOverviewL1(rows, url, hub, inputs, c) {
+// Ethereum totalSupply() denominators, each its own {v, at, err} observation read by the same
+// protocol as a destination supply. A failed total retries only itself and never holds up the overview.
+const L1_TOTALS = { stETH: STETH.l1Token, LDO: LDO.l1Token };
+function l1TotalSupply(symbol, force) {
+  const token = L1_TOTALS[symbol];
+  const row = { chainId: 1, token, decimals: 18, key: token.toLowerCase() };
+  return destinationSupply(row, force, "l1-total")
+    .then((t) => t.err ? { ...t, err: `Ethereum ${symbol} totalSupply: ${t.err}` } : t);
+}
+async function readOverviewL1(rows, url, hub, inputs, c, useCache) {
   const generation = cacheGeneration;
-  const out = { url, at: null, err: null, rate: null, supply: null, stethSupply: null, stethSupplyError: null,
+  const out = { url, at: null, err: null, rate: null, supply: null,
                 stethQuote: null, ldoQuote: null, escrow: {}, silo: {}, pool: { addr: hub || null, held: null, unsiloed: null } };
   if (!url) { out.err = "no RPC configured for Ethereum"; return out; }
 
+  // Matching cached values also back a fresh read. Failed subcalls must not erase earlier answers.
   if (c) {
     out.at = c.at; out.rate = ovBig(c.rate); out.supply = ovBig(c.supply);
-    out.stethSupply = ovBig(c.stethSupply);
     for (const [k, v] of Object.entries(c.escrow)) out.escrow[k] = ovBig(v);
     for (const [k, v] of Object.entries(c.silo)) out.silo[k] = { siloed: v.siloed, available: ovBig(v.available) };
     out.pool.held = ovBig(c.pool.held); out.pool.unsiloed = ovBig(c.pool.unsiloed);
-    return out;
+    if (useCache) return out;
   }
 
   const escrows = rows.filter((r) => r.escrow);
@@ -1569,35 +1601,34 @@ async function readOverviewL1(rows, url, hub, inputs, c) {
     }
   }
 
-  // Append the stETH denominator checks without coupling them to escrow reads.
-  calls.push({ method: "eth_chainId", params: [] },
-    call(STETH.l1Token, SEL.decimals), call(STETH.l1Token, SEL.totalSupply));
   try {
     const r = await rpcRead(url, calls);
+    let retained = false;
+    const merge = (fresh, previous) => {
+      if (fresh !== null) return fresh;
+      out.err = "Some Ethereum overview calls returned no answer";
+      if (previous != null) retained = true;
+      return previous ?? null;
+    };
     let k = 0;
-    out.supply = decUint(r[k++]);
-    out.rate = decUint(r[k++]);
-    for (const e of escrows) out.escrow[e.key] = decUint(r[k++]);
+    out.supply = merge(decUint(r[k++]), out.supply);
+    out.rate = merge(decUint(r[k++]), out.rate);
+    for (const e of escrows) out.escrow[e.key] = merge(decUint(r[k++]), out.escrow[e.key]);
     if (out.pool.addr) {
-      out.pool.held = decUint(r[k++]);
-      out.pool.unsiloed = decUint(r[k++]);
+      out.pool.held = merge(decUint(r[k++]), out.pool.held);
+      out.pool.unsiloed = merge(decUint(r[k++]), out.pool.unsiloed);
       for (const s of spokes) {
-        const siloed = decBool(r[k++]), available = decUint(r[k++]);
+        const siloed = merge(decBool(r[k++]), out.silo[s.key]?.siloed);
+        const available = merge(decUint(r[k++]), out.silo[s.key]?.available);
         out.silo[s.key] = { siloed, available };
       }
     }
-    if (!chainMatches(r[k++], 1)) out.stethSupplyError = "Ethereum chain ID unavailable or mismatched";
-    else if (strictUint(r[k]) !== 18n) out.stethSupplyError = "stETH decimals unavailable or mismatched";
-    else {
-      out.stethSupply = strictUint(r[k + 1]);
-      if (out.stethSupply === null) out.stethSupplyError = "Ethereum stETH supply unavailable";
-    }
-    out.at = Date.now();
-    // Keep valid observations visible, but retry an incomplete batch on the next load.
-    if (generation === cacheGeneration && out.stethSupply !== null) {
+    // The batch has one timestamp: keep its oldest observation time when answers were retained.
+    out.at = retained ? c.at : Date.now();
+    // Persisted even when incomplete, so its valid values reach reloads and the offline snapshot.
+    if (generation === cacheGeneration) {
       metaCache.set(OV_KEY, {
-        inputs, url, at: out.at, rate: ovStr(out.rate), supply: ovStr(out.supply),
-        stethSupply: ovStr(out.stethSupply),
+        inputs, url, at: out.at, err: out.err, rate: ovStr(out.rate), supply: ovStr(out.supply),
         escrow: Object.fromEntries(Object.entries(out.escrow).map(([a, b]) => [a, ovStr(b)])),
         silo: Object.fromEntries(Object.entries(out.silo).map(([a, b]) => [a, { siloed: b.siloed, available: ovStr(b.available) }])),
         pool: { held: ovStr(out.pool.held), unsiloed: ovStr(out.pool.unsiloed) },
@@ -1607,6 +1638,10 @@ async function readOverviewL1(rows, url, hub, inputs, c) {
   } catch (e) { out.err = e.message; }
   return out;
 }
+// Every value the batch asked for was answered.
+const overviewComplete = (out) => [out.supply, out.rate, ...Object.values(out.escrow),
+  ...(out.pool.addr ? [out.pool.held, out.pool.unsiloed] : []),
+  ...Object.values(out.silo).flatMap((s) => [s.siloed, s.available])].every((v) => v != null);
 
 // One network's own wstETH supply. Cached next to everything else, keyed by the RPC that
 // produced it so pointing a chain at a different endpoint drops the old figure.
@@ -1630,7 +1665,7 @@ async function overviewSupply(row, force) {
 
 // ── overview: numbers ────────────────────────────────────────────────────────
 // Live view state. The current view context also guards background fills.
-const ov = { rows: [], l1: null, registryError: null, supply: new Map() };
+const ov = { rows: [], l1: null, registryError: null, supply: new Map(), totals: new Map() };
 
 const ovUsd = (amount) => {
   if (amount === null || !ov.l1 || ov.l1.rate === null) return null;
@@ -1713,15 +1748,16 @@ function ovL1Cell(row, s) {
 // scroll position and hover, 24 times over.
 const minuteTime = (at) => new Date(at).toISOString().slice(0, 16).replace("T", " ") + " UTC";
 const differsFromBoard = (at) => at != null && dataAt != null && Math.abs(at - dataAt) > 120000;
-function readTime(at) {
+function readTime(at, tag = "div") {
   if (!differsFromBoard(at)) return "";
-  return `<div class="muted" style="font-size:var(--fs-xs)">read <time datetime="${esc(new Date(at).toISOString())}">${esc(minuteTime(at))}</time></div>`;
+  return `<${tag} class="muted" style="font-size:var(--fs-xs)">read <time datetime="${esc(new Date(at).toISOString())}">${esc(minuteTime(at))}</time></${tag}>`;
 }
 
 function ovUpdateStatus() {
   const t = ovTotals();
   tabStatus.set("overview", t.read === ov.rows.length && !ov.registryError && registry.mainnet && ov.l1 && !ov.l1.err
-    && ov.l1.stethSupply != null
+    && overviewComplete(ov.l1)
+    && Object.keys(L1_TOTALS).every((s) => ov.totals.get(s)?.v != null)
     && ov.rows.every((r) => { const b = ovBacking(r); return b.kind === "pooled" || b.v !== null; })
     && ldo.rows.every((r) => !r.token || ldo.supply.get(r.key)?.v != null)
     && !ldoPriceError(ldo.quote)
@@ -1788,17 +1824,19 @@ function summaryUsd(value) {
   return `$${tenths / 10n}${tenths % 10n ? '.' + tenths % 10n : ''}${suffix}`;
 }
 
-function summaryToken(symbol, model, denominator, usdValue, denominatorError) {
+// denominator: the Ethereum total as a {v, err} observation, or undefined while it is still being read.
+function summaryToken(symbol, model, denominator, usdValue) {
   const { sum, read, pending, total } = summarySupply(model.rows, model.supply);
   const partial = read < total;
   const title = `${symbol} outstanding on listed destination tokens; ${read}/${total} deployments read. `
-    + (denominator === undefined ? '' : `% = destination supply / Ethereum ${symbol} totalSupply. `)
-    + (denominatorError ? `${denominatorError}. ` : '')
+    + `% = destination supply / Ethereum ${symbol} totalSupply. `
+    + (denominator?.err ? `${denominator.err}. ` : '')
     + 'Reads may be from different blocks; this is not a backing check.';
   let value = read ? `<b>${formatAmount(sum)}</b>` : pending ? 'loading…' : 'unavailable';
-  if (read && denominator !== undefined) {
-    const pct = ovPct(sum, denominator);
-    value += ` · ${pct === null ? '% unavailable' : sum > 0n && pct === 0 ? '&lt;0.01%' : pct.toFixed(2) + '%'}`;
+  if (read) {
+    const pct = denominator && ovPct(sum, denominator.v);
+    value += ` · ${!denominator ? '% loading…' : pct === null ? '% unavailable'
+      : sum > 0n && pct === 0 ? '&lt;0.01%' : pct.toFixed(2) + '%'}`;
   }
   if (read && usdValue) {
     const usd = usdValue(sum);
@@ -1809,13 +1847,18 @@ function summaryToken(symbol, model, denominator, usdValue, denominatorError) {
   return `<span class="chip ${tone}" title="${esc(title)}">${symbol} ${value}</span>`;
 }
 
+// A total is its own observation, so a read time that differs from the board's is shown beside it.
+function totalText(t) {
+  const time = t?.at ? readTime(t.at, 'span') : '';
+  return `<b>${!t ? 'loading…' : t.v === null ? 'unavailable' : formatAmount(t.v)}</b>${time && ' ' + time}`;
+}
 function ovPaintSummary() {
   const tot = document.querySelector('[data-ov-total]');
   if (!tot) return;
   tot.innerHTML = `<span class="muted" style="font-size:var(--fs-sm)">Bridged</span>`
-    + summaryToken('wstETH', ov, ov.l1?.supply ?? null, ovUsd)
-    + summaryToken('stETH', steth, ov.l1?.stethSupply ?? null, undefined, ov.l1?.stethSupplyError || ov.l1?.err)
-    + summaryToken('LDO', ldo, undefined, ldoUsd);
+    + summaryToken('wstETH', ov, ov.l1 && { v: ov.l1.supply, err: ov.l1.err }, ovUsd)
+    + summaryToken('stETH', steth, ov.totals.get('stETH'))
+    + summaryToken('LDO', ldo, ov.totals.get('LDO'), ldoUsd);
   const counts = document.querySelector('[data-ov-networks]');
   if (!counts) return;
   const count = rows => new Set(rows.map(r => String(r.chainId))).size;
@@ -1826,7 +1869,8 @@ function ovPaintSummary() {
       return n || group !== 'unclassified' ? `<span><b>${n}</b> ${label}</span>` : '';
     }).join('')
     + (ov.registryError || !registry.mainnet ? '<span class="chip c-warn">CCIP registry unavailable</span>' : '')
-    + `<span style="margin-left:auto" title="Total stETH supply on Ethereum, including stETH held in the wstETH wrapper and bridge backing. Wrapped and bridged amounts are already included in this total.">Total stETH <b>${ov.l1?.stethSupply == null ? 'unavailable' : formatAmount(ov.l1.stethSupply)}</b></span>`;
+    + `<span style="margin-left:auto" title="Total stETH supply on Ethereum, including stETH held in the wstETH wrapper and bridge backing. Wrapped and bridged amounts are already included in this total.${esc(ov.totals.get('stETH')?.err ? ' ' + ov.totals.get('stETH').err : '')}">Total stETH ${totalText(ov.totals.get('stETH'))}</span>`
+    + `<span title="Total LDO supply: totalSupply() of the Ethereum LDO token. LDO locked on Ethereum behind bridged representations is included; bridged LDO above is not additional supply. Not a backing check.${esc(ov.totals.get('LDO')?.err ? ' ' + ov.totals.get('LDO').err : '')}">Total LDO ${totalText(ov.totals.get('LDO'))}</span>`;
 }
 
 // ── overview: render ─────────────────────────────────────────────────────────
@@ -1851,7 +1895,7 @@ function overviewNetworkName(row) {
 }
 
 const OV_COLS = {
-  name:   { th: "network", td: (r) => `<td class="t-name">${overviewNetworkName(r)}<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(r.chainId)}</span></td>` },
+  name:   { th: "network", td: (r) => `<td class="t-name">${overviewNetworkName(r)}${networkIdLine(r.chainId)}</td>` },
   model:  { th: "L1 liquidity model", td: (r) => `<td>${ovLiquidityModel(r)}</td>` },
   via:    { th: "how it gets there", td: (r) => `<td class="t-via" style="white-space:normal; max-width:190px">${esc(r.bridge)}</td>` },
   token:  { th: "network token", td: (r) => `<td>${addrCell(r.chainId, r.token, short(r.token))} ${ovSrcChip(r.src.token)}</td>` },
@@ -1896,13 +1940,20 @@ async function viewOverview(force, context) {
   catch (e) { registryError = e.message; } // Sourced token and ledger reads can proceed independently.
   if (!context.isCurrent()) return;
   const rows = overviewRows();
-  const l1 = await overviewL1(rows, force);
+  // The totals start after overviewL1 queues its deferred read, so rpcRead sends them in the same
+  // Ethereum batch; they are painted on arrival, not awaited.
+  const l1Read = overviewL1(rows, force);
+  const totals = Object.keys(L1_TOTALS).map((symbol) => [symbol, l1TotalSupply(symbol, force)]);
+  const l1 = await l1Read;
   if (!context.publish(() => renderOverview(rows, l1, registryError))) return;
 
   // Phase two: each completion publishes through the same generation guard.
   const paint = (update, at, render) => context.commit(() => {
     update(); noteDataAge(at); render(); renderTabs(); tickStamp();
   });
+  for (const [symbol, read] of totals) {
+    read.then((t) => paint(() => ov.totals.set(symbol, t), t.at, () => { ovUpdateStatus(); ovPaintSummary(); }));
+  }
   for (const row of steth.rows) {
     stethSupply(row, force).then((s) =>
       paint(() => steth.supply.set(row.key, s), s.at, stethPaintNumbers));
@@ -1931,6 +1982,7 @@ function renderOverview(rows, l1, registryError) {
   ov.l1 = l1;
   steth.quote = ov.l1.stethQuote || {err: ov.l1.err || "USD price unavailable", at: null};
   ldo.quote = ov.l1.ldoQuote || {err: ov.l1.err || "USD price unavailable", at: null};
+  ov.totals = new Map();
   noteDataAge(ov.l1.at);
   ovUpdateStatus();
 

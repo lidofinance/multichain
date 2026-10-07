@@ -13,6 +13,7 @@ import argparse
 import base64
 import hashlib
 import html
+from datetime import date
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -38,6 +39,17 @@ def address(value):
     if not isinstance(value, str) or not ADDRESS.fullmatch(value) or int(value, 16) == 0:
         raise ValueError(f"Missing or invalid deployed address: {value!r}")
     return value
+
+
+def iso_day(value):
+    """A real calendar date written YYYY-MM-DD; the pattern alone admits 2026-02-31."""
+    if not isinstance(value, str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', value):
+        return False
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
 
 
 def https_source(value, label):
@@ -94,7 +106,7 @@ def steth_metadata(ledger, metadata):
     source = partial(https_source, label='stETH')
     source(metadata['docsUrl'])
     source(metadata['rateSource'])
-    if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', metadata['takenAt']):
+    if not iso_day(metadata['takenAt']):
         raise ValueError('Invalid stETH metadata date')
     feed = metadata['priceFeed']
     address(feed['address'])
@@ -149,7 +161,7 @@ def ldo_metadata(metadata):
     address(metadata['l1Token'])
     source = partial(https_source, label='LDO')
     source(metadata['l1Source'])
-    if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', metadata['takenAt']):
+    if not iso_day(metadata['takenAt']):
         raise ValueError('Invalid LDO metadata date')
     seen = set()
     for row in metadata['networks']:
@@ -174,6 +186,61 @@ def ldo_metadata(metadata):
         if (type(feed['decimals']) is not int or not 0 <= feed['decimals'] <= 36 or
                 type(feed['maxAgeSeconds']) is not int or feed['maxAgeSeconds'] <= 0):
             raise ValueError('Invalid LDO price feed scale or heartbeat')
+    return metadata
+
+
+NETWORK_TYPE_FIELDS = {'chainId', 'name', 'type', 'source', 'category', 'archived', 'qualifier', 'note'}
+L2BEAT_CATEGORIES = {'Optimistic Rollup', 'ZK Rollup', 'Optimium', 'Validium', 'Other'}
+L2BEAT_PROJECT_PATH = re.compile(r'/(?:layer2s|scaling)/projects/[a-z0-9-]+/?')
+
+
+def network_types_metadata(metadata):
+    """Validate the sourced L2 / alt-L1 labels; a missing chain stays unclassified."""
+    text = lambda value: isinstance(value, str) and value.strip() == value and bool(value)
+    if not isinstance(metadata, dict) or set(metadata) != {'takenAt', 'types', 'networks'}:
+        raise ValueError('Network type metadata must have takenAt, types and networks')
+    if not iso_day(metadata['takenAt']):
+        raise ValueError('Invalid network type metadata date')
+    types = metadata['types']
+    if (not isinstance(types, dict) or set(types) != {'L2', 'alt-L1'} or
+            not all(text(v) for v in types.values())):
+        raise ValueError('Network types must define exactly L2 and alt-L1')
+    if not isinstance(metadata['networks'], list):
+        raise ValueError('Network types must list networks')
+    seen = set()
+    for row in metadata['networks']:
+        chain = row.get('chainId') if isinstance(row, dict) else None
+        if type(chain) is not int or chain <= 1:
+            raise ValueError('Network types must have positive non-Ethereum chain IDs')
+        if chain in seen:
+            raise ValueError(f'Duplicate network type for chain {chain}')
+        seen.add(chain)
+        invalid = lambda: ValueError(f'Invalid network type for chain {chain}')
+        if not {'name', 'type', 'source'} <= set(row) <= NETWORK_TYPE_FIELDS:
+            raise invalid()
+        if not text(row['name']) or not isinstance(row['type'], str) or row['type'] not in types:
+            raise invalid()
+        if not all(text(row[k]) for k in ('qualifier', 'note') if k in row):
+            raise invalid()
+        # The page ends the tooltip's note sentence itself.
+        if row.get('note', '').endswith('.'):
+            raise invalid()
+        if not isinstance(row['source'], str):
+            raise invalid()
+        https_source(row['source'], label='Network type')
+        # An L2 claim is L2BEAT's, so it cites an L2BEAT project page and carries L2BEAT's category
+        # and archive date. The path check cannot tie the page to this chain; review does that.
+        # A qualifier marks where a non-L2BEAT source's own term differs from the label; on an L2 row
+        # it would only be a free-text route for the stage or maturity claims the label does not make.
+        if row['type'] == 'L2':
+            url = urlsplit(row['source'])
+            if (url.netloc != 'l2beat.com' or url.query or url.fragment or
+                    not L2BEAT_PROJECT_PATH.fullmatch(url.path) or 'qualifier' in row or
+                    not isinstance(row.get('category'), str) or row['category'] not in L2BEAT_CATEGORIES or
+                    ('archived' in row and not iso_day(row['archived']))):
+                raise invalid()
+        elif 'category' in row or 'archived' in row:
+            raise invalid()
     return metadata
 
 
@@ -461,9 +528,11 @@ def build(root, output, upstream_path=None, reuse_build=None):
     metadata = json.loads(metadata_bytes)
     ldo_bytes = (root / 'components/dashboard/config/ldo-networks.json').read_bytes()
     steth_bytes = (root / 'components/dashboard/config/steth-networks.json').read_bytes()
+    types_bytes = (root / 'components/dashboard/config/network-types.json').read_bytes()
     data = dict(live=live, networks=ledger_networks(ledger, metadata),
                 ldo=ldo_metadata(json.loads(ldo_bytes)),
                 steth=steth_metadata(ledger, json.loads(steth_bytes)),
+                networkTypes=network_types_metadata(json.loads(types_bytes)),
                 l1Token=deployed(ledger, 'eip155:1', 'ethereum-ethereum-wsteth-token'),
                 provenance=dict(takenAt=metadata['takenAt'], docsUrl=metadata['docsUrl'],
                                 ledgerUpdatedAt=ledger['updatedAt'], ledgerUrl=ledger_url),
@@ -473,7 +542,8 @@ def build(root, output, upstream_path=None, reuse_build=None):
                              ledgerCommit=ledger_commit, ledgerSha256=digest(ledger_bytes),
                              ledgerContentSha256=digest(json.dumps(ledger, sort_keys=True, separators=(',', ':')).encode()),
                              metadataSha256=digest(metadata_bytes), ldoMetadataSha256=digest(ldo_bytes),
-                             stethMetadataSha256=digest(steth_bytes)))
+                             stethMetadataSha256=digest(steth_bytes),
+                             networkTypesSha256=digest(types_bytes)))
     if reuse_build is not None:
         data['sources'].update(upstreamMode='reused-build', upstreamBuildSha256=digest(reused_raw),
                                upstreamBuildFile='upstream/dashboard-build.json')

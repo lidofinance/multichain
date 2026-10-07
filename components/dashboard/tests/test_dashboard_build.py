@@ -17,7 +17,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit, parse_qs, unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from build_dashboard import ROOT, GitHubSource, LocalSource, build, ledger_networks, ldo_metadata, steth_metadata, read_upstream, source_text, main, ledger_source
+from build_dashboard import ROOT, GitHubSource, LocalSource, build, ledger_networks, ldo_metadata, network_types_metadata, steth_metadata, read_upstream, source_text, main, ledger_source
 
 
 def addr(n):
@@ -30,6 +30,7 @@ class DashboardBuildTests(unittest.TestCase):
         self.metadata = json.loads((ROOT / 'components/dashboard/config/dashboard-networks.json').read_text())
         self.ldo = json.loads((ROOT / 'components/dashboard/config/ldo-networks.json').read_text())
         self.steth = json.loads((ROOT / 'components/dashboard/config/steth-networks.json').read_text())
+        self.types = json.loads((ROOT / 'components/dashboard/config/network-types.json').read_text())
 
     def test_steth_projects_ledger_tokens_and_sourced_rate_oracles(self):
         data = steth_metadata(self.ledger, self.steth)
@@ -98,9 +99,76 @@ class DashboardBuildTests(unittest.TestCase):
             metadata['networks'][0][field] = value
             with self.assertRaises(ValueError):
                 ldo_metadata(metadata)
+        for day in ('2026-02-31', '2026-13-01'):
+            metadata = copy.deepcopy(self.ldo)
+            metadata['takenAt'] = day
+            with self.assertRaisesRegex(ValueError, 'Invalid LDO metadata date'):
+                ldo_metadata(metadata)
         self.ldo['networks'].append(copy.deepcopy(self.ldo['networks'][0]))
         with self.assertRaisesRegex(ValueError, 'Duplicate LDO'):
             ldo_metadata(self.ldo)
+
+    def test_network_types_classify_every_configured_mainnet_network(self):
+        types = {row['chainId']: row['type'] for row in network_types_metadata(self.types)['networks']}
+        configured = ({row['chainId'] for row in ledger_networks(self.ledger, self.metadata)} |
+                      {row['chainId'] for row in steth_metadata(self.ledger, self.steth)['networks']} |
+                      {row['chainId'] for row in ldo_metadata(self.ldo)['networks']})
+        self.assertEqual(configured - set(types), set())
+        self.assertEqual(types[42161], 'L2')
+        self.assertEqual(types[56], 'alt-L1')
+        # A catalogue name must agree with the configured name, so a mistyped chain ID shows up here.
+        names = {}
+        for row in (ledger_networks(self.ledger, self.metadata) + steth_metadata(self.ledger, self.steth)['networks'] +
+                    ldo_metadata(self.ldo)['networks']):
+            names.setdefault(row['chainId'], set()).add(row['name'])
+        for row in self.types['networks']:
+            if row['chainId'] in names:
+                self.assertIn(row['name'], names[row['chainId']], row['chainId'])
+
+    def test_network_types_reject_duplicates_unknown_labels_and_unsafe_sources(self):
+        l2, alt = (next(i for i, r in enumerate(self.types['networks']) if r['type'] == t) for t in ('L2', 'alt-L1'))
+        for row, field, value in [(l2, 'chainId', 1), (l2, 'chainId', True), (l2, 'type', 'L3'), (l2, 'type', ['L2']),
+                                  (l2, 'name', ''), (l2, 'name', 5), (l2, 'source', 'javascript:alert(1)'), (l2, 'source', 5),
+                                  (l2, 'note', 5), (l2, 'note', {}), (alt, 'qualifier', ''), (alt, 'qualifier', 5),
+                                  (l2, 'stage', 'Stage 1'), (l2, 'qualifier', 'Stage 2'),
+                                  (l2, 'source', 'https://example.com/x'), (l2, 'source', 'https://l2beat.com.example/x'),
+                                  (l2, 'source', 'https://l2beat.com/'), (l2, 'source', 'https://l2beat.com/scaling/summary'),
+                                  (l2, 'source', 'https://l2beat.com:8443/scaling/projects/base'),
+                                  (l2, 'source', 'https://l2beat.com:443/scaling/projects/base'),
+                                  (l2, 'source', 'https://x@l2beat.com/layer2s/projects/base'),
+                                  (l2, 'source', 'https://:secret@l2beat.com/layer2s/projects/base'),
+                                  (l2, 'source', 'https://l2beat.com/scaling/projects/base?stage=2'),
+                                  (l2, 'source', 'https://l2beat.com/scaling/projects/base#Stage-2'),
+                                  (l2, 'source', 'https://l2beat.com/scaling/projects/'), (alt, 'note', 'Own PoS validator set.'),
+                                  (l2, 'category', 'Sidechain'), (l2, 'category', ['Other']), (l2, 'category', {}),
+                                  (l2, 'archived', 'May 2026'), (l2, 'archived', '2026-02-30'), (l2, 'archived', 20260527),
+                                  (alt, 'category', 'Other'), (alt, 'archived', '2026-05-27')]:
+            metadata = copy.deepcopy(self.types)
+            metadata['networks'][row][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                network_types_metadata(metadata)
+        metadata = copy.deepcopy(self.types)
+        metadata['networks'][l2]['source'] = 'https://l2beat.com/scaling/projects/arbitrum'
+        network_types_metadata(metadata)  # L2BEAT's current project path is accepted beside /layer2s/.
+        for row, field in [(l2, 'chainId'), (l2, 'name'), (l2, 'source'), (l2, 'category')]:
+            metadata = copy.deepcopy(self.types)
+            del metadata['networks'][row][field]
+            with self.subTest(missing=field), self.assertRaises(ValueError):
+                network_types_metadata(metadata)
+        for mutate in [lambda m: m['types'].update({'L2': 5}), lambda m: m.update(networks={}),
+                       lambda m: m.update(takenAt=20261007), lambda m: m.update(takenAt='2026-99-99'),
+                       lambda m: m.update(takenAt='2026-02-31'), lambda m: m.pop('takenAt')]:
+            metadata = copy.deepcopy(self.types)
+            mutate(metadata)
+            with self.subTest(mutate=mutate), self.assertRaises(ValueError):
+                network_types_metadata(metadata)
+        metadata = copy.deepcopy(self.types)
+        metadata['types']['sidechain'] = 'not a supported label'
+        with self.assertRaisesRegex(ValueError, 'exactly L2 and alt-L1'):
+            network_types_metadata(metadata)
+        self.types['networks'].append(copy.deepcopy(self.types['networks'][0]))
+        with self.assertRaisesRegex(ValueError, 'Duplicate network type'):
+            network_types_metadata(self.types)
 
     def test_ldo_prices_require_declared_pairs_and_positive_heartbeat(self):
         self.ldo['priceFeeds'][0]['maxAgeSeconds'] = 0
@@ -295,6 +363,8 @@ One resolver; no delivery claim.
             self.assertEqual(payload['ldo'], self.ldo)
             self.assertIn('ldoMetadataSha256', payload['sources'])
             self.assertIn('stethMetadataSha256', payload['sources'])
+            self.assertIn('networkTypesSha256', payload['sources'])
+            self.assertEqual(payload['networkTypes'], self.types)
             self.assertEqual(payload['steth'], steth_metadata(self.ledger, self.steth))
             self.assertNotIn('ledger', payload)
             embedded_ledger = json.loads(re.search(r'id="ledger-data">(.*?)</script>', page).group(1))
