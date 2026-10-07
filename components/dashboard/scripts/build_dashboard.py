@@ -342,12 +342,16 @@ class EvidenceHTML(HTMLParser):
         self.invalid()
 
     def handle_data(self, data):
-        # HTMLParser treats unfinished tags as text at EOF; the enclosing page
-        # can complete them. Require literal '<' in prose to be entity-escaped.
+        # Require literal '<' in prose to be entity-escaped.
         if '<' in data:
             self.invalid()
 
     def close(self):
+        # Check before close(): some Python versions discard unfinished tags
+        # or accept unfinished comments at EOF instead of calling handle_data.
+        # The enclosing page could complete such markup when it is inserted.
+        if '<' in self.rawdata:
+            self.invalid()
         super().close()
         if self.stack:
             self.invalid()

@@ -14,7 +14,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from build_dashboard import ROOT, build, ledger_networks, ldo_metadata, network_types_metadata, steth_metadata, testnet_metadata, main, ledger_source
+from build_dashboard import ROOT, EvidenceHTML, build, ledger_networks, ldo_metadata, network_types_metadata, steth_metadata, testnet_metadata, main, ledger_source
 
 
 def addr(n):
@@ -412,6 +412,19 @@ class DashboardBuildTests(unittest.TestCase):
                 with self.subTest(fragment=fragment), self.assertRaisesRegex(ValueError, 'Invalid evidence HTML'):
                     build(root, output)
                 self.assertFalse(output.exists())
+
+    def test_evidence_parser_rejects_incomplete_markup_at_eof(self):
+        for fragment in ('<img src=x onerror=alert(1)', '<!-- unfinished comment',
+                         '<p', '<', '<p>closed</p><!-- trailing'):
+            parser = EvidenceHTML('test fragment')
+            with self.subTest(fragment=fragment), self.assertRaisesRegex(ValueError, 'Invalid evidence HTML'):
+                parser.feed(fragment)
+                parser.close()
+        # Buffering between feed calls is valid; only EOF requires completion.
+        parser = EvidenceHTML('complete fragment')
+        for chunk in ('<p', '>Escaped &lt;img&gt;', '</p', '>'):
+            parser.feed(chunk)
+        parser.close()
 
     def test_legacy_output_is_rejected_without_modifying_existing_files(self):
         with tempfile.TemporaryDirectory() as tmp:
