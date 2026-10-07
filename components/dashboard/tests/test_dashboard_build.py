@@ -420,11 +420,27 @@ class DashboardBuildTests(unittest.TestCase):
             with self.subTest(fragment=fragment), self.assertRaisesRegex(ValueError, 'Invalid evidence HTML'):
                 parser.feed(fragment)
                 parser.close()
-        # Buffering between feed calls is valid; only EOF requires completion.
-        parser = EvidenceHTML('complete fragment')
-        for chunk in ('<p', '>Escaped &lt;img&gt;', '</p', '>'):
-            parser.feed(chunk)
-        parser.close()
+        # Every split of valid markup must work, including inside entity refs
+        # and attributes. Only EOF requires a complete fragment.
+        source = '<div class="table"><p>Escaped &lt;img&gt;</p></div>'
+        for split in range(len(source) + 1):
+            with self.subTest(split=split):
+                parser = EvidenceHTML('complete fragment')
+                parser.feed(source[:split])
+                parser.feed(source[split:])
+                parser.close()
+
+    def test_evidence_accepts_complete_markup_when_parser_defers_until_close(self):
+        # A buffered '<' need not be incomplete. Simulate a parser that keeps
+        # complete markup pending until close(), as seen in the CI failure.
+        def defer(parser, data):
+            parser.rawdata += data
+        with patch('build_dashboard.HTMLParser.feed', new=defer):
+            parser = EvidenceHTML('deferred complete fragment')
+            for chunk in ('<p', '>Escaped &lt;img&gt;', '</p', '>'):
+                parser.feed(chunk)
+            parser.close()
+            self.assertEqual(parser.stack, [])
 
     def test_legacy_output_is_rejected_without_modifying_existing_files(self):
         with tempfile.TemporaryDirectory() as tmp:

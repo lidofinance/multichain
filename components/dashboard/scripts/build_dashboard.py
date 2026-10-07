@@ -318,10 +318,18 @@ class EvidenceHTML(HTMLParser):
     """A small, inert HTML subset for maintained evidence, not a general sanitizer."""
     TAGS = {'p', 'strong', 'em', 'code', 'pre', 'h3', 'div', 'table', 'thead', 'tbody',
             'tr', 'th', 'td', 'ul', 'ol', 'li'}
+    # Deliberately narrower than HTML: evidence only needs plain tags and the
+    # table wrapper's class. Check completeness independently of HTMLParser's
+    # version-dependent EOF recovery and incremental buffering.
+    MARKUP = re.compile(r'''</?[a-zA-Z][a-zA-Z0-9]*(?:\s+class\s*=\s*(?:"table"|'table'))?\s*>''')
 
     def __init__(self, name):
         super().__init__(convert_charrefs=False)
         self.name, self.stack = name, []
+        self.fragments = []
+
+    def feed(self, data):
+        self.fragments.append(data)
 
     def invalid(self):
         raise ValueError(f'Invalid evidence HTML in {self.name}: use balanced inert markup only')
@@ -347,11 +355,11 @@ class EvidenceHTML(HTMLParser):
             self.invalid()
 
     def close(self):
-        # Check before close(): some Python versions discard unfinished tags
-        # or accept unfinished comments at EOF instead of calling handle_data.
-        # The enclosing page could complete such markup when it is inserted.
-        if '<' in self.rawdata:
-            self.invalid()
+        source = ''.join(self.fragments)
+        for match in re.finditer('<', source):
+            if not self.MARKUP.match(source, match.start()):
+                self.invalid()
+        super().feed(source)
         super().close()
         if self.stack:
             self.invalid()
