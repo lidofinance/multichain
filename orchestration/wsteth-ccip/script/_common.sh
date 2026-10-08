@@ -28,6 +28,7 @@ L1_RPC="${RPC_SEPOLIA}"
 # dir) derives from L2_CHAIN. The RPC env var NAME
 # is RPC_<UPPERCASED SLUG> (forks-tray convention), e.g. RPC_MANTLE_SEPOLIA.
 export L2_CHAIN="${L2_CHAIN:-mantle_sepolia}"
+export L2_STATE_FILE="${L2_STATE_FILE:-state/l2.json}"
 L2_RPC_VAR="RPC_$(printf '%s' "${L2_CHAIN}" | tr '[:lower:]' '[:upper:]')"
 [ -n "${!L2_RPC_VAR:-}" ] || { echo "✗ ${L2_RPC_VAR} unset — export it via the forks tray app or .env"; exit 1; }
 export "${L2_RPC_VAR}"
@@ -128,6 +129,9 @@ is_l1_chain() {
     [ "${pt}" = "SiloedLockRelease" ]
 }
 
+# Proxy-admin classification and assertion (transparent vs legacy OssifiableProxy): script/_proxy.sh.
+. "$(dirname "${BASH_SOURCE[0]}")/_proxy.sh"
+
 # is_anvil <rpc>: succeed iff the endpoint is an anvil node (responds to an anvil_* cheat method).
 # Used to gate fork-only operations (account impersonation, setBalance) so they fail loudly against
 # a live RPC instead of silently no-op'ing and leaving the deploy in a half-configured state.
@@ -158,12 +162,12 @@ run_ccip_script() {
         --rpc-url "${rpc}" --broadcast --skip "*.t.sol" -vv )
 }
 
-# assert_l2_state_chain: state/l2.json (written by step 02) must belong to the active L2_CHAIN —
+# assert_l2_state_chain: ${L2_STATE_FILE} (written by step 02) must belong to the active L2_CHAIN —
 # catches switching L2_CHAIN over leftover state from another pair (files predating the .l2Chain
 # field are assumed to belong to the default pair).
 assert_l2_state_chain() {
-    [ -f state/l2.json ] || return 0
-    local rec; rec="$(jq -r '.l2Chain // "mantle_sepolia"' state/l2.json)"
+    [ -f "${L2_STATE_FILE}" ] || return 0
+    local rec; rec="$(jq -r '.l2Chain // "mantle_sepolia"' "${L2_STATE_FILE}")"
     [ "${rec}" = "${L2_CHAIN}" ] || {
-        echo "✗ state/l2.json belongs to '${rec}' but L2_CHAIN=${L2_CHAIN} — prepare a new run first"; exit 1; }
+        echo "✗ ${L2_STATE_FILE} belongs to '${rec}' but L2_CHAIN=${L2_CHAIN} — prepare a new run first"; exit 1; }
 }

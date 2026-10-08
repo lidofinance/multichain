@@ -72,7 +72,7 @@ const ctx = vm.createContext({
 ctx.globalThis = ctx;
 ctx.window.addEventListener = () => {};
 
-vm.runInContext(`${src}\nglobalThis.__page = { loadRegistry, crawl, overviewRows, overviewL1, overviewSupply, ldoRows, ldoSupply, ldoPrice, ldoPriceError, stethRows, stethSupply, stethRate, stethPrice, stethPriceError, LIVE, state, BUILD, CACHE_KEY };`,
+vm.runInContext(`${src}\nglobalThis.__page = { loadRegistry, crawl, overviewRows, overviewL1, l1TotalSupply, L1_TOTALS, overviewSupply, ldoRows, ldoSupply, ldoPrice, ldoPriceError, stethRows, stethSupply, stethRate, stethPrice, stethPriceError, LIVE, state, BUILD, CACHE_KEY };`,
   ctx, { filename: "index.html#script" });
 
 const P = ctx.__page;
@@ -97,8 +97,14 @@ async function main() {
 
   say("overview: L1");
   const rows = P.overviewRows();
-  let l1;
-  try { l1 = await P.overviewL1(rows, true); } catch (e) { say("  failed:", e.message); }
+  // Started together, overview first, so the totals join its Ethereum batch as on the page.
+  const l1Read = P.overviewL1(rows, true).catch((e) => { say("  failed:", e.message); });
+  const totals = Object.keys(P.L1_TOTALS).map((symbol) => [symbol, P.l1TotalSupply(symbol, true)]);
+  const l1 = await l1Read;
+  for (const [symbol, read] of totals) {
+    const res = await read;
+    say(`overview: Ethereum ${symbol} total${res.err ? ` — ${res.err}` : ""}`);
+  }
   // One chain at a time: these are 25 different public endpoints and a burst gets throttled.
   for (const r of rows) {
     const res = await P.overviewSupply(r, true).catch((e) => ({ err: e.message }));

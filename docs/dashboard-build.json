@@ -403,31 +403,220 @@
       }
     ]
   },
+  "networkTypes": {
+    "takenAt": "2026-10-07",
+    "types": {
+      "L2": "Listed by L2BEAT as a Layer 2 hosted on Ethereum. L2BEAT's category is given per network; its stage is not reflected here. This label makes no security or maturity claim.",
+      "alt-L1": "Not an Ethereum L2: the network's own documentation describes independent consensus, or settlement on a chain other than Ethereum (an L2 of another chain carries a visible qualifier). This label makes no security claim."
+    },
+    "networks": [
+      {
+        "chainId": 10,
+        "name": "Optimism",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/op-mainnet",
+        "category": "Optimistic Rollup"
+      },
+      {
+        "chainId": 56,
+        "name": "BNB Chain",
+        "type": "alt-L1",
+        "source": "https://docs.bnbchain.org/bnb-smart-chain/introduction/",
+        "note": "Proof of Staked Authority validator set"
+      },
+      {
+        "chainId": 130,
+        "name": "Unichain",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/unichain",
+        "category": "Optimistic Rollup"
+      },
+      {
+        "chainId": 137,
+        "name": "Polygon PoS",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/polygon-pos",
+        "category": "Other",
+        "note": "Ethereum checkpoints, own PoS validator set"
+      },
+      {
+        "chainId": 143,
+        "name": "Monad",
+        "type": "alt-L1",
+        "source": "https://docs.monad.xyz/",
+        "note": "MonadBFT consensus"
+      },
+      {
+        "chainId": 324,
+        "name": "ZKsync Era",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/zksync-era",
+        "category": "ZK Rollup"
+      },
+      {
+        "chainId": 1135,
+        "name": "Lisk",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/lisk",
+        "category": "Other"
+      },
+      {
+        "chainId": 1868,
+        "name": "Soneium",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/soneium",
+        "category": "Other"
+      },
+      {
+        "chainId": 1923,
+        "name": "Swellchain",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/swell",
+        "category": "Other",
+        "archived": "2026-08-05"
+      },
+      {
+        "chainId": 2741,
+        "name": "Abstract",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/abstract",
+        "category": "ZK Rollup"
+      },
+      {
+        "chainId": 4326,
+        "name": "MegaETH",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/megaeth",
+        "category": "Other"
+      },
+      {
+        "chainId": 4663,
+        "name": "Robinhood Chain",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/robinhood",
+        "category": "Other"
+      },
+      {
+        "chainId": 5000,
+        "name": "Mantle",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/mantle",
+        "category": "ZK Rollup"
+      },
+      {
+        "chainId": 8453,
+        "name": "Base",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/base",
+        "category": "Optimistic Rollup"
+      },
+      {
+        "chainId": 9745,
+        "name": "Plasma",
+        "type": "alt-L1",
+        "source": "https://docs.plasma.to/docs/plasma-chain/architecture/system-overview",
+        "note": "PlasmaBFT consensus"
+      },
+      {
+        "chainId": 16661,
+        "name": "0G",
+        "type": "alt-L1",
+        "source": "https://docs.0g.ai/concepts/chain",
+        "note": "CometBFT-based proof-of-stake consensus"
+      },
+      {
+        "chainId": 34443,
+        "name": "Mode",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/mode",
+        "category": "Other"
+      },
+      {
+        "chainId": 42161,
+        "name": "Arbitrum One",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/arbitrum",
+        "category": "Optimistic Rollup"
+      },
+      {
+        "chainId": 42220,
+        "name": "Celo",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/celo",
+        "category": "Optimium"
+      },
+      {
+        "chainId": 48900,
+        "name": "Zircuit",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/zircuit",
+        "category": "Other"
+      },
+      {
+        "chainId": 57073,
+        "name": "Ink",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/ink",
+        "category": "Optimistic Rollup"
+      },
+      {
+        "chainId": 59144,
+        "name": "Linea",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/linea",
+        "category": "ZK Rollup"
+      },
+      {
+        "chainId": 200901,
+        "name": "Bitlayer",
+        "type": "alt-L1",
+        "source": "https://docs.bitlayer.org/docs/Learn/Bitlayer%20Rollup/overview/",
+        "qualifier": "Bitcoin L2",
+        "note": "Own PoS block production, settles on Bitcoin rather than Ethereum"
+      },
+      {
+        "chainId": 534352,
+        "name": "Scroll",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/scroll",
+        "category": "ZK Rollup"
+      },
+      {
+        "chainId": 5734951,
+        "name": "Jovay",
+        "type": "L2",
+        "source": "https://l2beat.com/layer2s/projects/jovay",
+        "category": "Other",
+        "archived": "2026-05-27"
+      }
+    ]
+  },
   "l1Token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
   "provenance": {
     "takenAt": "2026-08-27",
     "docsUrl": "https://docs.lido.fi/deployed-contracts/",
     "ledgerUpdatedAt": "2026-09-17",
-    "ledgerUrl": "https://github.com/lidofinance/multichain/blob/739e4594b2ca017aa3b93197f645d1bbff752328/ledger.json"
+    "ledgerUrl": "https://github.com/lidofinance/multichain/blob/e754dba96653877fdaa25e9b3cd2701ed90945b7/ledger.json"
   },
   "sources": {
-    "upstreamRepository": "https://github.com/lidofinance/wsteth-ccip",
-    "upstreamCommit": null,
-    "upstreamMode": "reused-build",
-    "upstreamFiles": {
-      "docs/CURRENT-DEPLOYMENT.md": "27b8680582f6d3403568e1b1120faeecb6bb7ee2ae902ee39126bfa940da74c0",
-      "docs/deployment-2026-09-15.md": "af91dad2dd610e96065e7b318fb3f69496536a7b9eae433f66ae1463acc53e76",
-      "config/chains.live-mantle-2026-09-15/mantle_sepolia.json": "285ef3ecbd92e6d4de8932d0576a300cb39c71321451ac6cb59925a189d7d111",
-      "config/chains.live-mantle-2026-09-15/sepolia.json": "081c53bf7a884eb6d2a4a0c7bec4a3b9cd2fdac2ee2072e038e5f401a0fc1978"
+    "testnetSnapshotSha256": "cfff008f176ee266b2a554b4c08e8510259ad84ff510b13126c8ed033e745fda",
+    "testnetContentSha256": {
+      "evidence": "84d2ee4861130eb8e25f136e3f91ca5b7efc11b42ce350033897edfcbd89e4e0",
+      "permissions": "5162da01b817cae246b82c00ffa62d125d8e456a8d30b1630094dc49cdbd395c",
+      "ccv": "aa1808481c9498addc82b9e9bf618357a565faa9496d79f618ae947a1f043262"
     },
-    "ledgerCommit": "739e4594b2ca017aa3b93197f645d1bbff752328",
+    "templateSha256": {
+      "index": "49f869ae07050522163ccf40382680092dc93673dbf0132ab0aeb3d8368b9bb4",
+      "roles": "55f6ded922182cd05f076b69d47eb5598672373795bb459a367d411241204157",
+      "ccv": "23aa1c9b0ccc3ac63c1cf256fb2490fd88579fe727da5c7f660eb74887efcfff"
+    },
+    "ledgerCommit": "e754dba96653877fdaa25e9b3cd2701ed90945b7",
     "ledgerSha256": "1e294ff4cf2620c71be68d1fcab85fcdbf96ac8ffdebbf09dd61002308156edf",
     "ledgerContentSha256": "671fdf80ad604949da44bbeb1c912082523bfe162db2365902ba0ec773d7e60e",
     "metadataSha256": "170205bc9114098667804bec2401d6e67fdd2d156e1437e107575bde04ac6153",
     "ldoMetadataSha256": "44839d38ef45e42003f547009dcc6581b538cd7d001e3236ab6df300dc39e49b",
     "stethMetadataSha256": "4a0ea96ff75bbf0c70e6a152654f9743adf90eb69b118dad7c281ea19b005bd7",
-    "upstreamBuildSha256": "c62cb8488e7aa73864b974939ae8ff0b8d991ad6a1504afbd89d114366052966",
-    "upstreamBuildFile": "upstream/dashboard-build.json"
+    "networkTypesSha256": "6c4c97d8423c2aeba74dcb6e34e401bcde25f3321f44d9fce002d280b385ece4"
   },
-  "identity": "c08cbb0a6a1bf6837535c8ebaa7a85a6941d08f192622bc611e3504a2f189b49"
+  "identity": "1841cde9f5caab894f6a3099340b30069373831e728ce4025856bf8513c94a6f"
 }

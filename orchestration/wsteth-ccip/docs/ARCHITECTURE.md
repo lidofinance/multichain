@@ -68,7 +68,7 @@ Three scope-restricted cuts of the same structure follow the diagram: [§1.1](#1
                    L1 · Ethereum mainnet (1)         L2 · OP-stack L2
  ═════════════════════════════════════════════════════════════════════════════════════
  LIDO CORE         wstETH  ◀ the bridged asset       L2 wstETH = ERC20BridgedPermit
- the asset and     stETH · LidoLocator                 behind OssifiableProxy
+ the asset and     stETH · LidoLocator                 behind TransparentUpgradeableProxy
  the DAO's spine   ResealManager                       proxy admin = OpExec
                    Voting ▸ DualGovernance ▸         OptimismBridgeExecutor  OpExec
                    Timelock ▸ AdminExecutor ▸          ethereumGovernanceExecutor
@@ -149,7 +149,7 @@ flowchart LR
   subgraph L2C["L2 · Lido core"]
     direction TB
     OPX["OptimismBridgeExecutor<br/>ethereumGovernanceExecutor = Agent<br/>onlyThis to change"]
-    WS2["L2 wstETH<br/>ERC20BridgedPermit + OssifiableProxy"]
+    WS2["L2 wstETH<br/>ERC20BridgedPermit + TransparentUpgradeableProxy"]
     OPX -->|"proxy admin · DEFAULT_ADMIN"| WS2
   end
   subgraph L2W["L2 · CCIP-wstETH — ours"]
@@ -276,7 +276,7 @@ flowchart LR
   end
 
   subgraph L2A["L2 · asset"]
-    WS2["L2 wstETH<br/>ERC20BridgedPermit + OssifiableProxy"]
+    WS2["L2 wstETH<br/>ERC20BridgedPermit + TransparentUpgradeableProxy"]
   end
   subgraph L2W["L2 · CCIP-wstETH — ours"]
     direction TB
@@ -384,7 +384,7 @@ flowchart TB
   subgraph G2["L2 · Lido governance"]
     direction TB
     OPX["OptimismBridgeExecutor<br/>ethereumGovernanceExecutor = Agent<br/>onlyThis to change"]
-    WS2["L2 wstETH<br/>ERC20BridgedPermit + OssifiableProxy"]
+    WS2["L2 wstETH<br/>ERC20BridgedPermit + TransparentUpgradeableProxy"]
   end
 
   subgraph T1["L1 · governed through L1-POM"]
@@ -659,7 +659,7 @@ this is what it means *here*, not in general. Where a word is ours rather than t
 | **version tag**                                 | the 4-byte prefix a proof must carry (`0xdecafbad` for ours). `VersionedVerifierResolver` maps it to the verifier implementation that checks it                                                                                                                                                                                                                                                                                                                                      | `DummyMessageIdVerifier.sol:23`                                                                      |
 | **token bucket**                                | the per-lane rate limiter, a separate pair per chain and direction: `capacity` is the bucket maximum — it caps a single transfer *and* is the lane's burst ceiling — and `rate` the refill per second, so a transfer also fails when the current level is short. Gate `A-RL-01`                                                                                                                                                                                                      | `RateLimiter.sol:21, 60-74`; `PARAMETERS.md` §2                                                      |
 | **`administrator`** (TAR)                       | the per-token role in `TokenAdminRegistry` that may `setPool` for that token. Ours is `L1-POM` / `L2-POM`, seated permissionlessly by `RegistryModuleOwnerCustom` in step 07                                                                                                                                                                                                                                                                                                         | `PERMISSIONS.md` §3                                                                                  |
-| **impl + proxy**                                | one address, two contracts. `L1-POM` / `L2-POM` is a UUPS `PoolOperationManager` behind an `ERC1967Proxy`, upgradeable only by Agent / OpExec; the L2 token is `ERC20BridgedPermit` behind an `OssifiableProxy` (upgradeable by OpExec)                                                                                                                                                                                                                                                  | §1.5                                                                                                 |
+| **impl + proxy**                                | one address, two contracts. `L1-POM` / `L2-POM` is a UUPS `PoolOperationManager` behind an `ERC1967Proxy`, upgradeable only by Agent / OpExec; the L2 token is `ERC20BridgedPermit` behind an OZ 5.3.0 `TransparentUpgradeableProxy` (upgradeable by OpExec through its `ProxyAdmin`)                                                                                                                                                                                                                                                  | §1.5                                                                                                 |
 
 ### 1.5 Contract inventory
 
@@ -673,7 +673,7 @@ operators, not contracts, and have no address to record.
 | `Voting` · `DualGovernance` · `EmergencyProtectedTimelock` · `AdminExecutor` · `Agent` · `ResealManager` | L1 | Lido core | pre-existing on mainnet; step 01 on every substrate that exists | `state/l1.json` — `.dg` holds `dualGovernance`, `timelock`, `adminExecutor`, `resealManager`; `Voting` is `.voting` and `Agent` is `.agent`, also mirrored to `governance_addresses.lido_dao_agent` |
 | `wstETH` · `stETH` · `LidoLocator` | L1 | Lido core | ditto | `state/l1.json`; `wstETH` also `addresses.token` |
 | `OptimismBridgeExecutor` (OpExec) | L2 | Lido core | step 02 | `state/l2.json` `.opExec`; `governance_addresses.lido_dao_agent` |
-| L2 `wstETH` — `ERC20BridgedPermit` + `OssifiableProxy` | L2 | Lido core | step 03 | `state/l2.json` `.wstETH` / `.wstETHImpl`; `addresses.token` |
+| L2 `wstETH` — `ERC20BridgedPermit` + `TransparentUpgradeableProxy` (+ `ProxyAdmin`) | L2 | Lido core | step 03 | `state/l2.json` `.wstETH` / `.wstETHImpl` / `.wstETHProxyAdmin`; `addresses.token` |
 | `PoolOperationManager` — impl + `ERC1967Proxy` | L1 · L2 | CCIP-wstETH | step 04 `1_Deploy` | `deployed.pool_operation_manager` — **the proxy only**; the implementation address is never saved (`1_Deploy.s.sol:144, 170`) |
 | `SiloedLockReleaseTokenPool` (L1) · `BurnMintTokenPool` (L2) | L1 · L2 | CCIP-wstETH | step 04 `1_Deploy` | `deployed.token_pool` |
 | `PausableAdvancedPoolHooks` | L1 · L2 | CCIP-wstETH | step 04 `1_Deploy` | `deployed.advanced_pool_hooks` |
@@ -919,8 +919,8 @@ the real end-state; the `CcvBridge` harness contracts are that harness's context
 **Token TAR-registration notes (no deploy-step impersonation).** Both tokens self-register into the
 real TAR permissionlessly in step 07: the L1 core wstETH carries a testnet-only `getCCIPAdmin()` hook
 (`lib/core/contracts/0.6.12/WstETH.sol`) ⇒ `registerAdminViaGetCCIPAdmin`; the L2
-`ERC20BridgedPermit` (`components/wsteth-token`, OZ-upgradeable 4.x `AccessControl`, `pragma 0.8.10`, built under
-`FOUNDRY_PROFILE=token` — a separate profile from the CCIP OZ-5.x default) holds `DEFAULT_ADMIN_ROLE` ⇒
+`ERC20BridgedPermit` (`components/wsteth-token`, OZ 5.0.2 upgradeable `AccessControl` with ERC-7201 namespaced storage, `pragma 0.8.26`, built under
+`FOUNDRY_PROFILE=token` — the same OZ editions the CCIP token deployment uses, in a separate profile) holds `DEFAULT_ADMIN_ROLE` ⇒
 `registerAccessControlDefaultAdmin`. A guarded `proposeAdministrator` fallback (fork-only owner
 impersonation) remains in step 07 for a token exposing none of these interfaces, but **neither of ours
 hits it** — the deploy runs impersonation-free on a fork exactly as it would on live. See

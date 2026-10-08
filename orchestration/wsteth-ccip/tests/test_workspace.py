@@ -116,16 +116,25 @@ def test_owned_token_sources_are_snapshotted_and_protected(layout):
     component = workspace.ROOT / 'components/wsteth-token'
     (component / 'contracts').mkdir(parents=True)
     (component / 'contracts/Token.sol').write_text('original token')
+    (component / 'contracts/lib').mkdir()
+    (component / 'contracts/lib/Storage.sol').write_text('owned storage')
     (component / 'out').mkdir()
     (component / 'out/generated.json').write_text('{}')
+    # A pinned submodule inside the component is a dependency, recorded via dependencies.json.
+    (component / 'lib/openzeppelin').mkdir(parents=True)
+    (component / 'lib/openzeppelin/Proxy.sol').write_text('upstream')
     data = workspace.read_json(target / 'target.json')
     data['components'] = ['wsteth-token']
     workspace.write_json(target / 'target.json', data)
     workspace.prepare('example', 'token', 'fork')
     snapshot = runs / 'workspaces/token/inputs/components/wsteth-token'
     assert (snapshot / 'contracts/Token.sol').read_text() == 'original token'
+    assert (snapshot / 'contracts/lib/Storage.sol').read_text() == 'owned storage'
     assert not (snapshot / 'out').exists()
-    (component / 'contracts/Token.sol').write_text('next edition')
+    assert not (snapshot / 'lib').exists()
+    (component / 'lib/openzeppelin/Proxy.sol').write_text('upstream bumped')
+    workspace.active()
+    (component / 'contracts/lib/Storage.sol').write_text('changed storage')
     with pytest.raises(ValueError, match='Live source differs'):
         workspace.active()
     (snapshot / 'contracts/Token.sol').write_text('tampered')
@@ -227,3 +236,176 @@ def test_selected_target_reaches_lint_and_scenarios(layout, monkeypatch):
     assert calls[-1]['env']['WSTETH_TARGET_DIR'] == str(runs / 'workspaces/first/inputs/target')
     workspace.execute(['test-scenarios'])
     assert calls[-1]['env']['WSTETH_TEST_DIR'] == str(target / 'test')
+
+
+def multi_target(target, count):
+    data = workspace.read_json(target / 'target.json')
+    leaves = [{'slug': f'leaf{i}', 'chainId': 5000 + i} for i in range(count)]
+    data['networks'].pop('l2')
+    data['networks']['l2s'] = leaves
+    workspace.write_json(target / 'target.json', data)
+    for network in [data['networks']['l1'], *leaves]:
+        hub = network['slug'] == 'sepolia'
+        workspace.write_json(target / 'config/chains' / (network['slug'] + '.json'), {
+            'chain': {'chain_id': network['chainId'], 'pool_type': 'SiloedLockRelease' if hub else 'BurnMint'},
+            'addresses': {'token': ''},
+            'remote_lanes': [{'remote_chain_name': n['slug'], 'is_siloed': hub}
+                             for n in (leaves if hub else [data['networks']['l1']])],
+        })
+    return leaves
+
+
+@pytest.mark.parametrize('count', [1, 2, 3])
+def test_pipeline_finishes_deployment_everywhere_before_configuration(layout, monkeypatch, count):
+    from types import SimpleNamespace
+    _, _, target = layout
+    leaves = multi_target(target, count)
+    workspace.prepare('example', 'multi', 'fork')
+    calls = []
+    def run(command, **kwargs):
+        calls.append((command[-1], kwargs['env']))
+        return SimpleNamespace(returncode=0)
+    monkeypatch.delenv('L2_CHAIN', raising=False)
+    monkeypatch.setattr(workspace.subprocess, 'run', run)
+    assert workspace.execute(['all']) == 0
+    deployed = [i for i, (r, _) in enumerate(calls) if r == 'ccip-deploy']
+    configured = [i for i, (r, _) in enumerate(calls) if r == 'ccip-configure']
+    assert len(deployed) == len(configured) == count
+    assert max(deployed) < min(configured)
+    assert sum(r == 'l1-core-dg' for r, _ in calls) == 1
+    for recipe in ['ccip-deploy', 'ccip-configure', 'set-pool-gov', 'verify-contracts']:
+        assert [env['WSTETH_SKIP_L1'] for r, env in calls if r == recipe] == ['0'] + ['1'] * (count - 1)
+    assert all(env['WSTETH_SKIP_L1'] == '0' for r, env in calls if r == 'verify-state')
+    assert [calls[i][1]['L2_STATE_FILE'] for i in deployed] == [f"state/{n['slug']}.json" for n in leaves]
+
+
+def test_subset_prunes_run_topology_without_changing_target(layout):
+    operations, _, target = layout
+    multi_target(target, 3)
+    policy = {'schemaVersion': 1, 'chains': {}}
+    for chain in ['sepolia', 'leaf0', 'leaf1', 'leaf2']:
+        remotes = ['leaf0', 'leaf1', 'leaf2'] if chain == 'sepolia' else ['sepolia']
+        policy['chains'][chain] = {'lanes': {r: {} for r in remotes},
+            'localResolver': {'outbound': {r: 'dummy' for r in remotes}},
+            'externalResolvers': {'provider': {'outbound': {r: 'impl' for r in remotes}}}}
+    workspace.write_json(target / 'config/ccv-policy.json', policy)
+    original = workspace.hashes(target)
+    workspace.prepare('example', 'one', 'fork', selected_spokes=['leaf1'])
+    assert workspace.active()[1]['l2Chains'] == ['leaf1']
+    assert workspace.hashes(target) == original
+    assert workspace.read_json(operations / 'config/chains/sepolia.json')['remote_lanes'] == [
+        {'remote_chain_name': 'leaf1', 'is_siloed': True}]
+    assert not (operations / 'config/chains/leaf0.json').exists()
+    policy = workspace.read_json(operations / 'config/ccv-policy.json')
+    assert set(policy['chains']) == {'sepolia', 'leaf1'}
+    assert policy['chains']['sepolia']['externalResolvers']['provider']['outbound'] == {'leaf1': 'impl'}
+    assert policy['chains']['leaf1']['externalResolvers']['provider']['outbound'] == {'sepolia': 'impl'}
+
+
+def test_failure_stops_before_later_chains_or_phases(layout, monkeypatch):
+    from types import SimpleNamespace
+    _, _, target = layout
+    multi_target(target, 2)
+    workspace.prepare('example', 'multi', 'fork')
+    calls = []
+    def run(command, **kwargs):
+        calls.append(command[-1])
+        return SimpleNamespace(returncode=7 if command[-1] == 'ccip-deploy' else 0)
+    monkeypatch.delenv('L2_CHAIN', raising=False)
+    monkeypatch.setattr(workspace.subprocess, 'run', run)
+    assert workspace.execute(['all']) == 7
+    assert calls[-1] == 'ccip-deploy'
+    assert 'ccip-configure' not in calls
+
+
+@pytest.mark.parametrize('recipe', sorted(workspace.HUB_ONCE))
+def test_retry_selected_spoke_preserves_explicit_hub_skip(layout, monkeypatch, recipe):
+    from types import SimpleNamespace
+    _, _, target = layout
+    multi_target(target, 2)
+    workspace.prepare('example', 'retry', 'fork')
+    monkeypatch.setenv('L2_CHAIN', 'leaf1')
+    monkeypatch.setenv('WSTETH_SKIP_L1', '1')
+    calls = []
+    monkeypatch.setattr(workspace.subprocess, 'run', lambda *args, **kwargs:
+                        calls.append(kwargs['env']) or SimpleNamespace(returncode=0))
+    assert workspace.execute([recipe]) == 0
+    assert len(calls) == 1
+    assert calls[0]['L2_CHAIN'] == 'leaf1'
+    assert calls[0]['WSTETH_SKIP_L1'] == '1'
+    monkeypatch.setenv('WSTETH_SKIP_L1', 'yes')
+    with pytest.raises(ValueError, match='must be 0 or 1'):
+        workspace.execute([recipe])
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize('location', ['target', 'src', 'script', 'patches'])
+def test_owned_top_level_library_is_snapshotted_and_checked(layout, location):
+    operations, runs, target = layout
+    live = target if location == 'target' else operations / location
+    (live / 'lib').mkdir()
+    (live / 'lib/helper').write_text('owned source')
+    workspace.prepare('example', 'library', 'fork')
+    relative = 'target' if location == 'target' else 'orchestration/' + location
+    assert (runs / 'workspaces/library/inputs' / relative / 'lib/helper').read_text() == 'owned source'
+    (live / 'lib/helper').write_text('modified')
+    with pytest.raises(ValueError, match='Live source differs'):
+        workspace.active()
+
+
+@pytest.mark.parametrize('record_has_policy', [False, True])
+@pytest.mark.parametrize('state_layout', ['nested', 'siblings'])
+def test_import_does_not_inherit_target_policy(layout, record_has_policy, state_layout):
+    import shutil
+    operations, runs, target = layout
+    # Deliberately different intent: never apply this target policy to an old record.
+    (target / 'config/ccv-policy.json').write_text('{"chains":{"wrong":{}}}')
+    record = runs / 'history/old/chains'
+    record.mkdir(parents=True)
+    for chain in ['sepolia', 'example']:
+        shutil.copy2(target / f'config/chains/{chain}.json', record / f'{chain}.json')
+    state = record / 'state' if state_layout == 'nested' else record.parent / 'state'
+    state.mkdir()
+    (state / 'l2.json').write_text('{"l2Chain":"example"}')
+    expected = {'chains': {}}
+    if record_has_policy:
+        workspace.write_json(record / 'ccv-policy.json', expected)
+    workspace.prepare('example', 'import', 'fork', str(record.relative_to(workspace.ROOT)))
+    policy = operations / 'config/ccv-policy.json'
+    if record_has_policy:
+        assert workspace.read_json(policy) == expected
+    else:
+        assert not policy.exists()
+    assert workspace.read_json(operations / 'state/example.json') == {'l2Chain': 'example'}
+    assert (runs / 'workspaces/import/inputs/record/state/l2.json').exists()
+
+
+def test_configure_retry_runs_only_failed_spoke(layout, monkeypatch):
+    import subprocess
+    operations, _, target = layout
+    multi_target(target, 2)
+    script = Path(__file__).parents[1] / 'script/05_ccip_configure.sh'
+    (operations / 'script/05_ccip_configure.sh').write_text(script.read_text())
+    (operations / 'script/_common.sh').write_text('''
+L1_RPC=l1
+L2_RPC=l2
+run_ccip_script() {
+    echo "$1" >> configured-attempts
+    if [ "$1" = leaf1 ] && [ ! -f interrupted ]; then touch interrupted; return 42; fi
+    [ ! -f "configured-$1" ] || return 43
+    touch "configured-$1"
+}
+''')
+    workspace.prepare('example', 'configure-retry', 'fork')
+    real_run = subprocess.run
+    def run_worker(command, **kwargs):
+        return real_run(['bash', str(operations / 'script/05_ccip_configure.sh')], **kwargs)
+    monkeypatch.setattr(workspace.subprocess, 'run', run_worker)
+    monkeypatch.delenv('L2_CHAIN', raising=False)
+    monkeypatch.delenv('WSTETH_SKIP_L1', raising=False)
+    monkeypatch.setenv('DEPLOYER_PRIVATE_KEY', 'fake')
+    assert workspace.execute(['ccip-configure']) == 42
+    monkeypatch.setenv('L2_CHAIN', 'leaf1')
+    monkeypatch.setenv('WSTETH_SKIP_L1', '1')
+    assert workspace.execute(['ccip-configure']) == 0
+    assert (operations / 'configured-attempts').read_text().splitlines() == ['sepolia', 'leaf0', 'leaf1', 'leaf1']

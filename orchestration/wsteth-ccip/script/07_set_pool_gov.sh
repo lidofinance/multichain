@@ -16,7 +16,8 @@
 #      then grants POM DEFAULT_ADMIN_ROLE -> Lido DAO (Agent on L1 / OpExec on L2) and revokes
 #      the deployer.
 #   D) L2 only: complete the token end-state (PLAN §4) — grant token DEFAULT_ADMIN_ROLE ->
-#      OpExec, hand the OssifiableProxy admin -> OpExec, revoke the deployer's token admin.
+#      OpExec and revoke the deployer's token admin. The proxy upgrade right needs no handover:
+#      step 03 made OpExec the owner of the token's ProxyAdmin at deployment; D re-asserts it.
 #
 # Idempotent: each part checks current on-chain state and skips work already done.
 # Prereq: steps 01–05 ran on both chains (pools deployed + configured, ownership -> POM).
@@ -185,30 +186,35 @@ propose_tar_admin() {
 }
 echo ""
 echo "▸ B) seat deployer as pending TAR admin (both chains)"
-propose_tar_admin sepolia       "${L1_TAR}" "${L1_RMO}" "${L1_TOKEN}" "${L1_RPC}"
+if [ "${WSTETH_SKIP_L1:-0}" != 1 ]; then
+    propose_tar_admin sepolia "${L1_TAR}" "${L1_RMO}" "${L1_TOKEN}" "${L1_RPC}"
+fi
 propose_tar_admin "${L2_CHAIN}" "${L2_TAR}" "${L2_RMO}" "${L2_TOKEN}" "${L2_RPC}" true
 
 # The fresh L1 token uses the testnet core patch's current-CCIP-admin setter,
 # rather than AccessControl.DEFAULT_ADMIN_ROLE. Complete that explicit integration
 # independently of whether TAR was already proposed, registered or handed over.
-echo ""
-echo "▸ transfer fresh L1 token CCIP administration to the DAO Agent"
-if ! L1_CCIP_ADMIN=$(cast call "${L1_TOKEN}" 'getCCIPAdmin()(address)' --rpc-url "${L1_RPC}"); then
-    echo "✗ cannot read fresh L1 token CCIP admin; check the core patch and RPC"
-    exit 1
-fi
-if eq "${L1_CCIP_ADMIN}" "${L1_AGENT}"; then
-    echo "  L1 token CCIP admin already DAO Agent; skip."
-elif eq "${L1_CCIP_ADMIN}" "${DEPLOYER}"; then
-    cast send "${L1_TOKEN}" 'setCCIPAdmin(address)' "${L1_AGENT}" \
-        --private-key "${DEPLOYER_PRIVATE_KEY}" --rpc-url "${L1_RPC}" >/dev/null
-    L1_CCIP_ADMIN=$(cast call "${L1_TOKEN}" 'getCCIPAdmin()(address)' --rpc-url "${L1_RPC}")
-    eq "${L1_CCIP_ADMIN}" "${L1_AGENT}" \
-        || { echo "✗ L1 token CCIP admin handover did not reach the DAO Agent"; exit 1; }
-    echo "  L1 token CCIP admin -> DAO Agent."
-else
-    echo "✗ L1 token CCIP admin is neither deployer nor DAO Agent: ${L1_CCIP_ADMIN}"
-    exit 1
+if [ "${WSTETH_SKIP_L1:-0}" != 1 ]; then
+    echo ""
+    echo "▸ transfer fresh L1 token CCIP administration to the DAO Agent"
+    if ! L1_CCIP_ADMIN=$(cast call "${L1_TOKEN}" 'getCCIPAdmin()(address)' --rpc-url "${L1_RPC}"); then
+        echo "✗ cannot read fresh L1 token CCIP admin; check the core patch and RPC"
+        exit 1
+    fi
+    if eq "${L1_CCIP_ADMIN}" "${L1_AGENT}"; then
+        echo "  L1 token CCIP admin already DAO Agent; skip."
+    elif eq "${L1_CCIP_ADMIN}" "${DEPLOYER}"; then
+        cast send "${L1_TOKEN}" 'setCCIPAdmin(address)' "${L1_AGENT}" \
+            --private-key "${DEPLOYER_PRIVATE_KEY}" --rpc-url "${L1_RPC}" >/dev/null
+        L1_CCIP_ADMIN=$(cast call "${L1_TOKEN}" 'getCCIPAdmin()(address)' --rpc-url "${L1_RPC}")
+        eq "${L1_CCIP_ADMIN}" "${L1_AGENT}" \
+            || { echo "✗ L1 token CCIP admin handover did not reach the DAO Agent"; exit 1; }
+        echo "  L1 token CCIP admin -> DAO Agent."
+    else
+        echo "✗ L1 token CCIP admin is neither deployer nor DAO Agent: ${L1_CCIP_ADMIN}"
+        exit 1
+    fi
+
 fi
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -223,30 +229,37 @@ run_set_pool() {
 }
 echo ""
 echo "▸ C) set pool + transfer POM admin to DAO (both chains)"
-run_set_pool sepolia       "${L1_RPC}"
+if [ "${WSTETH_SKIP_L1:-0}" != 1 ]; then
+    run_set_pool sepolia "${L1_RPC}"
+fi
 run_set_pool "${L2_CHAIN}" "${L2_RPC}"
 
 # ═══════════════════════════════════════════════════════════════════════════
-# D) L2 token end-state (PLAN §4): DEFAULT_ADMIN_ROLE + proxy admin -> OpExec, revoke deployer
+# D) L2 token end-state (PLAN §4): DEFAULT_ADMIN_ROLE -> OpExec, revoke deployer; upgrade right at OpExec
 # ═══════════════════════════════════════════════════════════════════════════
 echo ""
-echo "▸ D) hand L2 token admin + proxy admin to OpExec ${L2_OPEXEC}, revoke deployer"
+echo "▸ D) hand L2 token admin to OpExec ${L2_OPEXEC}, revoke deployer; upgrade right must rest with OpExec"
 DEFAULT_ADMIN_ROLE="0x0000000000000000000000000000000000000000000000000000000000000000"
 
 # grant DEFAULT_ADMIN_ROLE -> OpExec (before revoking deployer, to avoid lock-out)
 grant_role "${L2_TOKEN}" "${DEFAULT_ADMIN_ROLE}" "${L2_OPEXEC}" "token DEFAULT_ADMIN_ROLE -> OpExec" "${L2_RPC}"
 
-# OssifiableProxy admin -> OpExec
-CUR_PROXY_ADMIN=$(cast call "${L2_TOKEN}" "proxy__getAdmin()(address)" --rpc-url "${L2_RPC}")
-if eq "${CUR_PROXY_ADMIN}" "${L2_OPEXEC}"; then
-    echo "  proxy admin already OpExec; skip."
-elif eq "${CUR_PROXY_ADMIN}" "${DEPLOYER}"; then
+# The upgrade right (script/_proxy.sh verifies the record-selected kind and EIP-1967 admin slot):
+#   transparent — step 03 made OpExec the ProxyAdmin's initialOwner; nothing to transfer, assert it so a
+#                 token deployed another way cannot pass this step.
+#   legacy      — an OssifiableProxy from a run before 2026-10-08 still in flight: the deployer holds the
+#                 admin until this step hands it to OpExec (the pre-2026-10-08 handover, kept as the
+#                 migration path). Any other admin is a deployment this pipeline did not make.
+PINNED_PROXY_ADMIN="$(jq -r '.wstETHProxyAdmin // empty' "${L2_STATE_FILE}")"
+PROXY_INFO="$(proxy_admin_kind "${L2_TOKEN}" "${L2_RPC}" "${PINNED_PROXY_ADMIN}")"
+if legacy_pending_handover "${PROXY_INFO}" "${PINNED_PROXY_ADMIN}" "${DEPLOYER}"; then
     cast send "${L2_TOKEN}" "proxy__changeAdmin(address)" "${L2_OPEXEC}" \
         --private-key "${DEPLOYER_PRIVATE_KEY}" --rpc-url "${L2_RPC}" >/dev/null
-    echo "  proxy admin -> OpExec."
-else
-    echo "  ⚠ proxy admin is ${CUR_PROXY_ADMIN} (not deployer/OpExec); leaving as-is."
+    echo "  legacy OssifiableProxy admin -> OpExec."
+    # A mutation invalidates the earlier observation; assert the post-transaction owner.
+    PROXY_INFO="$(proxy_admin_kind "${L2_TOKEN}" "${L2_RPC}" "${PINNED_PROXY_ADMIN}")"
 fi
+assert_proxy_admin_owner "${L2_TOKEN}" "${L2_RPC}" "${L2_OPEXEC}" "L2 wstETH" "${PINNED_PROXY_ADMIN}" "${PROXY_INFO}"
 
 # revoke deployer's token DEFAULT_ADMIN_ROLE (last)
 revoke_role "${L2_TOKEN}" "${DEFAULT_ADMIN_ROLE}" "${DEPLOYER}" "deployer token DEFAULT_ADMIN_ROLE" "${L2_RPC}"

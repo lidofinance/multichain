@@ -37,8 +37,12 @@ if [ "${L2_CHAIN}" = "mantle_sepolia" ]; then
 else
     INPUTS="${ROOT}/config/state-mate/wsteth.inputs.${L2_CHAIN}.yaml"
 fi
-L1_CFG="${ROOT}/${RECORD_DIR}/sepolia.json"
-L2_CFG="${ROOT}/${RECORD_DIR}/${L2_CHAIN}.json"
+case "${RECORD_DIR}" in
+    /*) RECORD_PATH="${RECORD_DIR}" ;;
+    *) RECORD_PATH="${ROOT}/${RECORD_DIR}" ;;
+esac
+L1_CFG="${RECORD_PATH}/sepolia.json"
+L2_CFG="${RECORD_PATH}/${L2_CHAIN}.json"
 
 [ -d "${SM_DIR}/node_modules" ] || { echo "✗ state-mate deps not installed at ${SM_DIR} (run: just init-thirdparty)"; exit 1; }
 [ -f "${CONFIG}" ] || { echo "✗ missing wiring config ${CONFIG}"; exit 1; }
@@ -55,7 +59,7 @@ L1_POOL=$(jq_addr   '.deployed.token_pool'                 "${L1_CFG}")
 L1_HOOKS=$(jq_addr  '.deployed.advanced_pool_hooks'        "${L1_CFG}")
 L1_POM=$(jq_addr    '.deployed.pool_operation_manager'     "${L1_CFG}")
 L1_TAR=$(jq_addr    '.ccip.token_admin_registry'          "${L1_CFG}")
-L1_LOCKBOX=$(jq_addr '.deployed.lock_boxes[0].lock_box'   "${L1_CFG}")
+L1_LOCKBOX=$(jq -er --arg lane "${L2_CHAIN}" '[.deployed.lock_boxes[] | select(.remote_chain_name == $lane)] | if length == 1 then .[0].lock_box else error("missing or duplicate lockbox") end' "${L1_CFG}")
 L1_ROUTER=$(jq_addr '.ccip.router'                         "${L1_CFG}")
 L1_RESOLVER=$(jq_addr '.ccv.verifier_resolver'             "${L1_CFG}")
 L1_VERIFIER=$(jq_addr '.ccv.message_id_verifier'           "${L1_CFG}")
@@ -79,17 +83,23 @@ L2_OPEXEC=$(jq_addr '.governance_addresses.lido_dao_agent' "${L2_CFG}")
 # whatever the latest run happens to have left in ./state.
 # State travels with the record (`just snapshot-record` copies it to $RECORD_DIR/state).
 # The in-progress deploy uses ./state next to the default templates.
-if [ -f "${ROOT}/${RECORD_DIR}/state/l2.json" ]; then
-    STATE_DIR="${ROOT}/${RECORD_DIR}/state"
-elif [ -f "${ROOT}/state/l2.json" ]; then
-    STATE_DIR="${ROOT}/state"
-else
-    echo "✗ missing state/l2.json next to ${RECORD_DIR} or in ./state — needed for the L2 token implementation"
-    exit 1
-fi
-L2_STATE="${STATE_DIR}/l2.json"
-[ -f "${L2_STATE}" ] || { echo "✗ missing ${L2_STATE} — needed for the L2 token implementation (.wstETHImpl); run step 03, or point RECORD_DIR at an archive that carries state/l2.json"; exit 1; }
+. "${HERE}/_record.sh"
+resolve_record_state
 L2_WSTETH_IMPL=$(jq_addr '.wstETHImpl' "${L2_STATE}")
+# What the token proxy's EIP-1967 admin slot must hold (the wiring's `proxyAdmin:` anchor):
+#   - a record from 2026-10-08 on carries .wstETHProxyAdmin — the ProxyAdmin contract the OZ 5.3.0
+#     TransparentUpgradeableProxy constructor created in step 03 (owned by OpExec);
+#   - an earlier record (OssifiableProxy, e.g. the live Mantle Sepolia token) has no such field: that
+#     proxy keeps its admin — OpExec itself after step 07 — directly in the slot.
+# The renderer adds proxyAdminOwner for transparent records, so both ownership hops
+# are checked by state-mate and retained in its archived log.
+if jq -e '.wstETHProxyAdmin' "${L2_STATE}" >/dev/null 2>&1; then
+    L2_WSTETH_PROXY_ADMIN=$(jq_addr '.wstETHProxyAdmin' "${L2_STATE}")
+    L2_WSTETH_PROXY_KIND="transparent"
+else
+    L2_WSTETH_PROXY_ADMIN="${L2_OPEXEC}"
+    L2_WSTETH_PROXY_KIND="legacy"
+fi
 # Implementation identities are pinned by step 04 from its CREATE transaction records.
 for state_file in "${STATE_DIR}/l1.json" "${L2_STATE}"; do
     if [ ! -f "${state_file}" ] || ! jq -e '[.poolOperationManager, .poolOperationManagerImplementation] | all(.[]; type == "string" and test("^0x[0-9a-fA-F]{40}$") and test("^0x0{40}$") == false)' "${state_file}" >/dev/null 2>&1; then
@@ -212,7 +222,23 @@ deployed:
     - &l2OptimismBridgeExecutor "${L2_OPEXEC}"
     # The implementation the L2 token proxy currently points at, from state/l2.json (see above).
     - &l2WstETHImpl "${L2_WSTETH_IMPL}"
+    # What the token proxy's EIP-1967 admin slot holds (see above): the ProxyAdmin from state/l2.json
+    # for a transparent proxy (${L2_WSTETH_PROXY_KIND} here), OpExec itself for a legacy OssifiableProxy.
+    - &l2WstETHProxyAdmin "${L2_WSTETH_PROXY_ADMIN}"
 EOF
+
+# Generate whole-hub expectations plus this spoke's complete matrix from declared policy.
+# Archives carry their own policy; never borrow today's intent for an old record.
+resolve_record_policy
+if [ ! -f "${POLICY}" ]; then
+    POLICY="${ROOT}/config/state-mate/ccv-policy.legacy.${L2_CHAIN}.json"
+    node "${HERE}/legacy-ccv-policy.cjs" "${RECORD_PATH}" "${L2_CHAIN}" "${L2_STATE}" "${POLICY}"
+    echo "▸ Legacy record: asserting the historical single-lane dummy policy (not inferred from RPC)."
+fi
+GENERATED_CONFIG="${ROOT}/config/state-mate/wsteth.${L2_CHAIN}.yaml"
+STATE_MATE_DIR="${SM_DIR}" node "${HERE}/render-multichain-state.cjs" \
+    "${CONFIG}" "${RECORD_PATH}" "${POLICY}" "${L2_CHAIN}" "${GENERATED_CONFIG}" "${L2_STATE}"
+CONFIG="${GENERATED_CONFIG}"
 
 # ── 4. Run state-mate: wiring + generated address book + committed inputs. ────────────────────
 # Output is tee'd to state/state-mate.log so the run itself (not a number retyped into a document)
@@ -220,7 +246,7 @@ EOF
 # temp file so that a FAILED run — which aborts before the archive step, since pipefail is set —
 # still leaves its output for inspection.
 mkdir -p "${ROOT}/state"
-RUN_LOG="${ROOT}/state/state-mate.log"
+RUN_LOG="${ROOT}/state/state-mate.${L2_CHAIN}.log"
 echo "▸ state-mate diff against L1 ${RPC_SEPOLIA} / L2 ${L2_RPC} (record: ${RECORD_DIR})"
 {
     echo "# state-mate run — $(date +%Y-%m-%dT%H:%M:%S%z)"
@@ -232,6 +258,8 @@ echo "▸ state-mate diff against L1 ${RPC_SEPOLIA} / L2 ${L2_RPC} (record: ${RE
     echo "# config:     $(basename "${CONFIG}") + $(basename "${DEPLOYED}") + $(basename "${INPUTS}")"
     echo
 } > "${RUN_LOG}"
+STATE_MATE_DIR="${SM_DIR}" node "${HERE}/verify-state-tables.cjs" \
+    "${CONFIG}.tables.json" "${RPC_SEPOLIA}" "${L2_RPC}" 2>&1 | tee -a "${RUN_LOG}"
 STATE_MATE_DIR="${SM_DIR}" node "${HERE}/build-state-mate-abis.cjs" "${CONFIG}" "${DEPLOYED}" "${INPUTS}" | tee -a "${RUN_LOG}"
 ( cd "${SM_DIR}" && corepack yarn start "${CONFIG}" --deployed "${DEPLOYED}" --inputs "${INPUTS}" ) \
     2>&1 | tee -a "${RUN_LOG}"
@@ -276,23 +304,31 @@ ARCHIVE="${ROOT}/deployments/${DEPLOY_TYPE}/sepolia-${L2_CHAIN}/$(date +%Y-%m-%d
 [ ! -e "${ARCHIVE}" ] || { echo "archive already exists: ${ARCHIVE}" >&2; exit 1; }
 mkdir -p "${ARCHIVE}/state-mate" "${ARCHIVE}/chains" "${ARCHIVE}/state" "${ARCHIVE}/run"
 cp "${CONFIG}" "${DEPLOYED}" "${INPUTS}" "${ROOT}/config/state-mate/abis.json" "${ROOT}/config/state-mate/abis.json.gz" "${ARCHIVE}/state-mate/"
+cp "${CONFIG}.tables.json" "${ARCHIVE}/state-mate/"
 # Claim A's evidence carrier (A.10): the run itself, not a figure quoted in a document.
 cp "${RUN_LOG}" "${ARCHIVE}/run/state-mate.log"
 # Claim B's carrier, when `just test-scenarios` has already run on this substrate. Inside
 # `just all` runs test-scenarios immediately before verify-state, so this archives the current
 # deployment's scenario carrier. Standalone verify-state may still pick up an older log; its own
 # header carries the date and commit, so check those before relying on it.
-[ -f "${ROOT}/state/forge-scenarios.log" ] && cp "${ROOT}/state/forge-scenarios.log" "${ARCHIVE}/run/" || true
-cp "${L1_CFG}" "${L2_CFG}" "${ARCHIVE}/chains/"
+[ -f "${ROOT}/state/forge-scenarios.${L2_CHAIN}.log" ] && cp "${ROOT}/state/forge-scenarios.${L2_CHAIN}.log" "${ARCHIVE}/run/" || true
+cp "${RECORD_PATH}/"*.json "${ARCHIVE}/chains/"
+cp "${POLICY}" "${ARCHIVE}/chains/ccv-policy.json"
 # The selector/governance config the deploy actually ran with. Without it the record cannot say
 # WHICH custom_delay_selectors produced the POM state it archives — the same label-vs-binding gap
 # this file's override exists to close, recurring one level up. See config/README.md.
 # Both variants: the L1 hub runs with default_config.json, every spoke with the non_l1 one
 # (0xa6cc6ef9 not Blocked there). Archiving only the first would misdescribe the L2 POM.
 cp "${ROOT}/config/default_config.json" "${ROOT}/config/default_config.non_l1.json" "${ARCHIVE}/"
-for f in l1.json l2.json l1.deployed.json; do
-    [ -f "${ROOT}/state/${f}" ] && cp "${ROOT}/state/${f}" "${ARCHIVE}/state/" || true
+STATE_FILES=(l1.json l1.deployed.json)
+for chain in ${WSTETH_L2_CHAINS:-${L2_CHAIN}}; do STATE_FILES+=("${chain}.json"); done
+# Legacy archives can still carry a single l2.json.
+STATE_FILES+=("${L2_STATE_NAME}")
+for f in "${STATE_FILES[@]}"; do
+    [ -f "${STATE_DIR}/${f}" ] && cp "${STATE_DIR}/${f}" "${ARCHIVE}/state/" || true
 done
+# State has one authoritative copy: RECORD_DIR=<archive>/chains and --record imports
+# resolve the sibling ../state directory.
 cp "${ROOT}/.active-run/run.json" "${ARCHIVE}/migration-run.json"
 # Non-secret deploy parameters only — never copy .env (holds DEPLOYER_PRIVATE_KEY).
 cat > "${ARCHIVE}/parameters.env" <<EOF

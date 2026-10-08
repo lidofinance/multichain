@@ -176,7 +176,7 @@ anvil keys.
 | `VersionedVerifierResolver` | the CCV resolver | both chains |
 | `TokenAdminRegistry` | CCIP registry — Chainlink infra; we hold only our token's entry | both chains |
 | `ERC20BridgedPermit` | the L2 wstETH implementation | L2, step 03 |
-| `OssifiableProxy` | the proxy in front of it | L2, step 03 |
+| `TransparentUpgradeableProxy` + `ProxyAdmin` (OZ 5.3.0) | the proxy in front of it and its admin contract | L2, step 03 |
 | `Router` | CCIP router — Chainlink infra | both chains |
 | `RMN` / `RMNProxy` | CCIP Risk Management Network — Chainlink infra; `i_rmnProxy` is immutable in our pool | both chains |
 | `OffRamp` | CCIP 2.0 OffRamp — Chainlink infra; where the CCV quorum is enforced | both chains |

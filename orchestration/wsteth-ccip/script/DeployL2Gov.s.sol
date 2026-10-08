@@ -40,7 +40,7 @@ contract DeployL2Gov is Script {
         vm.startBroadcast(pk);
         // Compile the upstream 0.8.10 contract separately; CREATE still broadcasts from the deployer.
         address opExec = deployCode(
-            "out-token/OptimismBridgeExecutor.sol/OptimismBridgeExecutor.json",
+            "out-govexec/OptimismBridgeExecutor.sol/OptimismBridgeExecutor.json",
             abi.encode(L2_MESSENGER, agent, delay, gracePeriod, minimumDelay, maximumDelay, guardian)
         );
         vm.stopBroadcast();

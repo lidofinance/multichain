@@ -1,7 +1,6 @@
 """Regression checks for dashboard source projection; no network or Git writes."""
 import copy
 import hashlib
-import base64
 import io
 import json
 from pathlib import Path
@@ -13,11 +12,9 @@ import tempfile
 import contextlib
 import unittest
 from unittest.mock import patch
-from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit, parse_qs, unquote
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from build_dashboard import ROOT, GitHubSource, LocalSource, build, ledger_networks, ldo_metadata, steth_metadata, read_upstream, source_text, main, ledger_source
+from build_dashboard import ROOT, EvidenceHTML, build, ledger_networks, ldo_metadata, network_types_metadata, steth_metadata, testnet_metadata, main, ledger_source
 
 
 def addr(n):
@@ -30,6 +27,7 @@ class DashboardBuildTests(unittest.TestCase):
         self.metadata = json.loads((ROOT / 'components/dashboard/config/dashboard-networks.json').read_text())
         self.ldo = json.loads((ROOT / 'components/dashboard/config/ldo-networks.json').read_text())
         self.steth = json.loads((ROOT / 'components/dashboard/config/steth-networks.json').read_text())
+        self.types = json.loads((ROOT / 'components/dashboard/config/network-types.json').read_text())
 
     def test_steth_projects_ledger_tokens_and_sourced_rate_oracles(self):
         data = steth_metadata(self.ledger, self.steth)
@@ -61,35 +59,6 @@ class DashboardBuildTests(unittest.TestCase):
         self.assertEqual(row['bridge'], 'Bridge not classified')
         self.assertIsNone(row['oracle'])
 
-    def test_explicit_reused_build_is_reproducible_and_does_not_fetch_upstream(self):
-        saved = ROOT / 'docs/upstream/dashboard-build.json'
-        with tempfile.TemporaryDirectory() as tmp, patch('build_dashboard.GitHubSource') as remote:
-            first, second = Path(tmp) / 'first', Path(tmp) / 'second'
-            first.mkdir()
-            (first / 'roles.html').write_text('original companion evidence')
-            data = build(ROOT, first, reuse_build=saved)
-            again = build(ROOT, second, reuse_build=saved)
-            remote.assert_not_called()
-            self.assertEqual(data, again)
-            for name in ('index.html', 'dashboard-build.json', 'upstream/dashboard-build.json'):
-                self.assertEqual((first / name).read_bytes(), (second / name).read_bytes())
-            self.assertEqual((first / 'roles.html').read_text(), 'original companion evidence')
-            self.assertFalse((second / 'ccv.html').exists())
-            self.assertEqual(data['sources']['upstreamMode'], 'reused-build')
-            self.assertIn('REUSED BUILD DATA', (first / 'index.html').read_text())
-            self.assertEqual(data['steth'], steth_metadata(self.ledger, self.steth))
-            self.assertNotIn('ledger', data)
-            with self.assertRaisesRegex(ValueError, 'mutually exclusive'):
-                build(ROOT, second, upstream_path=Path(tmp), reuse_build=saved)
-            bad = json.loads(saved.read_text())
-            bad['live']['record'] = 'tampered'
-            corrupt = Path(tmp) / 'corrupt.json'
-            corrupt.write_text(json.dumps(bad))
-            before = (first / 'index.html').read_bytes()
-            with self.assertRaisesRegex(ValueError, 'identity'):
-                build(ROOT, first, reuse_build=corrupt)
-            self.assertEqual((first / 'index.html').read_bytes(), before)
-
     def test_ldo_catalogue_rejects_duplicate_tokens_and_invalid_sources_or_scales(self):
         self.assertEqual(len(ldo_metadata(self.ldo)['networks']), 6)
         for field, value in [('token', addr(0)), ('chainId', 1), ('chainId', True),
@@ -98,9 +67,76 @@ class DashboardBuildTests(unittest.TestCase):
             metadata['networks'][0][field] = value
             with self.assertRaises(ValueError):
                 ldo_metadata(metadata)
+        for day in ('2026-02-31', '2026-13-01'):
+            metadata = copy.deepcopy(self.ldo)
+            metadata['takenAt'] = day
+            with self.assertRaisesRegex(ValueError, 'Invalid LDO metadata date'):
+                ldo_metadata(metadata)
         self.ldo['networks'].append(copy.deepcopy(self.ldo['networks'][0]))
         with self.assertRaisesRegex(ValueError, 'Duplicate LDO'):
             ldo_metadata(self.ldo)
+
+    def test_network_types_classify_every_configured_mainnet_network(self):
+        types = {row['chainId']: row['type'] for row in network_types_metadata(self.types)['networks']}
+        configured = ({row['chainId'] for row in ledger_networks(self.ledger, self.metadata)} |
+                      {row['chainId'] for row in steth_metadata(self.ledger, self.steth)['networks']} |
+                      {row['chainId'] for row in ldo_metadata(self.ldo)['networks']})
+        self.assertEqual(configured - set(types), set())
+        self.assertEqual(types[42161], 'L2')
+        self.assertEqual(types[56], 'alt-L1')
+        # A catalogue name must agree with the configured name, so a mistyped chain ID shows up here.
+        names = {}
+        for row in (ledger_networks(self.ledger, self.metadata) + steth_metadata(self.ledger, self.steth)['networks'] +
+                    ldo_metadata(self.ldo)['networks']):
+            names.setdefault(row['chainId'], set()).add(row['name'])
+        for row in self.types['networks']:
+            if row['chainId'] in names:
+                self.assertIn(row['name'], names[row['chainId']], row['chainId'])
+
+    def test_network_types_reject_duplicates_unknown_labels_and_unsafe_sources(self):
+        l2, alt = (next(i for i, r in enumerate(self.types['networks']) if r['type'] == t) for t in ('L2', 'alt-L1'))
+        for row, field, value in [(l2, 'chainId', 1), (l2, 'chainId', True), (l2, 'type', 'L3'), (l2, 'type', ['L2']),
+                                  (l2, 'name', ''), (l2, 'name', 5), (l2, 'source', 'javascript:alert(1)'), (l2, 'source', 5),
+                                  (l2, 'note', 5), (l2, 'note', {}), (alt, 'qualifier', ''), (alt, 'qualifier', 5),
+                                  (l2, 'stage', 'Stage 1'), (l2, 'qualifier', 'Stage 2'),
+                                  (l2, 'source', 'https://example.com/x'), (l2, 'source', 'https://l2beat.com.example/x'),
+                                  (l2, 'source', 'https://l2beat.com/'), (l2, 'source', 'https://l2beat.com/scaling/summary'),
+                                  (l2, 'source', 'https://l2beat.com:8443/scaling/projects/base'),
+                                  (l2, 'source', 'https://l2beat.com:443/scaling/projects/base'),
+                                  (l2, 'source', 'https://x@l2beat.com/layer2s/projects/base'),
+                                  (l2, 'source', 'https://:secret@l2beat.com/layer2s/projects/base'),
+                                  (l2, 'source', 'https://l2beat.com/scaling/projects/base?stage=2'),
+                                  (l2, 'source', 'https://l2beat.com/scaling/projects/base#Stage-2'),
+                                  (l2, 'source', 'https://l2beat.com/scaling/projects/'), (alt, 'note', 'Own PoS validator set.'),
+                                  (l2, 'category', 'Sidechain'), (l2, 'category', ['Other']), (l2, 'category', {}),
+                                  (l2, 'archived', 'May 2026'), (l2, 'archived', '2026-02-30'), (l2, 'archived', 20260527),
+                                  (alt, 'category', 'Other'), (alt, 'archived', '2026-05-27')]:
+            metadata = copy.deepcopy(self.types)
+            metadata['networks'][row][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                network_types_metadata(metadata)
+        metadata = copy.deepcopy(self.types)
+        metadata['networks'][l2]['source'] = 'https://l2beat.com/scaling/projects/arbitrum'
+        network_types_metadata(metadata)  # L2BEAT's current project path is accepted beside /layer2s/.
+        for row, field in [(l2, 'chainId'), (l2, 'name'), (l2, 'source'), (l2, 'category')]:
+            metadata = copy.deepcopy(self.types)
+            del metadata['networks'][row][field]
+            with self.subTest(missing=field), self.assertRaises(ValueError):
+                network_types_metadata(metadata)
+        for mutate in [lambda m: m['types'].update({'L2': 5}), lambda m: m.update(networks={}),
+                       lambda m: m.update(takenAt=20261007), lambda m: m.update(takenAt='2026-99-99'),
+                       lambda m: m.update(takenAt='2026-02-31'), lambda m: m.pop('takenAt')]:
+            metadata = copy.deepcopy(self.types)
+            mutate(metadata)
+            with self.subTest(mutate=mutate), self.assertRaises(ValueError):
+                network_types_metadata(metadata)
+        metadata = copy.deepcopy(self.types)
+        metadata['types']['sidechain'] = 'not a supported label'
+        with self.assertRaisesRegex(ValueError, 'exactly L2 and alt-L1'):
+            network_types_metadata(metadata)
+        self.types['networks'].append(copy.deepcopy(self.types['networks'][0]))
+        with self.assertRaisesRegex(ValueError, 'Duplicate network type'):
+            network_types_metadata(self.types)
 
     def test_ldo_prices_require_declared_pairs_and_positive_heartbeat(self):
         self.ldo['priceFeeds'][0]['maxAgeSeconds'] = 0
@@ -111,23 +147,17 @@ class DashboardBuildTests(unittest.TestCase):
             ldo_metadata(self.ldo)
 
     def test_ldo_catalogue_changes_invalidate_build_identity(self):
-        self.upstream()
         with tempfile.TemporaryDirectory() as tmp, \
                 patch('build_dashboard.subprocess.check_output', side_effect=[b'c' * 40, (ROOT / 'ledger.json').read_bytes()] * 2):
             root = Path(tmp) / 'repo'
             shutil.copytree(ROOT / 'components/dashboard', root / 'components/dashboard')
             shutil.copyfile(ROOT / 'ledger.json', root / 'ledger.json')
-            local = Path(tmp) / 'upstream'
-            for relative, text in self.files.items():
-                path = local / relative
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(text)
             output = Path(tmp) / 'site'
-            before = build(root, output, upstream_path=local)
+            before = build(root, output)
             metadata = root / 'components/dashboard/config/ldo-networks.json'
             self.ldo['networks'][0]['token'] = addr(777)
             metadata.write_text(json.dumps(self.ldo))
-            after = build(root, output, upstream_path=local)
+            after = build(root, output)
             self.assertNotEqual(before['identity'], after['identity'])
             self.assertNotEqual(before['sources']['ldoMetadataSha256'], after['sources']['ldoMetadataSha256'])
             self.assertEqual(after['ldo']['networks'][0]['token'], addr(777))
@@ -164,13 +194,13 @@ class DashboardBuildTests(unittest.TestCase):
     def test_preview_serves_selected_output_directory(self):
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / 'custom site'
-            result = {'networks': [], 'sources': {'upstreamCommit': None, 'upstreamMode': 'local'}, 'identity': 'test'}
+            result = {'networks': [], 'live': {'deployedAt': '2026-09-15'}, 'identity': 'test'}
             with patch('sys.argv', ['build_dashboard.py', '--serve', '--output', str(output)]), \
                     patch('build_dashboard.build', return_value=result) as builder, \
                     patch('build_dashboard.ThreadingHTTPServer') as server, \
                     contextlib.redirect_stdout(io.StringIO()):
                 main()
-            self.assertEqual(builder.call_args.args, (ROOT, output, None))
+            self.assertEqual(builder.call_args.args, (ROOT, output))
             bind, handler = server.call_args.args
             self.assertEqual(bind, ('127.0.0.1', 8000))
             self.assertEqual(handler.keywords['directory'], str(output.resolve()))
@@ -202,193 +232,228 @@ class DashboardBuildTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Expected one deployed'):
             ledger_networks(self.ledger, self.metadata)
 
-    def upstream(self):
-        record = 'config/chains.live-mantle-2026-09-15'
-        self.sha = 'a' * 40
-        self.requests = []
-        self.files = {}
-        self.files['docs/CURRENT-DEPLOYMENT.md'] = ('''# Current deployment
-[record](../config/chains.live-mantle-2026-09-15/)
-## Evidence and limits
-New evidence; no live delivery claim.
-## Current POM permissions
-| Role | Holder |
-| --- | --- |
-| ADMIN | Agent |
-### Queue rules
-The delay is **3 days**.
-## CCV configuration
-One resolver; no delivery claim.
-''')
-        self.files['docs/deployment-2026-09-15.md'] = 'Dated report'
-        for i, name, peer, kind in [(1, 'sepolia', 'mantle_sepolia', 'SiloedLockRelease'), (2, 'mantle_sepolia', 'sepolia', 'BurnMint')]:
-            data = dict(chain=dict(chain_id=i, chain_name=name, pool_type=kind),
-                        addresses=dict(token=addr(i * 10)),
-                        deployed=dict(token_pool=addr(i * 10 + 1), pool_operation_manager=addr(i * 10 + 2),
-                                      advanced_pool_hooks=addr(i * 10 + 3), lock_boxes=[]),
-                        ccv=dict(message_id_verifier=addr(i * 10 + 4), verifier_resolver=addr(i * 10 + 5)),
-                        governance_addresses=dict(lido_dao_agent=addr(i * 10 + 6)),
-                        remote_lanes=[dict(remote_chain_name=peer)])
-            self.files[record + '/' + name + '.json'] = json.dumps(data)
-        return record
 
-    def response(self, request, timeout):
-        self.requests.append(request)
-        self.assertEqual(timeout, 30)
-        url = urlsplit(request.full_url)
-        prefix = '/repos/lidofinance/wsteth-ccip/'
-        self.assertEqual((url.scheme, url.netloc), ('https', 'api.github.com'))
-        path = unquote(url.path.removeprefix(prefix))
-        if path == 'commits/main':
-            data = {'sha': self.sha}
-        else:
-            self.assertEqual(parse_qs(url.query), {'ref': [self.sha]})
-            path = path.removeprefix('contents/')
-            if path in self.files:
-                data = dict(type='file', encoding='base64', content=base64.b64encode(self.files[path].encode()).decode())
-            else:
-                data = [dict(type='file', name=p.rsplit('/', 1)[1], path=p)
-                        for p in self.files if p.rsplit('/', 1)[0] == path]
-                if not data:
-                    raise HTTPError(request.full_url, 404, 'missing', {}, None)
-        return io.BytesIO(json.dumps(data).encode())
-
-    def test_missing_record_never_falls_back(self):
-        record = self.upstream()
-        del self.files[record + '/sepolia.json']
-        with patch('build_dashboard.urlopen', side_effect=self.response):
-            with self.assertRaisesRegex(ValueError, 'Expected two chain JSON'):
-                read_upstream(GitHubSource())
-        del self.files['docs/CURRENT-DEPLOYMENT.md']
-        with patch('build_dashboard.urlopen', side_effect=self.response):
-            with self.assertRaisesRegex(ValueError, 'GitHub HTTP 404'):
-                read_upstream(GitHubSource())
-
-    def test_invalid_addresses_and_lane_fail(self):
-        record = self.upstream()
-        path = record + '/sepolia.json'
-        data = json.loads(self.files[path])
-        data['remote_lanes'] = []
-        self.files[path] = json.dumps(data)
-        with patch('build_dashboard.urlopen', side_effect=self.response):
-            with self.assertRaisesRegex(ValueError, 'reciprocal lane'):
-                read_upstream(GitHubSource())
-            data['addresses']['token'] = addr(0)
-            self.files[path] = json.dumps(data)
-            with self.assertRaisesRegex(ValueError, 'invalid deployed address'):
-                read_upstream(GitHubSource())
-
-    def test_build_fetches_main_once_and_pins_files_and_cache(self):
-        record = self.upstream()
-        with tempfile.TemporaryDirectory() as tmp, patch('build_dashboard.urlopen', side_effect=self.response), \
-                patch('build_dashboard.subprocess.check_output', side_effect=[b'c' * 40, (ROOT / 'ledger.json').read_bytes()] * 3):
-            output = Path(tmp) / 'site'
-            before = build(ROOT, output)
-            self.assertFalse((output / 'ledger.json').exists())
-            commit = before['sources']['ledgerCommit']
-            url = f'https://github.com/lidofinance/multichain/blob/{commit}/ledger.json'
-            self.assertEqual(before['provenance']['ledgerUrl'], url)
-            self.assertIn(url, (output / 'index.html').read_text())
-            page = (output / 'index.html').read_text()
+    def test_build_from_checkout_is_offline_complete_and_reproducible(self):
+        # A clean Pages output must contain all pages without consulting old docs/ or any network.
+        with tempfile.TemporaryDirectory() as tmp, \
+                patch('socket.socket', side_effect=AssertionError('Network must not be used')):
+            root = Path(tmp) / 'repo'
+            shutil.copytree(ROOT / 'components/dashboard', root / 'components/dashboard')
+            shutil.copyfile(ROOT / 'ledger.json', root / 'ledger.json')
+            with patch('build_dashboard.subprocess.check_output', side_effect=[b'c' * 40, (ROOT / 'ledger.json').read_bytes()] * 2):
+                first, second = Path(tmp) / 'first', Path(tmp) / 'second'
+                before = build(root, first)
+                again = build(root, second)
+            self.assertEqual(before, again)
+            self.assertEqual({p.name for p in first.iterdir()},
+                             {'index.html', 'roles.html', 'ccv.html', 'dashboard-build.json', 'testnet-deployment.json'})
+            for path in first.iterdir():
+                self.assertEqual(path.read_bytes(), (second / path.name).read_bytes())
+            page = (first / 'index.html').read_text()
             payload = json.loads(re.search(r'id="dashboard-data">(.*?)</script>', page).group(1))
-            self.assertEqual(payload['identity'], before['identity'])
+            self.assertEqual(payload, before)
             self.assertEqual(payload['ldo'], self.ldo)
-            self.assertIn('ldoMetadataSha256', payload['sources'])
-            self.assertIn('stethMetadataSha256', payload['sources'])
+            self.assertEqual(payload['networkTypes'], self.types)
             self.assertEqual(payload['steth'], steth_metadata(self.ledger, self.steth))
             self.assertNotIn('ledger', payload)
-            embedded_ledger = json.loads(re.search(r'id="ledger-data">(.*?)</script>', page).group(1))
-            self.assertEqual(embedded_ledger, self.ledger)
-            content_hash = lambda value: hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
-            self.assertEqual(payload['sources']['ledgerContentSha256'], content_hash(embedded_ledger))
-            tampered = copy.deepcopy(embedded_ledger)
-            tampered['deployments'][0]['address'] = '0x' + '0' * 40
-            self.assertNotEqual(payload['sources']['ledgerContentSha256'], content_hash(tampered))
-            manifest = json.loads((output / 'dashboard-build.json').read_text())
-            self.assertNotIn('ledger', manifest)
+            embedded = json.loads(re.search(r'id="ledger-data">(.*?)</script>', page).group(1))
+            self.assertEqual(embedded, self.ledger)
+            content_hash = hashlib.sha256(json.dumps(embedded, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+            self.assertEqual(payload['sources']['ledgerContentSha256'], content_hash)
+            manifest = json.loads((first / 'dashboard-build.json').read_text())
             identity = manifest.pop('identity')
             self.assertEqual(identity, hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest())
-            # A compact original manifest remains a valid source for explicit reuse.
-            reused = build(ROOT, Path(tmp) / 'reused', reuse_build=output / 'dashboard-build.json')
-            self.assertEqual(reused['live'], before['live'])
-            self.assertIn(self.sha, (output / 'roles.html').read_text())
-            self.assertIn('New evidence', (output / 'ccv.html').read_text())
-            self.assertNotIn('431', (output / 'ccv.html').read_text())
-            self.assertEqual(sum(r.full_url.endswith('/commits/main') for r in self.requests), 1)
-            self.assertEqual(len(self.requests), 6)  # main, active doc, report, directory, two configs
-            self.sha = 'b' * 40
-            path = record + '/sepolia.json'
-            data = json.loads(self.files[path]); data['addresses']['token'] = addr(999)
-            self.files[path] = json.dumps(data)
-            after = build(ROOT, output)
-            self.assertNotEqual(before['identity'], after['identity'])
-            self.assertFalse((output / 'index.snapshot.json').exists())
-            self.assertEqual(after['live']['tokens']['1']['tokenAddress'], addr(999))
-            self.assertEqual(after['sources']['upstreamCommit'], self.sha)
-            self.assertEqual(sum(r.full_url.endswith('/commits/main') for r in self.requests), 2)
+            self.assertIn(before['provenance']['ledgerUrl'], page)
+            snapshot = json.loads((first / 'testnet-deployment.json').read_text())
+            self.assertEqual(snapshot['live'], before['live'])
+            origin = snapshot['origin']
+            self.assertEqual(origin['sourceMode'], 'local')
+            self.assertIsNone(origin['sourceCommit'])
+            self.assertEqual(origin['sourceFilesSha256']['docs/deployment-2026-09-15.md'],
+                             'af91dad2dd610e96065e7b318fb3f69496536a7b9eae433f66ae1463acc53e76')
+            self.assertEqual(len(origin['sourceFilesSha256']), 4)
+            self.assertEqual(len(origin['archivedFilesSha256']), 3)
+            for name in ('index', 'roles', 'ccv'):
+                html = (first / f'{name}.html').read_text()
+                self.assertIn('archived deployment snapshot', html)
+                self.assertIn('LOCAL DIRECTORY · unpublished changes may be included', html)
+                self.assertIn('testnet-deployment.json', html)
+                self.assertNotIn('upstream/', html)
+                self.assertNotIn('github.com/lidofinance/wsteth-ccip', html)
+                self.assertNotIn('<!-- BUILD_', html)
+                if name != 'index':
+                    self.assertIn('https://github.com/lidofinance/multichain/blob/' + origin['archiveCommit'] +
+                                  '/orchestration/wsteth-ccip/docs/deployment-2026-09-15.md', html)
+                    self.assertIn('hashes alone do not verify its claims', html)
+                    self.assertEqual(html.count('pre{white-space:pre-wrap;overflow-wrap:anywhere}'), 1)
+            self.assertNotRegex((first / 'roles.html').read_text(), r'\]\(\.\./config/')
+            self.assertIn('431 live state checks', (first / 'roles.html').read_text())
+            self.assertIn('DummyMessageIdVerifier', (first / 'ccv.html').read_text())
+            for chain in snapshot['live']['lane']:
+                token = snapshot['live']['tokens'][str(chain)]
+                self.assertIn(token['tokenAddress'], (first / 'ccv.html').read_text())
+                self.assertIn(snapshot['governanceHolders'][str(chain)], (first / 'roles.html').read_text())
 
-    def test_authentication_and_failures_without_local_fallback(self):
-        self.upstream()
-        with patch.dict('os.environ', {'WSTETH_CCIP_READ_TOKEN': 'test-secret'}), patch('build_dashboard.urlopen', side_effect=self.response):
-            GitHubSource()
-            self.assertEqual(self.requests[0].get_header('Authorization'), 'Bearer test-secret')
-        for failure in (HTTPError('https://api.github.com/', 401, 'unauthorized', {}, None), URLError('offline')):
-            with tempfile.TemporaryDirectory() as tmp, patch('build_dashboard.urlopen', side_effect=failure):
-                output = Path(tmp) / 'site'
-                with self.assertRaises(ValueError) as raised:
-                    build(ROOT, output)
-                self.assertNotIn('test-secret', str(raised.exception))
+    def test_snapshot_updates_addresses_tables_and_identity(self):
+        with tempfile.TemporaryDirectory() as tmp, \
+                patch('build_dashboard.subprocess.check_output', side_effect=[b'c' * 40, (ROOT / 'ledger.json').read_bytes()] * 3):
+            root = Path(tmp) / 'repo'
+            shutil.copytree(ROOT / 'components/dashboard', root / 'components/dashboard')
+            shutil.copyfile(ROOT / 'ledger.json', root / 'ledger.json')
+            output = Path(tmp) / 'site'
+            before = build(root, output)
+            path = root / 'components/dashboard/config/testnet-deployment.json'
+            snapshot = json.loads(path.read_text())
+            chain = str(snapshot['live']['lane'][0])
+            snapshot['live']['tokens'][chain]['tokenAddress'] = addr(999)
+            next(seed for seed in snapshot['live']['seeds'][chain] if seed[1] == 'ours:token')[0] = addr(999)
+            path.write_text(json.dumps(snapshot))
+            after = build(root, output)
+            self.assertNotEqual(before['identity'], after['identity'])
+            self.assertNotEqual(before['sources']['testnetSnapshotSha256'], after['sources']['testnetSnapshotSha256'])
+            self.assertEqual(after['live']['tokens'][chain]['tokenAddress'], addr(999))
+            self.assertIn(addr(999), (output / 'ccv.html').read_text())
+            evidence = root / 'components/dashboard/content/evidence.html'
+            evidence.write_text('<p>Changed dated evidence</p>')
+            updated = build(root, output)
+            self.assertNotEqual(after['identity'], updated['identity'])
+            self.assertIn('Changed dated evidence', (output / 'roles.html').read_text())
+
+    def test_missing_snapshot_fails_before_writing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / 'site'
+            with self.assertRaises(FileNotFoundError):
+                build(Path(tmp), output)
+            self.assertFalse(output.exists())
+
+    def test_invalid_testnet_snapshot_is_rejected(self):
+        original = json.loads((ROOT / 'components/dashboard/config/testnet-deployment.json').read_text())
+        for field, value in [('env', 'mainnet'), ('deployedAt', '2026-02-31'),
+                             ('lane', [1, 1]), ('lane', [True, 5003]), ('lane', [1]), ('record', '')]:
+            snapshot = copy.deepcopy(original)
+            snapshot['live'][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                testnet_metadata(snapshot)
+        chain = str(original['live']['lane'][0])
+        for field in ('tokenAddress', 'poolAddress'):
+            snapshot = copy.deepcopy(original)
+            snapshot['live']['tokens'][chain][field] = addr(0)
+            with self.assertRaises(ValueError):
+                testnet_metadata(snapshot)
+        snapshot = copy.deepcopy(original)
+        snapshot['live']['seeds'][chain].pop(0)
+        with self.assertRaisesRegex(ValueError, 'exactly one testnet seed'):
+            testnet_metadata(snapshot)
+        snapshot = copy.deepcopy(original)
+        snapshot['live']['tokens'][chain]['tokenAddress'] = addr(777)
+        with self.assertRaisesRegex(ValueError, 'disagree'):
+            testnet_metadata(snapshot)
+
+    def test_malformed_snapshot_types_fail_cleanly_through_cli(self):
+        original = json.loads((ROOT / 'components/dashboard/config/testnet-deployment.json').read_text())
+        chain = str(original['live']['lane'][0])
+        cases = [
+            ((), []), (('live',), []), (('live',), None),
+            (('live', 'lane'), 5), (('live', 'lane'), {}), (('live', 'lane'), [[], 5003]),
+            (('live', 'tokens'), []), (('live', 'seeds'), None), (('governanceHolders',), []),
+            (('live', 'tokens', chain), []), (('live', 'tokens', chain, 'chainName'), 5),
+            (('live', 'tokens', chain, 'chainName'), '  '),
+            (('live', 'tokens', chain, 'decimals'), 18.0),
+            (('live', 'tokens', chain, 'decimals'), True),
+            (('live', 'seeds', chain), 5), (('live', 'seeds', chain), [None]),
+            (('live', 'seeds', chain), [[addr(1)]]),
+            (('live', 'seeds', chain), [[addr(1), []]]),
+            (('origin',), None), (('origin', 'archiveCommit'), 5),
+            (('origin', 'sourceFilesSha256'), []),
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            root, output = Path(tmp) / 'repo', Path(tmp) / 'site'
+            source = root / 'components/dashboard/config/testnet-deployment.json'
+            source.parent.mkdir(parents=True)
+            for path, value in cases:
+                snapshot = copy.deepcopy(original)
+                if path:
+                    target = snapshot
+                    for key in path[:-1]:
+                        target = target[key]
+                    target[path[-1]] = value
+                else:
+                    snapshot = value
+                source.write_text(json.dumps(snapshot))
+                errors = io.StringIO()
+                with self.subTest(path=path, value=value), patch('build_dashboard.ROOT', root), \
+                        patch('sys.argv', ['build_dashboard.py', '--output', str(output)]), \
+                        contextlib.redirect_stderr(errors), self.assertRaises(SystemExit) as raised:
+                    main()
+                self.assertEqual(raised.exception.code, 1)
+                self.assertIn('Dashboard build failed:', errors.getvalue())
+                self.assertNotIn('Traceback', errors.getvalue())
                 self.assertFalse(output.exists())
 
-    def test_explicit_local_directory_uses_working_files_without_network(self):
-        record = self.upstream()
-        with tempfile.TemporaryDirectory() as tmp, patch('build_dashboard.urlopen', side_effect=AssertionError('Network must not be used')), \
-                patch('build_dashboard.subprocess.check_output', side_effect=[b'c' * 40, (ROOT / 'ledger.json').read_bytes()] * 3):
-            local = Path(tmp) / 'local source'
-            output = Path(tmp) / 'site'
-            for relative, text in self.files.items():
-                path = local / relative
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text(text)
-            before = build(ROOT, output, upstream_path=local)
-            self.assertEqual(before['sources']['upstreamMode'], 'local')
-            self.assertIsNone(before['sources']['upstreamCommit'])
-            self.assertIn('LOCAL DIRECTORY', (output / 'index.html').read_text())
-            self.assertNotIn(str(local), (output / 'dashboard-build.json').read_text())
-            for relative, text in self.files.items():
-                self.assertEqual((output / 'upstream' / relative).read_text(), text)
-            path = local / record / 'sepolia.json'
-            data = json.loads(path.read_text()); data['addresses']['token'] = addr(888)
-            path.write_text(json.dumps(data))
-            after = build(ROOT, output, upstream_path=local)
-            self.assertNotEqual(before['identity'], after['identity'])
-            self.assertEqual(after['live']['tokens']['1']['tokenAddress'], addr(888))
-            (local / 'docs/CURRENT-DEPLOYMENT.md').unlink()
-            with self.assertRaisesRegex(ValueError, 'Missing local upstream input'):
-                build(ROOT, output, upstream_path=local)
+    def test_conflicting_seed_addresses_are_rejected_case_insensitively(self):
+        snapshot = json.loads((ROOT / 'components/dashboard/config/testnet-deployment.json').read_text())
+        chain = str(snapshot['live']['lane'][0])
+        pool = snapshot['live']['tokens'][chain]['poolAddress']
+        snapshot['live']['seeds'][chain][0][0] = pool.lower()
+        with self.assertRaisesRegex(ValueError, 'Duplicate testnet seed address'):
+            testnet_metadata(snapshot)
 
-    def test_local_directory_must_exist_and_inputs_stay_inside_it(self):
+    def test_evidence_rejects_active_or_unbalanced_html_before_writing(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            with self.assertRaisesRegex(ValueError, 'directory does not exist'):
-                LocalSource(root / 'missing')
-            outside = root / 'outside.md'
-            outside.write_text('outside')
-            local = root / 'local'
-            local.mkdir()
-            (local / 'escape.md').symlink_to(outside)
-            with self.assertRaisesRegex(ValueError, 'escapes source directory'):
-                LocalSource(local).read('escape.md')
+            root, output = Path(tmp) / 'repo', Path(tmp) / 'site'
+            shutil.copytree(ROOT / 'components/dashboard', root / 'components/dashboard')
+            evidence = root / 'components/dashboard/content/evidence.html'
+            for fragment in ('<script>alert(1)</script>', '<STYLE>p{color:red}</STYLE>',
+                             '<p onclick="alert(1)">text</p>', '<iframe src="x"></iframe>',
+                             '<a href="javascript:alert(1)">link</a>', '<p><strong>x</p></strong>',
+                             '<p>unfinished', '</style>', '<svg onload="alert(1)"/>',
+                             '<img src=x onerror=alert(1)', '<!-- unfinished comment'):
+                evidence.write_text(fragment)
+                with self.subTest(fragment=fragment), self.assertRaisesRegex(ValueError, 'Invalid evidence HTML'):
+                    build(root, output)
+                self.assertFalse(output.exists())
 
-    def test_untrusted_source_is_escaped(self):
-        rendered = source_text('<script>alert(1)</script>\n\n**bold** and `code`')
-        self.assertNotIn('<script>', rendered)
-        self.assertIn('&lt;script&gt;', rendered)
-        self.assertIn('<strong>bold</strong>', rendered)
-        links = source_text('[config](../config/input.json) [bad](javascript:alert)',
-                            'https://github.com/owner/repo/blob/abc/docs/current.md')
-        self.assertIn('href="https://github.com/owner/repo/blob/abc/config/input.json"', links)
-        self.assertNotIn('href="javascript:', links)
+    def test_evidence_parser_rejects_incomplete_markup_at_eof(self):
+        for fragment in ('<img src=x onerror=alert(1)', '<!-- unfinished comment',
+                         '<p', '<', '<p>closed</p><!-- trailing'):
+            parser = EvidenceHTML('test fragment')
+            with self.subTest(fragment=fragment), self.assertRaisesRegex(ValueError, 'Invalid evidence HTML'):
+                parser.feed(fragment)
+                parser.close()
+        # Every split of valid markup must work, including inside entity refs
+        # and attributes. Only EOF requires a complete fragment.
+        source = '<div class="table"><p>Escaped &lt;img&gt;</p></div>'
+        for split in range(len(source) + 1):
+            with self.subTest(split=split):
+                parser = EvidenceHTML('complete fragment')
+                parser.feed(source[:split])
+                parser.feed(source[split:])
+                parser.close()
+
+    def test_evidence_accepts_complete_markup_when_parser_defers_until_close(self):
+        # A buffered '<' need not be incomplete. Simulate a parser that keeps
+        # complete markup pending until close(), as seen in the CI failure.
+        def defer(parser, data):
+            parser.rawdata += data
+        with patch('build_dashboard.HTMLParser.feed', new=defer):
+            parser = EvidenceHTML('deferred complete fragment')
+            for chunk in ('<p', '>Escaped &lt;img&gt;', '</p', '>'):
+                parser.feed(chunk)
+            parser.close()
+            self.assertEqual(parser.stack, [])
+
+    def test_legacy_output_is_rejected_without_modifying_existing_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / 'site'
+            legacy = output / 'upstream/docs/report.md'
+            legacy.parent.mkdir(parents=True)
+            legacy.write_text('old generated report')
+            page = output / 'index.html'
+            page.write_text('previous site')
+            with self.assertRaisesRegex(ValueError, 'Legacy generated inputs remain'):
+                build(ROOT, output)
+            self.assertEqual(page.read_text(), 'previous site')
+            self.assertEqual(legacy.read_text(), 'old generated report')
 
 
 if __name__ == '__main__':
