@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2024 OpenZeppelin, Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.26;
 
 import {ERC20Bridged} from "./ERC20Bridged.sol";
 import {PermitExtension} from "./PermitExtension.sol";
 import {Versioned} from "../utils/Versioned.sol";
 import {AccessControlEnumerableUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
+    "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 
 /// @author kovalgek, arwer13
 /// @notice Non-rebasing L2 token with permit, versioning and enumerable mint/burn roles.

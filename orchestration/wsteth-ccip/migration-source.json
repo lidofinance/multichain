@@ -123,5 +123,8 @@
     "lib/governance-crosschain-bridges": "components/governance-crosschain-bridges",
     "lib/lido-l2-with-steth": "components/wsteth-token",
     "lib/openzeppelin-contracts-upgradeable-4x": "components/openzeppelin-contracts-upgradeable-4x"
+  },
+  "supersededAfterImport": {
+    "components/openzeppelin-contracts-upgradeable-4x": "Removed 2026-10-08 together with components/openzeppelin-contracts-4x (added 2026-09-28). The token now builds against components/openzeppelin-contracts-5.0.2, components/openzeppelin-contracts-upgradeable-5.0.2 and components/wsteth-token/lib/openzeppelin-contracts-5.3.0 (proxy). The layout and dependencies entries describe the import at sourceCommit and are not rewritten."
   }
 }

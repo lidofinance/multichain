@@ -1,5 +1,16 @@
 # wstETH CCIP orchestration
 
+The development target now supports one or more OP-stack spokes, initially Mantle
+Sepolia and Base Sepolia, with separate L1 lockboxes. Use the repository-root
+`just wsteth` entrypoint to run each phase across the selected topology.
+Preparation accepts `--spokes mantle_sepolia` (or `base_sepolia`) for a single-spoke
+run. New runs keep L2 state in `state/<chain>.json`.
+
+See [multichain operations](docs/MULTICHAIN-OPERATIONS.md) for run selection,
+incremental lane actions, CCV policy, the offline `plan-ccv-update` command and the
+Nethermind onboarding checklist. Dummy verification is intentional during setup;
+the policy and governance plan allow later implementation/resolver changes.
+
 Imported from the local `wsteth-2.0` checkout at
 `9e9b60aaa7b39de08b64f05c1bf9bc9ab11fffd3`, preserving local dependency changes.
 The original checkout remains intact. The migration is recorded in this repository's Git history.
@@ -20,7 +31,7 @@ From the repository root:
 just wsteth                         # list recipes
 just wsteth patch-submodules-check  # read-only patch/base check
 just wsteth build                   # build scripts and scenario tests
-just wsteth build-l2-artifacts      # separate Solidity 0.8.10 profile
+just wsteth build-l2-artifacts      # token (solc 0.8.26, OZ 5.x) and govexec (0.8.10) profiles
 ```
 
 RPC endpoints and keys stay in ignored `orchestration/wsteth-ccip/.env` or the

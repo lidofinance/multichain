@@ -5,8 +5,15 @@
 #
 # OZ version split is handled by PROFILE, not contextual remaps (which don't propagate past
 # the first hop). The default profile resolves @openzeppelin/contracts -> 5.3.0 (CCIP + our
-# 5.3 code). The `token` profile resolves it -> 4.8.3 + upgradeable 4.7.3 for the locally maintained wsteth-token
-# wstETH (pragma 0.8.10). Build its artifacts with FOUNDRY_PROFILE=token; deploy scripts use default.
+# 5.3 code). The `token` profile builds the locally maintained wsteth-token implementation against
+# OZ 5.0.2 (contracts + upgradeable), the edition the CCIP token is built against, from public
+# pinned submodules. The `govexec` profile builds the pinned 0.8.10 OptimismBridgeExecutor.
+# Build artifacts with FOUNDRY_PROFILE=token / FOUNDRY_PROFILE=govexec; deploy scripts use default.
+#
+# The OZ 5.3.0 TransparentUpgradeableProxy + ProxyAdmin the token is deployed behind are NOT built
+# by any profile here: they compile inside components/wsteth-token (whose lib/ holds that submodule),
+# so their metadata carries `lib/openzeppelin-contracts-5.3.0/contracts/...` source names instead of
+# this machine's checkout path (see that foundry.toml). DeployL2Token.s.sol reads those artifacts.
 #
 # The CCIP pool/hook/CCV/POM deploy is driven by the vendored ccip submodule's OWN foundry
 # project (../../components/ccip/chains/evm), not compiled here — see the justfile.
@@ -17,14 +24,14 @@ script = "script"
 test = "../../targets/wsteth-ccip-sepolia-mantle-dev/test"
 out = "out"
 libs = ["../../components", "../../libs"]
-# Scripts and scenarios use the modern compiler; upstream 0.8.10 artifacts use profile.token.
+# Scripts and scenarios use the modern compiler; vendored artifacts use profile.token / profile.govexec.
 solc = "0.8.34"
 evm_version = "osaka"
 optimizer = true
 optimizer_runs = 200
 ffi = true
-# Token sources are OZ-4.x/0.8.10 — compiled only under [profile.token], skipped by default.
-skip = ["src/vendor/*"]
+# Vendored build entrypoints are compiled only under their own profiles, skipped by default.
+skip = ["src/vendor/**"]
 fs_permissions = [
     { access = "read-write", path = "../../runs/wsteth-2.0/workspaces" },
     { access = "read", path = "../../runs/wsteth-2.0/history" },
@@ -33,27 +40,86 @@ fs_permissions = [
     { access = "read-write", path = "./config" },
     { access = "read", path = "./deployments" },
     { access = "read", path = "./out-token" },
+    { access = "read", path = "./out-govexec" },
+    { access = "read", path = "../../components/wsteth-token/out" },
 ]
 remappings = [
+    "forge-std/=../../libs/forge-std/src/",
+    "@chainlink/contracts/=../../components/ccip/chains/evm/node_modules/@chainlink/contracts/",
+    "@chainlink/contracts-ccip/=../../components/ccip/chains/evm/node_modules/@chainlink/contracts-ccip/contracts/",
+    "governance-crosschain-bridges/=../../components/governance-crosschain-bridges/",
+    "@wsteth-token/contracts/=../../components/wsteth-token/contracts/",
+    "@ccip-lido/=../../components/ccip/chains/evm/contracts/lido-hvmv/",
+    "@chainlink/policy-management/=../../components/ccip/chains/evm/contracts/vendor/policy-management/",
+    "@openzeppelin/contracts@4.8.3/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-4.8.3/",
+    "@openzeppelin/contracts@5.0.2/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.0.2/",
+
     "@openzeppelin/contracts/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.3.0/",
     "@openzeppelin/contracts@5.3.0/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.3.0/",
     "@openzeppelin/contracts-upgradeable/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.3.0/contracts/",
     "@openzeppelin/contracts-upgradeable@5.3.0/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.3.0/",
 ]
 
-# Upstream 0.8.10 contracts, built separately from the modern deployment scripts.
+# L2 wstETH implementation. Compiler settings must stay in step with
+# components/wsteth-token/foundry.toml (also used for the Transparent proxy and ProxyAdmin).
+# Deployed bytecode must not depend on which sibling packages are installed: with auto-detection off
+# only the profile remappings below enter the metadata's `settings.remappings`.
 [profile.token]
-src = "src/vendor"
-script = "src/vendor"
-test = "src/vendor"
+src = "src/vendor/token"
+script = "src/vendor/token"
+test = "src/vendor/token"
 out = "out-token"
 cache_path = "cache-token"
+solc = "0.8.26"
+evm_version = "paris"
+optimizer = true
+optimizer_runs = 80000
+via_ir = true
+bytecode_hash = "none"
+skip = []
+auto_detect_remappings = false
+remappings = [
+    "@wsteth-token/contracts/=../../components/wsteth-token/contracts/",
+    "@openzeppelin/contracts/=../../components/openzeppelin-contracts-5.0.2/contracts/",
+    "@openzeppelin/contracts-upgradeable/=../../components/openzeppelin-contracts-upgradeable-5.0.2/contracts/",
+]
+
+# Pinned upstream governance executor, kept separate from the token's compiler settings.
+# Preserve the pre-review solc 0.8.10 / london / optimizer 200 / no-IR / IPFS build input.
+# With the OP messenger immutable filled in, executable bytes match Optimism mainnet
+# 0xEfa0dB536d2c8089685630fafe88CF7805966FC3 (checked 2026-10-08). Full bytecode also
+# includes a metadata hash: this workspace's source names/remappings differ from that
+# historical build, so executable equality must not be reported as full-bytecode equality.
+[profile.govexec]
+src = "src/vendor/govexec"
+script = "src/vendor/govexec"
+test = "src/vendor/govexec"
+out = "out-govexec"
+cache_path = "cache-govexec"
 solc = "0.8.10"
 evm_version = "london"
 skip = []
+auto_detect_remappings = false
+# Preserve the pre-review compiler input, including its metadata hash. These aliases are
+# deliberate compatibility pins, even when OpExec does not import the corresponding packages.
+optimizer = true
+optimizer_runs = 200
+via_ir = false
+bytecode_hash = "ipfs"
 remappings = [
-    "@openzeppelin/contracts/=../../components/openzeppelin-contracts-4x/contracts/",
-    "@openzeppelin/contracts-upgradeable/=../../components/openzeppelin-contracts-upgradeable-4x/contracts/",
+    "forge-std/=../../libs/forge-std/src/",
+    "@chainlink/contracts/=../../components/ccip/chains/evm/node_modules/@chainlink/contracts/",
+    "@chainlink/contracts-ccip/=../../components/ccip/chains/evm/node_modules/@chainlink/contracts-ccip/contracts/",
+    "governance-crosschain-bridges/=../../components/governance-crosschain-bridges/",
+    "@wsteth-token/contracts/=../../components/wsteth-token/contracts/",
+    "@ccip-lido/=../../components/ccip/chains/evm/contracts/lido-hvmv/",
+    "@chainlink/policy-management/=../../components/ccip/chains/evm/contracts/vendor/policy-management/",
+    "@openzeppelin/contracts@4.8.3/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-4.8.3/",
+    "@openzeppelin/contracts@5.0.2/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.0.2/",
+    "@openzeppelin/contracts/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.3.0/",
+    "@openzeppelin/contracts@5.3.0/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.3.0/",
+    "@openzeppelin/contracts-upgradeable/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.3.0/contracts/",
+    "@openzeppelin/contracts-upgradeable@5.3.0/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.3.0/",
 ]
 
 [fmt]

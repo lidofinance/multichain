@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Step 05 — configure the CCIP pools by driving the vendored 2_Configure.s.sol on each chain.
-# Wires lanes + rate limits, siloed lockboxes, hooks CCV (single resolver for now; step 06
-# extends to 2-of-2), POM blocked/delay selectors, and transfers pool/hook/verifier/resolver/
+# Wires lanes + rate limits, siloed lockboxes, initial dummy CCV, POM blocked/delay
+# selectors, and transfers pool/hook/verifier/resolver/
 # lockbox ownership to the PoolOperationManager. Prereq: 1_Deploy ran on BOTH chains.
 set -euo pipefail
 
@@ -19,7 +19,7 @@ run_configure() {
     run_ccip_script "${name}" "${rpc}" "2_Configure.s.sol:ConfigureScript"
 }
 
-run_configure sepolia "${L1_RPC}"
+if [ "${WSTETH_SKIP_L1:-0}" != 1 ]; then run_configure sepolia "${L1_RPC}"; fi
 run_configure "${L2_CHAIN}" "${L2_RPC}"
 
 

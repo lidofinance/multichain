@@ -21,8 +21,8 @@ fund "${DEPLOYER_ADDRESS}" "${L2_RPC}"
 # Code alone isn't enough (cf. step 04's getToken probe): after an L1-only reset, step 01 mints a
 # NEW Agent while the old opExec survives on L2 — skipping then would wire steps 03–07 to an
 # executor whose ethereumGovernanceExecutor is the dead Agent, breaking L1→L2 governance.
-if [ -f state/l2.json ]; then
-    EXISTING="$(jq -r '.opExec // empty' state/l2.json)"
+if [ -f "${L2_STATE_FILE}" ]; then
+    EXISTING="$(jq -r '.opExec // empty' "${L2_STATE_FILE}")"
     if [ -n "${EXISTING}" ] && has_code "${EXISTING}" "${L2_RPC}"; then
         GOT="$(cast call "${EXISTING}" 'getEthereumGovernanceExecutor()(address)' --rpc-url "${L2_RPC}" 2>/dev/null || echo 0x0)"
         if eq "${GOT}" "${AGENT}"; then
@@ -34,20 +34,20 @@ if [ -f state/l2.json ]; then
 fi
 
 echo "▸ deploying OptimismBridgeExecutor (ethereumGovernanceExecutor = Agent ${AGENT})"
-FOUNDRY_PROFILE=token forge build ../../components/governance-crosschain-bridges/contracts/bridges/OptimismBridgeExecutor.sol
+FOUNDRY_PROFILE=govexec forge build --force ../../components/governance-crosschain-bridges/contracts/bridges/OptimismBridgeExecutor.sol
 OPEXEC_OUT="${ROOT}/state/l2.opexec.addr"
 L1_AGENT="${AGENT}" OPEXEC_OUT="${OPEXEC_OUT}" \
     forge script script/DeployL2Gov.s.sol:DeployL2Gov \
     --rpc-url "${L2_RPC}" --broadcast -vvv
 
 OPEXEC="$(cat "${OPEXEC_OUT}")"
-# Merge into an existing state/l2.json (preserving keys like wstETH/wstETHImpl that step 03 adds —
+# Merge into an existing ${L2_STATE_FILE} (preserving keys like wstETH/wstETHImpl that step 03 adds —
 # overwriting the file fresh would drop them on a re-run after a fork reset).
-[ -f state/l2.json ] || echo '{}' > state/l2.json
-jq_inplace state/l2.json --arg op "${OPEXEC}" --arg agent "${AGENT}" \
+[ -f "${L2_STATE_FILE}" ] || echo '{}' > "${L2_STATE_FILE}"
+jq_inplace "${L2_STATE_FILE}" --arg op "${OPEXEC}" --arg agent "${AGENT}" \
     --argjson cid "${L2_CHAIN_ID}" --arg l2 "${L2_CHAIN}" \
     '.chainId = $cid | .l2Chain = $l2 | .opExec = $op | .ethereumGovernanceExecutor = $agent'
 rm -f "${OPEXEC_OUT}"
 
 echo "✓ step 02 done. opExec = ${OPEXEC}"
-jq '.' state/l2.json
+jq '.' "${L2_STATE_FILE}"

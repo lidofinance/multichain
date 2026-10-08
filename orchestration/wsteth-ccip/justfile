@@ -39,7 +39,7 @@ init:
     @echo "lidofinance submodules ready (governance-crosschain-bridges, core + its dual-governance), patches applied."
     @echo "Third-party installs are GATED — run (with approval):"
     @echo "    just init-thirdparty"
-    @echo "Fetches: forge-std (foundry-rs), OZ 4.8.3 + upgradeable 4.7.3, the ccip submodule"
+    @echo "Fetches: forge-std (foundry-rs), OZ 5.0.2 (contracts + upgradeable) + OZ 5.3.0, the ccip submodule"
     @echo "(smartcontractkit) + its @chainlink/OpenZeppelin pnpm deps, and the state-mate /"
     @echo "core yarn deps (both lidofinance, but their installs pull third-party npm)."
 
@@ -49,7 +49,7 @@ init:
 # other third-party fetches.
 init-thirdparty:
     # --checkout opts into CCIP, which automatic Pages checkouts skip.
-    git submodule update --init --checkout ../../libs/forge-std ../../components/openzeppelin-contracts-upgradeable-4x ../../components/openzeppelin-contracts-4x ../../components/ccip ../../libs/state-mate
+    git submodule update --init --checkout ../../libs/forge-std ../../components/openzeppelin-contracts-5.0.2 ../../components/openzeppelin-contracts-upgradeable-5.0.2 ../../components/wsteth-token/lib/openzeppelin-contracts-5.3.0 ../../components/ccip ../../libs/state-mate
     # pnpm 9 matches the ccip repo's lockfileVersion 9.0 (pnpm 10+ blocks its @zksync git subdep)
     cd ../../components/ccip/chains/evm && corepack pnpm@9 install
     # state-mate (Claim A / step 08) — pins yarn@4.3.1 via packageManager
@@ -109,9 +109,14 @@ forks-check:
 build:
     forge build
 
-# Upstream 0.8.10 artifacts consumed by the Solidity 0.8.34 deployment scripts.
+# Vendored artifacts consumed by the Solidity 0.8.34 deployment scripts: the L2 token + its OZ 5.3.0
+# proxy (profile.token, solc 0.8.26) and the pinned 0.8.10 governance executor (profile.govexec).
 build-l2-artifacts:
-    FOUNDRY_PROFILE=token forge build ../../components/wsteth-token/contracts/token/ERC20BridgedPermit.sol ../../components/wsteth-token/contracts/proxy/OssifiableProxy.sol ../../components/governance-crosschain-bridges/contracts/bridges/OptimismBridgeExecutor.sol
+    FOUNDRY_PROFILE=token forge build ../../components/wsteth-token/contracts/token/ERC20BridgedPermit.sol
+    # OZ 5.3.0 TransparentUpgradeableProxy + ProxyAdmin, built from the token project's root (the
+    # submodule is in its lib/, so the metadata carries relative source names) -> components/wsteth-token/out.
+    forge build --root ../../components/wsteth-token lib/openzeppelin-contracts-5.3.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol lib/openzeppelin-contracts-5.3.0/contracts/proxy/transparent/ProxyAdmin.sol
+    FOUNDRY_PROFILE=govexec forge build --force ../../components/governance-crosschain-bridges/contracts/bridges/OptimismBridgeExecutor.sol
 
 # Keep upstream compiler warnings gating; the newer forge post-build lint is a separate check.
 build-ccip:
@@ -251,26 +256,9 @@ rpc-proxy-status:
     @pgrep -lf rpc-proxy.mjs 2>/dev/null | sed 's/^/  /' || echo "  (not running)"
     @for p in 8546 8547; do echo "  :$p chain-id $(cast chain-id --rpc-url http://127.0.0.1:$p 2>/dev/null || echo '—')"; done
 
-# Optional in-run copy of chain configs and state, followed by template restoration.
-# Runs already retain separate records; this is only for an additional named snapshot.
-# Verify it with RECORD_DIR=config/chains.live-<NAME>. Archive environment comes from run.json.
+# Snapshot the whole deployment and its desired CCV policy without resetting active records.
 snapshot-record name:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    dst="config/chains.live-{{name}}"
-    [ -e "${dst}" ] && { echo "✗ ${dst} already exists — pick another name or move it aside"; exit 1; }
-    src_l1="config/chains/sepolia.json"; src_l2="config/chains/{{l2_chain}}.json"
-    jq -e '.deployed.pool_operation_manager' "${src_l1}" >/dev/null 2>&1       || { echo "✗ ${src_l1} carries no .deployed — nothing to snapshot (is this a pristine template?)"; exit 1; }
-    mkdir -p "${dst}/state"
-    cp "${src_l1}" "${src_l2}" "${dst}/"
-    for f in l1.json l2.json l1.deployed.json; do
-      [ -f "state/${f}" ] && cp "state/${f}" "${dst}/state/" || echo "  ⚠ state/${f} missing — snapshot incomplete"
-    done
-    python3 ../../orchestration/wsteth-ccip/workspace.py restore-templates
-    echo "✓ record snapshotted to ${dst}/ ; config/chains/ restored from this run's target snapshot"
-    echo ""
-    echo "Verify against it (this also labels the archive correctly):"
-    echo "  RECORD_DIR=${dst} just verify-state"
+    python3 script/snapshot-record.py "{{name}}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Pipeline (each step idempotent; see PLAN.md §3). Stubs filled in per-task.
@@ -285,7 +273,7 @@ l1-core-dg:
 l2-gov:
     bash script/02_l2_gov.sh
 
-# 03 — L2 wstETH = ERC20BridgedPermit behind OssifiableProxy
+# 03 — L2 wstETH = ERC20BridgedPermit behind an OZ 5.3.0 TransparentUpgradeableProxy (ProxyAdmin -> OpExec)
 l2-token:
     bash script/03_l2_token.sh
 
@@ -317,7 +305,7 @@ set-pool-gov:
 # exercises the EIP-2612 surface the L2 token was moved onto the lido-l2-with-steth permit base for
 # (signature -> allowance, replay, expiry, EIP-712 domain coherence) and asserts the legacy `bridge`
 # mint authority is absent from the DEPLOYED bytecode. Nothing else here touches permit.
-# Output is tee'd to state/forge-scenarios.log — Claim B's A.10 evidence carrier (README.md §3):
+# Output is tee'd to state/forge-scenarios.{{l2_chain}}.log — Claim B's A.10 evidence carrier (README.md §3):
 # a dated, commit-stamped run, so no document has to hard-code a test count. pipefail keeps a
 # failing forge run failing. Step 08 copies the log into the run archive when it is present.
 test-scenarios:
@@ -327,9 +315,9 @@ test-scenarios:
         echo "# git:      $(git rev-parse --short HEAD 2>/dev/null || echo unknown)"; \
         echo "# L2_CHAIN: {{l2_chain}}"; \
         echo "# record:   {{record_dir}}"; \
-        echo; } > state/forge-scenarios.log; \
+        echo; } > state/forge-scenarios.{{l2_chain}}.log; \
       FOUNDRY_TEST="${WSTETH_TEST_DIR:-../../targets/wsteth-ccip-sepolia-mantle-dev/test}" L2_CHAIN={{l2_chain}} L2_RPC={{l2_rpc}} forge test --match-path '*/test/scenario/Real*' -vv \
-        2>&1 | tee -a state/forge-scenarios.log
+        2>&1 | tee -a state/forge-scenarios.{{l2_chain}}.log
 
 # OPTIONAL / non-gating — the 2.0 dual-CCV (2-of-2) quorum harness. Validates the §3 self-owned +
 # self-relayed 2.0 stack ALTERNATIVE (not the live path): deploys our own 2.0 OnRamp/OffRamp on the
@@ -372,10 +360,12 @@ verify-contracts:
 #       RECORD_DIR=config/chains.live-mantle \
 #       RPC_SEPOLIA=<archive> RPC_<L2 SLUG>=<archive> just test-leaf
 # Alternate records may live under config/ or deployments/ (Foundry grants the archive read-only access).
-test-leaf: verify-state test-scenarios
+test-leaf:
+    python3 workspace.py run test-leaf
 
 # Full disposable run: forks-check -> deploy -> configure -> handover -> scenarios -> verify/archive
-all: patch-submodules preflight build-l2-artifacts build build-ccip forks-check l1-core-dg l2-gov l2-token ccip-deploy ccip-configure set-pool-gov test-scenarios verify-state verify-contracts
+all:
+    python3 workspace.py run all
 
 # After resetting forks, prepare a new run ID, then invoke `just wsteth all`.
 
@@ -518,3 +508,7 @@ bridge-back-wsteth amount to="":
     cast send "$WSTETH" 'approve(address,uint256)' "$ROUTER" "$WEI" --rpc-url {{l2_rpc}} --private-key "$DEPLOYER_PRIVATE_KEY"
     cast send "$ROUTER" "$SIG" "$DEST" "$MSG" --value "$FEE" --rpc-url {{l2_rpc}} --private-key "$DEPLOYER_PRIVATE_KEY"
     echo "✓ sent — track on https://ccip.chain.link"
+
+# Offline governance calldata. Policies are explicit before/after snapshots, never inferred from RPC.
+plan-ccv-update before after output="state/ccv-update-plan.json":
+    node script/plan-ccv-update.cjs "{{record_dir}}" "{{before}}" "{{after}}" "{{output}}"
