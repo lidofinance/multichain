@@ -24,6 +24,35 @@ SAFE_RECIPES = {'build', 'build-l2-artifacts', 'build-ccip', 'fmt', 'fmt-check',
                 'slither', 'lint-config', 'init', 'init-thirdparty',
                 'patch-submodules', 'patch-submodules-check', 'patch-submodules-revert'}
 
+# Execute each phase across all spokes before advancing to the next phase.
+# In particular, ALL pools must exist before any cross-chain configuration.
+PIPELINES = {
+    'all': ['patch-submodules', 'preflight', 'build-l2-artifacts', 'build', 'build-ccip',
+            'forks-check', 'l1-core-dg', 'l2-gov', 'l2-token', 'ccip-deploy',
+            'ccip-configure', 'set-pool-gov', 'test-scenarios', 'verify-state', 'verify-contracts'],
+    'test-leaf': ['verify-state', 'test-scenarios'],
+}
+PER_SPOKE = {'preflight', 'forks-check', 'l2-gov', 'l2-token', 'ccip-deploy',
+             'ccip-configure', 'set-pool-gov', 'test-scenarios', 'test-ccv',
+             'verify-state', 'verify-contracts'}
+HUB_ONCE = {'ccip-deploy', 'ccip-configure', 'set-pool-gov', 'verify-contracts'}
+
+
+def spokes(data):
+    networks = data['networks']
+    result = networks.get('l2s', [networks['l2']] if 'l2' in networks else [])
+    if not isinstance(result, list) or not result:
+        raise ValueError('Specify at least one spoke in networks.l2s')
+    names = [identifier(n['slug']) for n in [networks['l1'], *result]]
+    ids = [n['chainId'] for n in [networks['l1'], *result]]
+    if len(set(names)) != len(names) or len(set(ids)) != len(ids):
+        raise ValueError('Duplicate network slug or chain ID')
+    return result
+
+
+def networks(data):
+    return [data['networks']['l1'], *spokes(data)]
+
 
 def identifier(value):
     if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9._-]*', value):
@@ -40,12 +69,22 @@ def write_json(path, value):
 
 
 GENERATED = {'out', 'cache', '__pycache__'}
+# Pinned submodules inside an owned component (components/wsteth-token/lib) are dependencies: the run
+# records their commit, dirty flag and diff via dependencies.json instead of copying the checkout.
+def excluded_owned_path(relative, source):
+    return bool(GENERATED.intersection(relative.parts) or
+                (source == Path('components/wsteth-token') and relative.parts[0] == 'lib'))
 
 
-def hashes(directory, *, owned=False):
+def owned_copy_ignore(root, source):
+    return lambda directory, names: [name for name in names
+                                    if excluded_owned_path((Path(directory) / name).relative_to(root), source)]
+
+
+def hashes(directory, *, owned=False, source=None):
     return {str(p.relative_to(directory)): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in sorted(directory.rglob('*')) if p.is_file()
-            and not (owned and GENERATED.intersection(p.relative_to(directory).parts))}
+            and not (owned and excluded_owned_path(p.relative_to(directory), source))}
 
 
 def git(*args, cwd=ROOT):
@@ -77,13 +116,23 @@ def target(name):
     chains = data['networks']
     if chains['l1']['slug'] != 'sepolia' or chains['l1']['chainId'] != 11155111:
         raise ValueError('This recipe currently supports Sepolia as its L1')
-    identifier(chains['l2']['slug'])
-    for network in chains.values():
+    for network in networks(data):
         cfg = read_json(directory / 'config/chains' / (network['slug'] + '.json'))
         if cfg['chain']['chain_id'] != network['chainId']:
             raise ValueError('Target network does not match its chain configuration')
         if cfg.get('deployed') or cfg.get('ccv') or cfg['addresses']['token']:
             raise ValueError('Target chain input contains deployment outputs')
+    if 'l2s' in chains:
+        leaf_names = [n['slug'] for n in spokes(data)]
+        for network in networks(data):
+            cfg = read_json(directory / 'config/chains' / (network['slug'] + '.json'))
+            hub = network == chains['l1']
+            expected = leaf_names if hub else [chains['l1']['slug']]
+            lanes = cfg.get('remote_lanes', [])
+            if ([lane['remote_chain_name'] for lane in lanes] != expected or
+                    any(lane['is_siloed'] != hub for lane in lanes) or
+                    cfg['chain']['pool_type'] != ('SiloedLockRelease' if hub else 'BurnMint')):
+                raise ValueError('Target must declare a siloed hub and reciprocal spoke lanes')
     return directory, data
 
 
@@ -156,7 +205,7 @@ def check_live_sources(directory, data):
     for live, relative in owned_sources(ROOT / 'targets' / identifier(data['target']), target_data):
         saved = snapshot / relative
         if live.is_dir() and saved.is_dir():
-            matches = hashes(live, owned=True) == hashes(saved, owned=True)
+            matches = hashes(live, owned=True, source=relative) == hashes(saved, owned=True, source=relative)
         else:
             matches = live.is_file() and saved.is_file() and live.read_bytes() == saved.read_bytes()
         if not matches:
@@ -186,8 +235,13 @@ def active():
     return directory, data
 
 
-def prepare(name, run_id, environment, record=None):
+def prepare(name, run_id, environment, record=None, selected_spokes=None):
     source, data = target(name)
+    leaves = [n['slug'] for n in spokes(data)]
+    if selected_spokes is not None:
+        if not selected_spokes or len(set(selected_spokes)) != len(selected_spokes) or any(s not in leaves for s in selected_spokes):
+            raise ValueError('Selected spokes must be a nonempty unique subset of the target')
+        leaves = [s for s in leaves if s in selected_spokes]
     if environment not in data['environments']:
         raise ValueError('Environment is not supported by this target')
     directory = RUNS / 'workspaces' / identifier(run_id)
@@ -199,7 +253,9 @@ def prepare(name, run_id, environment, record=None):
         record_path = (ROOT / record).resolve()
         if not record_path.is_relative_to(RUNS.resolve()):
             raise ValueError('Existing record must be under runs/wsteth-2.0')
-        for network in data['networks'].values():
+        for network in networks(data):
+            if network['slug'] != 'sepolia' and network['slug'] not in leaves:
+                continue
             cfg = read_json(record_path / (network['slug'] + '.json'))
             if cfg['chain']['chain_id'] != network['chainId']:
                 raise ValueError('Existing record belongs to a different network')
@@ -208,7 +264,7 @@ def prepare(name, run_id, environment, record=None):
     with tempfile.TemporaryDirectory(prefix=f'.{run_id}.', dir=directory.parent) as temporary:
         staging = Path(temporary) / 'run'
         staging.mkdir()
-        populate_run(source, data, staging, run_id, environment, record_path)
+        populate_run(source, data, staging, run_id, environment, record_path, leaves)
         staging.rename(directory)
         try:
             activate(run_id)
@@ -218,12 +274,12 @@ def prepare(name, run_id, environment, record=None):
     print(f'Prepared {run_id} ({environment}); no deployment or network operation performed.')
 
 
-def populate_run(source, data, directory, run_id, environment, record_path):
+def populate_run(source, data, directory, run_id, environment, record_path, leaves):
     for live, relative in owned_sources(source, data):
         saved = directory / 'inputs' / relative
         saved.parent.mkdir(parents=True, exist_ok=True)
         if live.is_dir():
-            shutil.copytree(live, saved, ignore=shutil.ignore_patterns(*GENERATED))
+            shutil.copytree(live, saved, ignore=owned_copy_ignore(live, relative))
         else:
             shutil.copy2(live, saved)
     shutil.copytree(directory / 'inputs/target/config', directory / 'config')
@@ -231,11 +287,53 @@ def populate_run(source, data, directory, run_id, environment, record_path):
         (directory / name).mkdir()
     if record_path:
         shutil.copytree(record_path, directory / 'inputs/record')
-        for network in data['networks'].values():
+        for network in networks(data):
+            if network['slug'] != 'sepolia' and network['slug'] not in leaves:
+                continue
             filename = network['slug'] + '.json'
             shutil.copy2(record_path / filename, directory / 'config/chains' / filename)
-        if (record_path / 'state').is_dir():
-            shutil.copytree(record_path / 'state', directory / 'state', dirs_exist_ok=True)
+        record_state = record_path / 'state'
+        if not record_state.is_dir() and record_path.name == 'chains':
+            record_state = record_path.parent / 'state'
+        if record_state.is_dir():
+            shutil.copytree(record_state, directory / 'state', dirs_exist_ok=True)
+            if record_state != record_path / 'state':
+                shutil.copytree(record_state, directory / 'inputs/record/state')
+            legacy = directory / 'state/l2.json'
+            if legacy.exists():
+                state = read_json(legacy)
+                leaf = state.get('l2Chain', 'mantle_sepolia')
+                if leaf in leaves:
+                    shutil.copy2(legacy, directory / 'state' / f'{leaf}.json')
+    # Subset selection changes run intent only; the source snapshot remains immutable.
+    selected = {'sepolia', *leaves}
+    for network in networks(data):
+        filename = directory / 'config/chains' / (network['slug'] + '.json')
+        if network['slug'] not in selected:
+            filename.unlink()
+            continue
+        config = read_json(filename)
+        if 'remote_lanes' in config:
+            if record_path and any(l['remote_chain_name'] not in selected for l in config['remote_lanes']):
+                raise ValueError('Cannot hide existing lanes by importing a record into a smaller topology')
+            config['remote_lanes'] = [l for l in config['remote_lanes'] if l['remote_chain_name'] in selected]
+            write_json(filename, config)
+    policy_path = directory / 'config/ccv-policy.json'
+    if record_path:
+        policy_path.unlink(missing_ok=True)
+        if (record_path / 'ccv-policy.json').exists():
+            shutil.copy2(record_path / 'ccv-policy.json', policy_path)
+        # Missing policy remains missing: verify-state applies only its guarded historical
+        # single-lane fallback, and rejects modern/multi-lane records without explicit intent.
+    if policy_path.exists():
+        policy = read_json(policy_path)
+        policy['chains'] = {c: v for c, v in policy['chains'].items() if c in selected}
+        for spec in policy['chains'].values():
+            spec['lanes'] = {c: v for c, v in spec['lanes'].items() if c in selected}
+            spec['localResolver']['outbound'] = {c: v for c, v in spec['localResolver']['outbound'].items() if c in selected}
+            for external in spec.get('externalResolvers', {}).values():
+                external['outbound'] = {c: v for c, v in external['outbound'].items() if c in selected}
+        write_json(policy_path, policy)
     dependencies = []
     for path in read_json(OPERATIONS / 'dependencies.json'):
         dep = {'path': path}
@@ -248,7 +346,9 @@ def populate_run(source, data, directory, run_id, environment, record_path):
         patch.write_text(git('diff', '--binary', 'HEAD', cwd=checkout) + '\n')
     write_json(directory / 'run.json', {
         'schemaVersion': 1, 'id': run_id, 'target': data['id'],
-        'environment': environment, 'l2Chain': data['networks']['l2']['slug'],
+        'environment': environment, 'l2Chain': leaves[0],
+        'l2Chains': leaves,
+        'chainStateFiles': True,
         'status': 'prepared', 'preparedAt': datetime.now(timezone.utc).isoformat(),
         'repositoryCommit': git('rev-parse', 'HEAD'),
         'sourceImportCommit': read_json(OPERATIONS / 'migration-source.json')['sourceCommit'],
@@ -272,12 +372,34 @@ def execute(arguments):
         env['WSTETH_TARGET_DIR'] = str(directory / 'inputs/target')
     if arguments[0] not in SAFE_RECIPES and arguments[0] not in ('--list', '--summary'):
         directory, data = active()
-        if env.get('L2_CHAIN', data['l2Chain']) != data['l2Chain']:
+        leaves = data.get('l2Chains', [data['l2Chain']])
+        if env.get('L2_CHAIN', leaves[0]) not in leaves:
             raise ValueError('L2_CHAIN differs from the selected target')
-        env['L2_CHAIN'] = data['l2Chain']
+        selected = [env['L2_CHAIN']] if env.get('L2_CHAIN') else leaves
+        if arguments[0] == 'all' and selected != leaves:
+            raise ValueError('all operates on the complete target; unset L2_CHAIN')
+        env['L2_CHAIN'] = selected[0]
         env['WSTETH_RUN_ENVIRONMENT'] = data['environment']
         env['WSTETH_TARGET_DIR'] = str(directory / 'inputs/target')
         env['WSTETH_TEST_DIR'] = str(ROOT / 'targets' / data['target'] / 'test')
+        env['WSTETH_L2_CHAINS'] = ' '.join(leaves)
+        if arguments[0] in PIPELINES and len(arguments) != 1:
+            raise ValueError('Pipeline recipes take no arguments')
+        skip_hub = env.get('WSTETH_SKIP_L1', '0')
+        if skip_hub not in ('0', '1'):
+            raise ValueError('WSTETH_SKIP_L1 must be 0 or 1')
+        for recipe in PIPELINES.get(arguments[0], [arguments[0]]):
+            for index, leaf in enumerate(selected if recipe in PER_SPOKE else selected[:1]):
+                child = dict(env, L2_CHAIN=leaf,
+                             WSTETH_SKIP_L1=('1' if index or skip_hub == '1' else '0') if recipe in HUB_ONCE else '0')
+                if data.get('chainStateFiles'):
+                    child['L2_STATE_FILE'] = f'state/{leaf}.json'
+                result = subprocess.run(['just', '--justfile', str(OPERATIONS / 'justfile'), '--',
+                                         recipe, *(arguments[1:] if recipe == arguments[0] else [])],
+                                        cwd=OPERATIONS, env=child)
+                if result.returncode:
+                    return result.returncode
+        return 0
     result = subprocess.run(['just', '--justfile', str(ROOT / 'orchestration/wsteth-ccip/justfile'),
                              *([] if arguments[0].startswith('-') else ['--']),
                              *arguments], cwd=OPERATIONS, env=env)
@@ -290,6 +412,7 @@ def main():
     p = commands.add_parser('prepare')
     p.add_argument('target'); p.add_argument('run_id'); p.add_argument('environment', nargs='?', default='fork', choices=['fork', 'testnet'])
     p.add_argument('--record', help='Repository-relative existing record to copy into this run')
+    p.add_argument('--spokes', nargs='+', help='Deploy a subset of the target spokes (default: all)')
     p = commands.add_parser('use'); p.add_argument('run_id')
     commands.add_parser('require-active')
     commands.add_parser('restore-templates')
@@ -302,12 +425,18 @@ def main():
             active()
             return 0
         if args.command == 'restore-templates':
-            directory, _ = active()
+            directory, data = active()
+            if 'l2Chains' in data:
+                raise ValueError('Prepare a new run to reset deployment inputs; restoring templates would erase selected topology and deployed records')
             for p in (directory / 'inputs/target/config/chains').glob('*.json'):
                 shutil.copy2(p, directory / 'config/chains' / p.name)
             return 0
         with exclusive():
-            if args.command == 'prepare': prepare(args.target, args.run_id, args.environment, args.record)
+            if args.command == 'prepare':
+                if args.spokes is None:
+                    prepare(args.target, args.run_id, args.environment, args.record)
+                else:
+                    prepare(args.target, args.run_id, args.environment, args.record, args.spokes)
             elif args.command == 'use': activate(args.run_id)
             elif args.command == 'run': return execute(args.arguments)
         return 0

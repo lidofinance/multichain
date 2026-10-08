@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Step 03 — deploy L2 wstETH (ERC20BridgedPermit) behind OssifiableProxy on the L2 fork.
+# Step 03 — deploy L2 wstETH (ERC20BridgedPermit) behind an OZ 5.3.0 TransparentUpgradeableProxy on the L2 fork.
+# The proxy constructor creates the ProxyAdmin and gives it to the OptimismBridgeExecutor (step 02).
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,8 +29,8 @@ TOKEN_METHODS="$(FOUNDRY_PROFILE=token forge inspect \
 [ -n "${TOKEN_METHODS}" ] || {
     echo "✗ could not compile ../../components/wsteth-token/contracts/token/ERC20BridgedPermit.sol under FOUNDRY_PROFILE=token."
     echo "  The deploy below needs the same build, so fix this first — usually a missing"
-    echo "  'just init-thirdparty' (the token profile resolves OZ 4.8.3 out of ../../components/ccip's"
-    echo "  node_modules), or a local token source/build configuration error."
+    echo "  'just init-thirdparty' (the token profile resolves OZ 5.0.2 / 5.3.0 from the public"
+    echo "  components/openzeppelin-contracts-* submodules), or a local token source/build configuration error."
     exit 1
 }
 # Method rows are '| name(args) | selector |', so anchor on the name column.
@@ -41,7 +42,7 @@ if printf '%s\n' "${TOKEN_METHODS}" | grep -qiE '^\|[[:space:]]*bridge'; then
     exit 1
 fi
 
-[ -f state/l2.json ] || { echo "✗ run step 02 first (state/l2.json missing)"; exit 1; }
+[ -f "${L2_STATE_FILE}" ] || { echo "✗ run step 02 first (${L2_STATE_FILE} missing)"; exit 1; }
 
 assert_chain_id "${L2_RPC}" "${L2_CHAIN_ID}" "L2 ${L2_CHAIN}"
 assert_l2_state_chain
@@ -76,6 +77,7 @@ assert_token_shape() {
     fi
 
     assert_eip712_domain "${proxy}"
+    assert_proxy_admin "${proxy}"
 
     # 4) The registration principal step 07 B relies on (registerAccessControlDefaultAdmin).
     #    Skipped once part D has handed DEFAULT_ADMIN_ROLE to the OpExec — that is the end state,
@@ -89,8 +91,27 @@ assert_token_shape() {
     fi
 }
 
+# 5) The proxy admin (script/_proxy.sh verifies the record-selected kind and EIP-1967 admin slot):
+#    - transparent: a fresh deploy. The OZ 5.3.0 TransparentUpgradeableProxy keeps a ProxyAdmin in the
+#      slot, and that ProxyAdmin must be owned by the OptimismBridgeExecutor from the first block
+#      (initialOwner in the proxy constructor), so no EOA ever holds the upgrade right.
+#    - legacy: a token from a run before 2026-10-08 (OssifiableProxy, admin acts directly). Accepted on
+#      the idempotent skip path with the admin at OpExec, or still at the deployer while step 07 D is
+#      pending (it hands the admin over). Such a proxy cannot be upgraded onto this implementation.
+assert_proxy_admin() {
+    local proxy="$1" opexec pinned info
+    opexec="$(jq -r '.opExec // empty' "${L2_STATE_FILE}")"
+    pinned="$(jq -r '.wstETHProxyAdmin // empty' "${L2_STATE_FILE}")"
+    info="$(proxy_admin_kind "${proxy}" "${L2_RPC}" "${pinned}")" || return 1
+    if legacy_pending_handover "${info}" "${pinned}" "${DEPLOYER_ADDRESS}"; then
+        echo "⚠ L2 wstETH: legacy OssifiableProxy still administered by deployer; step 07 D hands it to OpExec."
+    else
+        assert_proxy_admin_owner "${proxy}" "${L2_RPC}" "${opexec}" "L2 wstETH" "${pinned}" "${info}"
+    fi
+}
+
 # 3) EIP-712 domain coherence — the one place this proxy and its implementation can silently
-#    disagree. OZ 4.x `EIP712` bakes the hashed name/version into the IMPLEMENTATION's immutables
+#    disagree. `PermitExtension` bakes the hashed name/version into the IMPLEMENTATION's immutables
 #    from its CONSTRUCTOR arguments, and that is what `permit` validates against; `eip712Domain()`
 #    reports what the INITIALIZER wrote into PROXY storage. Nothing in the code makes the two agree
 #    — DeployL2Token.s.sol simply passes the same constants to both. If that ever drifts, wallets
@@ -127,32 +148,40 @@ assert_eip712_domain() {
 }
 
 # Idempotency: skip if token already deployed with code.
-EXISTING="$(jq -r '.wstETH // empty' state/l2.json)"
+EXISTING="$(jq -r '.wstETH // empty' "${L2_STATE_FILE}")"
 if [ -n "${EXISTING}" ] && has_code "${EXISTING}" "${L2_RPC}"; then
     echo "▸ L2 wstETH already at ${EXISTING}; skipping deploy."
     assert_token_shape "${EXISTING}"
     exit 0
 fi
 
-echo "▸ deploying L2 wstETH (ERC20BridgedPermit behind OssifiableProxy)"
+echo "▸ deploying L2 wstETH (ERC20BridgedPermit behind an OZ 5.3.0 TransparentUpgradeableProxy)"
 TOKEN_OUT="${ROOT}/state/l2.token.addr"
-FOUNDRY_PROFILE=token forge build ../../components/wsteth-token/contracts/token/ERC20BridgedPermit.sol ../../components/wsteth-token/contracts/proxy/OssifiableProxy.sol
-TOKEN_OUT="${TOKEN_OUT}" \
+L2_OPEXEC="$(jq -er '.opExec' "${L2_STATE_FILE}")"
+FOUNDRY_PROFILE=token forge build ../../components/wsteth-token/contracts/token/ERC20BridgedPermit.sol
+# The OZ 5.3.0 proxy + ProxyAdmin: compiled from the token project's root, whose lib/ holds the
+# submodule, so the deployed metadata names `lib/openzeppelin-contracts-5.3.0/contracts/...` sources
+# and not this checkout's path (see components/wsteth-token/foundry.toml).
+forge build --root ../../components/wsteth-token \
+    lib/openzeppelin-contracts-5.3.0/contracts/proxy/transparent/TransparentUpgradeableProxy.sol \
+    lib/openzeppelin-contracts-5.3.0/contracts/proxy/transparent/ProxyAdmin.sol
+TOKEN_OUT="${TOKEN_OUT}" L2_OPEXEC="${L2_OPEXEC}" \
     forge script script/DeployL2Token.s.sol:DeployL2Token \
     --rpc-url "${L2_RPC}" --broadcast -vvv
 
 # vm.writeFile emits no trailing newline, so `read` would hit EOF and (under set -e) abort.
 PROXY="$(awk '{print $1}' "${TOKEN_OUT}")"
 IMPL="$(awk '{print $2}' "${TOKEN_OUT}")"
+PROXY_ADMIN="$(awk '{print $3}' "${TOKEN_OUT}")"
 rm -f "${TOKEN_OUT}"
 
-assert_token_shape "${PROXY}"
+# Record CREATE outputs before checking them against the chain, including the new admin pin.
+jq_inplace "${L2_STATE_FILE}" --arg p "${PROXY}" --arg i "${IMPL}" --arg a "${PROXY_ADMIN}" '.wstETH = $p | .wstETHImpl = $i | .wstETHProxyAdmin = $a'
 
-# Merge token addresses into state/l2.json.
-jq_inplace state/l2.json --arg p "${PROXY}" --arg i "${IMPL}" '.wstETH = $p | .wstETHImpl = $i'
+assert_token_shape "${PROXY}"
 
 # Seed the CCIP L2 chain config token address (used by step 04's 1_Deploy).
 jq_inplace "${L2_CFG_CANON}" --arg p "${PROXY}" '.addresses.token = $p'
 
-echo "✓ step 03 done. L2 wstETH proxy = ${PROXY} (impl ${IMPL})"
-jq '.' state/l2.json
+echo "✓ step 03 done. L2 wstETH proxy = ${PROXY} (impl ${IMPL}, ProxyAdmin ${PROXY_ADMIN} owned by OpExec)"
+jq '.' "${L2_STATE_FILE}"

@@ -6,8 +6,10 @@
 # addresses Etherscan already shows as verified, and submits the rest with
 # `forge verify-contract --guess-constructor-args` FROM THE PROJECT THAT DEPLOYED them (so
 # compiler settings match the deploy artifacts):
-#   • root project          — OpExec, L2 wstETH impl + OssifiableProxy
-#                             ([profile.token]: OZ 4.x / solc 0.8.10)
+#   • root project          — OpExec ([profile.govexec]: solc 0.8.10),
+#                             L2 wstETH impl ([profile.token]: OZ 5.0.2, solc 0.8.26)
+#   • ../../components/wsteth-token — TransparentUpgradeableProxy + ProxyAdmin
+#                             (default profile: OZ 5.3.0, solc 0.8.26)
 #   • ../../components/ccip/chains/evm   — pools, hooks, lockboxes, POM (ERC1967Proxy + impl), CCV contracts
 #   • ../../components/core (hardhat)    — Lido core via its own `verify:deployed` task (deployed-local.json);
 #                             entries without a `contract` field (the dg:* ones) are skipped by it
@@ -31,10 +33,13 @@ cd "${ROOT}"
 
 # Self-gating so `just all` can include this step on a fork run without failing. Gate on the
 # PIPELINE RPCs (they encode the deploy substrate), not the remote endpoints below.
-L1_ANVIL=0; is_anvil "${L1_RPC}" && L1_ANVIL=1
+L1_ANVIL=0
+if [ "${WSTETH_SKIP_L1:-0}" != 1 ]; then
+    is_anvil "${L1_RPC}" && L1_ANVIL=1
+fi
 L2_ANVIL=0; is_anvil "${L2_RPC}" && L2_ANVIL=1
-if [ "${L1_ANVIL}" = "1" ] && [ "${L2_ANVIL}" = "1" ]; then
-    echo "▸ both RPCs are anvil forks — nothing to verify on an explorer; skipping."
+if { [ "${WSTETH_SKIP_L1:-0}" = 1 ] || [ "${L1_ANVIL}" = "1" ]; } && [ "${L2_ANVIL}" = "1" ]; then
+    echo "▸ selected RPCs are anvil forks — nothing to verify on an explorer; skipping."
     exit 0
 fi
 
@@ -47,7 +52,7 @@ esac
 backend_for() { [ "$1" = "11155111" ] && echo etherscan || echo "${L2_VERIFIER}"; }
 
 # The Etherscan key is needed only when a live chain actually verifies via Etherscan.
-if [ "${L1_ANVIL}" = "0" ] || { [ "${L2_ANVIL}" = "0" ] && [ "${L2_VERIFIER}" = "etherscan" ]; }; then
+if { [ "${WSTETH_SKIP_L1:-0}" != 1 ] && [ "${L1_ANVIL}" = "0" ]; } || { [ "${L2_ANVIL}" = "0" ] && [ "${L2_VERIFIER}" = "etherscan" ]; }; then
     : "${ETHERSCAN_API_KEY:?set ETHERSCAN_API_KEY (one Etherscan v2 key serves all Etherscan chains)}"
 fi
 
@@ -60,6 +65,7 @@ _l2_remote_var="${L2_RPC_VAR}_REMOTE"
 FAILED=0
 SUBMITTED=0
 SKIPPED=0
+NOT_ATTEMPTED=0
 
 # is_verified <chainid> <addr>: succeed iff the chain's explorer already has source for <addr>.
 # Blockscout's API is Etherscan-shape-compatible (getabi: .status == "1" when verified, no key).
@@ -152,7 +158,9 @@ verify_ccip_stack() {
 }
 
 # ── L1 (Sepolia) ───────────────────────────────────────────────────────────
-if [ "${L1_ANVIL}" = "1" ]; then
+if [ "${WSTETH_SKIP_L1:-0}" = 1 ]; then
+    echo "▸ L1 explorer verification completed in the first spoke pass."
+elif [ "${L1_ANVIL}" = "1" ]; then
     echo "▸ L1 RPC is an anvil fork — skipping L1 verification."
 else
     echo "── L1 Sepolia ────────────────────────────────────────────────────────"
@@ -217,13 +225,46 @@ if [ "${L2_ANVIL}" = "1" ]; then
     echo "▸ L2 RPC is an anvil fork — skipping L2 verification."
 else
     echo "── L2 ${L2_CHAIN} ────────────────────────────────────────────────────"
-    if [ -f state/l2.json ]; then
-        vc "${L2_CHAIN_ID}" "${L2_RPC}" "${ROOT}" token "$(jq -r '.opExec // empty' state/l2.json)" \
+    if [ -f "${L2_STATE_FILE}" ]; then
+        vc "${L2_CHAIN_ID}" "${L2_RPC}" "${ROOT}" govexec "$(jq -r '.opExec // empty' "${L2_STATE_FILE}")" \
             "../../components/governance-crosschain-bridges/contracts/bridges/OptimismBridgeExecutor.sol:OptimismBridgeExecutor" "OpExec"
-        vc "${L2_CHAIN_ID}" "${L2_RPC}" "${ROOT}" token "$(jq -r '.wstETHImpl // empty' state/l2.json)" \
-            "../../components/wsteth-token/contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit" "wstETH impl"
-        vc "${L2_CHAIN_ID}" "${L2_RPC}" "${ROOT}" token "$(jq -r '.wstETH // empty' state/l2.json)" \
-            "../../components/wsteth-token/contracts/proxy/OssifiableProxy.sol:OssifiableProxy" "wstETH proxy"
+        L2_TOKEN_PROXY="$(jq -r '.wstETH // empty' "${L2_STATE_FILE}")"
+        L2_TOKEN_PROXY_INFO="$(proxy_admin_kind "${L2_TOKEN_PROXY}" "${L2_RPC}" "$(jq -r '.wstETHProxyAdmin // empty' "${L2_STATE_FILE}")")"
+        read -r L2_TOKEN_PROXY_KIND _ <<<"${L2_TOKEN_PROXY_INFO}"
+        assert_proxy_admin_owner "${L2_TOKEN_PROXY}" "${L2_RPC}" \
+            "$(jq -r '.opExec // empty' "${L2_STATE_FILE}")" "L2 wstETH" \
+            "$(jq -r '.wstETHProxyAdmin // empty' "${L2_STATE_FILE}")" "${L2_TOKEN_PROXY_INFO}"
+        case "${L2_TOKEN_PROXY_KIND}" in
+        transparent)
+            vc "${L2_CHAIN_ID}" "${L2_RPC}" "${ROOT}" token "$(jq -r '.wstETHImpl // empty' "${L2_STATE_FILE}")" \
+                "../../components/wsteth-token/contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit" "wstETH impl"
+            # The OZ 5.3.0 proxy + ProxyAdmin were compiled from the token project's root (the submodule
+            # sits in its lib/, so the metadata carries relative source names); verify from that root with
+            # the same artifacts step 03 deployed. The build is idempotent and cheap.
+            TOKEN_ROOT="${ROOT}/../../components/wsteth-token"
+            OZ53_PROXY="lib/openzeppelin-contracts-5.3.0/contracts/proxy/transparent"
+            forge build --root "${TOKEN_ROOT}" --silent \
+                "${OZ53_PROXY}/TransparentUpgradeableProxy.sol" "${OZ53_PROXY}/ProxyAdmin.sol"
+            vc "${L2_CHAIN_ID}" "${L2_RPC}" "${TOKEN_ROOT}" - "${L2_TOKEN_PROXY}" \
+                "${OZ53_PROXY}/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy" "wstETH proxy"
+            # The ProxyAdmin is CREATED BY the proxy constructor, so Etherscan has no creation tx to guess
+            # its constructor args from: pass them (initialOwner = OpExec) explicitly.
+            vc "${L2_CHAIN_ID}" "${L2_RPC}" "${TOKEN_ROOT}" - "$(jq -r '.wstETHProxyAdmin // empty' "${L2_STATE_FILE}")" \
+                "${OZ53_PROXY}/ProxyAdmin.sol:ProxyAdmin" "wstETH ProxyAdmin" \
+                "$(cast abi-encode 'f(address)' "$(jq -r '.opExec' "${L2_STATE_FILE}")")"
+            ;;
+        legacy)
+            # A record from before 2026-10-08: OssifiableProxy + an OpenZeppelin 4.x build of the
+            # implementation. Neither source is in this tree any more (components/wsteth-token moved to
+            # OZ 5.0.2 / 5.3.0), so a compile here could only produce a mismatch. Verify those two from
+            # the run snapshot that produced them (runs/.../inputs/components/wsteth-token), not from HEAD.
+            echo "  – wstETH impl/proxy: legacy OssifiableProxy deployment (${L2_TOKEN_PROXY_KIND}); sources are not in this tree — verify from the originating run's inputs/ snapshot. Skipping."
+            NOT_ATTEMPTED=$((NOT_ATTEMPTED + 2))
+            ;;
+        *)
+            echo "✗ Cannot verify L2 token: missing or unrecognised proxy admin (${L2_TOKEN_PROXY_KIND})." >&2
+            exit 1 ;;
+        esac
     fi
 
     # CCIP stack (burn/mint spoke).
@@ -267,7 +308,7 @@ audit_ccip_stack() {
     done
 }
 
-if [ "${L1_ANVIL}" = "0" ]; then
+if [ "${WSTETH_SKIP_L1:-0}" != 1 ] && [ "${L1_ANVIL}" = "0" ]; then
     echo "── post-check L1 Sepolia: every deployed contract verified? ──────────"
     # Full Lido core family: every record entry carrying a contract+address pair (the set
     # core's verify:deployed covers — proxies and implementations alike).
@@ -294,16 +335,17 @@ fi
 
 if [ "${L2_ANVIL}" = "0" ]; then
     echo "── post-check L2 ${L2_CHAIN}: every deployed contract verified? ──────"
-    if [ -f state/l2.json ]; then
-        audit "${L2_CHAIN_ID}" "$(jq -r '.opExec // empty' state/l2.json)" "OpExec"
-        audit "${L2_CHAIN_ID}" "$(jq -r '.wstETH // empty' state/l2.json)" "wstETH proxy"
-        audit "${L2_CHAIN_ID}" "$(jq -r '.wstETHImpl // empty' state/l2.json)" "wstETH impl"
+    if [ -f "${L2_STATE_FILE}" ]; then
+        audit "${L2_CHAIN_ID}" "$(jq -r '.opExec // empty' "${L2_STATE_FILE}")" "OpExec"
+        audit "${L2_CHAIN_ID}" "$(jq -r '.wstETH // empty' "${L2_STATE_FILE}")" "wstETH proxy"
+        audit "${L2_CHAIN_ID}" "$(jq -r '.wstETHImpl // empty' "${L2_STATE_FILE}")" "wstETH impl"
+        audit "${L2_CHAIN_ID}" "$(jq -r '.wstETHProxyAdmin // empty' "${L2_STATE_FILE}")" "wstETH ProxyAdmin"
     fi
     audit_ccip_stack "${L2_CHAIN_ID}" "${L2_RPC}" "${RECORD_DIR}/${L2_CHAIN}.json"
 fi
 
 echo "──────────────────────────────────────────────────────────────────────────"
-echo "verification: ${SUBMITTED} submitted, ${SKIPPED} already verified, ${FAILED} failed"
+echo "verification: ${SUBMITTED} submitted, ${SKIPPED} already verified, ${NOT_ATTEMPTED} not attempted, ${FAILED} failed"
 echo "post-check:   ${CHECKED} contracts checked, ${NOT_VERIFIED} NOT verified"
 [ "${FAILED}" = "0" ] || { echo "✗ step 10 finished with submission failures — re-run after fixing (idempotent)."; exit 1; }
 [ "${NOT_VERIFIED}" = "0" ] || { echo "✗ step 10: ${NOT_VERIFIED} contract(s) lack verified source on their explorer (see ✗ above)."; exit 1; }

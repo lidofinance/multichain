@@ -9,8 +9,10 @@
 # Regenerable compiler and install outputs
 out/
 out-token/
+out-govexec/
 cache/
 cache-token/
+cache-govexec/
 node_modules/
 *.log
 .DS_Store

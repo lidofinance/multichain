@@ -3,7 +3,8 @@
 const fs = require('node:fs');
 const skipped = new Set(process.argv.slice(2));
 try {
-  for (const [chain, statePath] of [['sepolia', 'state/l1.json'], [process.env.L2_CHAIN || 'mantle_sepolia', 'state/l2.json']]) {
+  for (const [chain, statePath] of [['sepolia', 'state/l1.json'], [process.env.L2_CHAIN || 'mantle_sepolia', process.env.L2_STATE_FILE || 'state/l2.json']]) {
+    if (chain === 'sepolia' && process.env.WSTETH_SKIP_L1 === '1') continue;
     const config = JSON.parse(fs.readFileSync(`config/chains/${chain}.json`, 'utf8'));
     const state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
     const proxy = config.deployed.pool_operation_manager;

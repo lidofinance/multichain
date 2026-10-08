@@ -15,10 +15,10 @@ cd "${ROOT}"
 # vendor tree. PoolOperationManager itself is pristine upstream: GUARDIAN_ROLE has been removed.
 bash "${HERE}/00_patch_submodules.sh"
 
-for f in state/l1.json state/l2.json; do [ -f "$f" ] || { echo "✗ missing $f (run earlier steps)"; exit 1; }; done
+for f in state/l1.json "${L2_STATE_FILE}"; do [ -f "$f" ] || { echo "✗ missing $f (run earlier steps)"; exit 1; }; done
 assert_l2_state_chain
 L1_WSTETH=$(jq -r .wstETH state/l1.json); AGENT=$(jq -r .agent state/l1.json)
-L2_WSTETH=$(jq -r .wstETH state/l2.json); OPEXEC=$(jq -r .opExec state/l2.json)
+L2_WSTETH=$(jq -r .wstETH "${L2_STATE_FILE}"); OPEXEC=$(jq -r .opExec "${L2_STATE_FILE}")
 
 # Populate only this run's chain records; never import another run's cached CCIP data.
 seed_cfg() {
@@ -26,11 +26,10 @@ seed_cfg() {
     jq_inplace "${CFG_DIR}/${name}.json" --arg t "${token}" --arg a "${agent}" \
         '.addresses.token=$t | .governance_addresses.lido_dao_agent=$a'
 }
-seed_cfg sepolia "$L1_WSTETH" "$AGENT"
-# The L1 record's lane is per-pair: point it at the active L2 (siloed hub semantics preserved).
-# Steps 05/07/08 read this same run record.
-jq_inplace "${CFG_DIR}/sepolia.json" --arg l2 "${L2_CHAIN}" \
-    '.remote_lanes = [{"is_siloed": true, "remote_chain_name": $l2}]'
+if [ "${WSTETH_SKIP_L1:-0}" != 1 ]; then
+    seed_cfg sepolia "$L1_WSTETH" "$AGENT"
+fi
+# Preserve the complete target topology: the hub deploy creates one lockbox per lane.
 seed_cfg "${L2_CHAIN}" "$L2_WSTETH" "$OPEXEC"
 
 # Pair guard: if the L1 pool already exists on-chain but has no lockbox for THIS L2, the record
@@ -41,7 +40,8 @@ if [ -n "${L1_POOL_EXISTING}" ] && has_code "${L1_POOL_EXISTING}" "${L1_RPC}"; t
     if ! jq -e --arg l2 "${L2_CHAIN}" '.deployed.lock_boxes[]? | select(.remote_chain_name == $l2)' \
             "${CFG_DIR}/sepolia.json" >/dev/null; then
         echo "✗ L1 pool ${L1_POOL_EXISTING} is deployed for a different pair (no ${L2_CHAIN} lockbox in the record)."
-        echo "  Deploy this pair on a fresh L1 fork (prepare a new run first) or keep a separate L1 record per pair."
+        echo "  Add a distinct lockbox through the incremental governance procedure in docs/MULTICHAIN-OPERATIONS.md."
+        echo "  Bootstrap deployment does not migrate an already handed-over hub."
         exit 1
     fi
 fi
@@ -77,14 +77,18 @@ run_deploy() {
     run_ccip_script "${name}" "${rpc}" "1_Deploy.s.sol:DeployScript"
 }
 
-run_deploy sepolia "${L1_RPC}"
+if [ "${WSTETH_SKIP_L1:-0}" != 1 ]; then
+    run_deploy sepolia "${L1_RPC}"
+fi
 run_deploy "${L2_CHAIN}" "${L2_RPC}"
 
 # Stamp the key that actually signed the deploy into the record, so step 08's deployer-revocation
 # checks bind to the real deployer — not to whatever DEPLOYER_ADDRESS happens to be exported in the
 # verifying environment (default: anvil account 0, which would pass vacuously).
 DEPLOYER_FROM_KEY="$(cast wallet address --private-key "${DEPLOYER_PRIVATE_KEY}")"
-for f in config/chains/sepolia.json "${L2_CFG_CANON}"; do
+STAMP_FILES=("${L2_CFG_CANON}")
+if [ "${WSTETH_SKIP_L1:-0}" != 1 ]; then STAMP_FILES+=(config/chains/sepolia.json); fi
+for f in "${STAMP_FILES[@]}"; do
     jq_inplace "${f}" --arg d "${DEPLOYER_FROM_KEY}" '.governance_addresses.deployer = $d'
 done
 
