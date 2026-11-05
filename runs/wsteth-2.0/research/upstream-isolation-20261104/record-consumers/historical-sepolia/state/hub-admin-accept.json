@@ -1,0 +1,26 @@
+{
+  "hub": "0x40d36dbc2798666a40a23e7010bb9c2DC0c8d284",
+  "administrator": "0x9D2A6fd46410a4Ae45bDD6dF9F8a9055C4656489",
+  "proposal": {
+    "name": "accept-hub-admin",
+    "id": "0x1de547a1e4605d590a61684ff4ddb89960711a2d117f09be59305b6fb6c4fb4a",
+    "timelock": "0x9D2A6fd46410a4Ae45bDD6dF9F8a9055C4656489",
+    "predecessor": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "salt": "0x479afaa14660fab5454bd973c29f6c7600d4b266779622d3ef244390110e5ec6",
+    "delay": 259200,
+    "proposer": "0x3C3C000000000000000000000000000000000001",
+    "scheduledTx": "0x4694209330a8d928f52462ee9b65c047fc57db5535e0b52676747fe21e337e63",
+    "scheduledAtBlock": 12056953,
+    "executor": "0x942817af47F79AAa758BE480c4546361D4d56723",
+    "executedBy": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+    "executedTx": "0xb6a90dd403988e06c3faaf8f64c0131473c22dbba9b0cb53b2b6087b273366bd",
+    "executedAtBlock": 12056955,
+    "calls": [
+      {
+        "target": "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82",
+        "value": "0",
+        "data": "0x156194da0000000000000000000000009b5e9aac68c6c054d2b2579bd205f25c5dd4841f"
+      }
+    ]
+  }
+}

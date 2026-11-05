@@ -26,6 +26,11 @@ wsteth *args:
 wsteth-prepare target run *args:
     python3 orchestration/wsteth-ccip/workspace.py prepare "$@"
 
+# Fresh owned forks; both lines run the complete migration and verification pipeline.
+[positional-arguments]
+wsteth-rehearse line="both" *args:
+    python3 orchestration/wsteth-ccip/rehearse.py "$@"
+
 # Select an existing run without resetting its records
 [positional-arguments]
 wsteth-use run:

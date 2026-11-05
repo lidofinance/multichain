@@ -25,11 +25,10 @@ interface IERC20Bridged is IERC20 {
 }
 
 /// @author psirex, kovalgek
-/// @notice ERC20 with unstructured-storage metadata. Carries NO mint/burn authority of its own:
-///     the `bridge` immutable and the `bridgeMint`/`bridgeBurn` pair are removed by
-///     patches/lido-l2-with-steth/0001 — this deployment mints and burns exclusively through the
-///     OZ AccessControl roles defined in ERC20BridgedPermit. `IERC20Bridged`
-///     above is left declared so the submodule's own importers still resolve it.
+/// @notice ERC20 base: `ERC20Core` plus name, symbol and decimals in unstructured storage. It has
+///     no mint or burn function; `ERC20BridgedPermit` adds them behind MINTER_ROLE and
+///     BURNER_ROLE. `IERC20Bridged` above describes the previous implementation's bridge-only
+///     mint and burn ABI and is not implemented by this contract.
 contract ERC20Bridged is ERC20Core, ERC20Metadata {
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
@@ -40,7 +39,8 @@ contract ERC20Bridged is ERC20Core, ERC20Metadata {
         uint8 decimals_
     ) ERC20Metadata(name_, symbol_, decimals_) {}
 
-    /// @notice Sets the name and the symbol of the tokens if they both are empty
+    /// @notice Stores the name and the symbol of the token. Callers check that none is stored yet
+    ///     (see the initializers in ERC20BridgedPermit).
     /// @param name_ The name of the token
     /// @param symbol_ The symbol of the token
     function _initializeERC20Metadata(string memory name_, string memory symbol_) internal {

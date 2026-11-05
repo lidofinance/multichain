@@ -18,7 +18,7 @@ def layout(tmp_path, monkeypatch):
     for directory in ('src', 'script', 'patches'):
         (operations / directory).mkdir(parents=True)
         (operations / directory / 'input.txt').write_text('original\n')
-    for name in ('foundry.toml', 'remappings.txt', 'justfile', 'workspace.py'):
+    for name in ('foundry.toml', 'remappings.txt', 'justfile', 'workspace.py', 'rehearse.py'):
         (operations / name).write_text('fixture\n')
     (operations / 'dependencies.json').write_text('[]')
     (operations / 'migration-source.json').write_text(json.dumps({'sourceCommit': 'source', 'dependencies': []}))
@@ -106,6 +106,70 @@ def test_recipe_cannot_bypass_selected_run(layout):
         workspace.execute(['--justfile', '/unselected/justfile'])
 
 
+@pytest.mark.parametrize('key,value', [
+    ('WSTETH_DEPLOY_SCOPE', 'hub'), ('WSTETH_BOOTSTRAP', 'sepolia-migration'),
+    ('HUB_ALLOW_UNACCOUNTED', '1'), ('HUB_MIGRATION_ONLY', '1'),
+    ('HUB_PROPOSER', 'private-test-value'), ('HUB_EXECUTOR', 'private-test-value'),
+    ('HUB_LANE_PROPOSER', 'private-test-value'), ('FEE_AGGREGATOR', 'private-test-value'),
+    ('DEFAULT_CONFIG', '/unexpected/config.json'), ('WSTETH_ACCESS_PROFILE', '/unexpected/profile.json'),
+])
+@pytest.mark.parametrize('source', ['environment', 'dotenv'])
+def test_pipeline_overrides_rejected_before_any_child(layout, monkeypatch, key, value, source):
+    operations, _, _ = layout
+    if source == 'environment':
+        monkeypatch.setenv(key, value)
+    else:
+        monkeypatch.delenv(key, raising=False)
+        # just loads this after workspace.py, so cleaning only os.environ is insufficient.
+        (operations / '.env').write_text(f'export {key}="{value}"\n')
+    monkeypatch.setattr(workspace.subprocess, 'run', lambda *a, **k: pytest.fail('child started'))
+    with pytest.raises(ValueError, match='Pipeline controls') as caught:
+        workspace.execute(['all'])
+    assert key in str(caught.value)
+    if value == 'private-test-value':
+        assert value not in str(caught.value)
+
+
+def test_empty_dotenv_override_is_rejected_without_evaluating_values(layout, tmp_path):
+    operations, _, _ = layout
+    marker = tmp_path / 'must-not-exist'
+    (operations / '.env').write_text(f'RPC_SEPOLIA=$(touch {marker})\nFEE_AGGREGATOR=\n')
+    with pytest.raises(ValueError, match='FEE_AGGREGATOR'):
+        workspace.execute(['all'])
+    assert not marker.exists()
+
+
+def test_credentials_survive_and_bootstrap_is_selected_from_target(layout, monkeypatch):
+    from types import SimpleNamespace
+    operations, _, target = layout
+    data = workspace.read_json(target / 'target.json')
+    data.update(operation='in-place-upgrade', environments=['fork'], migration={},
+                bootstrap={'kind': 'sepolia-migration'})
+    workspace.write_json(target / 'target.json', data)
+    for name in ('wsteth-base-migration-mainnet', 'wsteth-ccip-sepolia-mantle-dev'):
+        (workspace.ROOT / 'targets' / name / 'test').mkdir(parents=True)
+    workspace.prepare('example', 'bootstrap', 'fork')
+    (operations / '.env').write_text('# FEE_AGGREGATOR=ignored-comment\nRPC_SEPOLIA=unused\n')
+    monkeypatch.setenv('DEPLOYER_PRIVATE_KEY', 'test-secret')
+    monkeypatch.setenv('RPC_SEPOLIA', 'http://127.0.0.1:1234')
+    calls = []
+    monkeypatch.setattr(workspace.subprocess, 'run', lambda command, **kwargs:
+                        calls.append((command[-1], kwargs['env'])) or SimpleNamespace(returncode=0))
+    assert workspace.execute(['all']) == 0
+    assert 'bootstrap-legacy' in [recipe for recipe, _ in calls]
+    assert all(env['WSTETH_BOOTSTRAP'] == 'sepolia-migration' for _, env in calls)
+    assert all(env['DEPLOYER_PRIVATE_KEY'] == 'test-secret' for _, env in calls)
+    assert all(env['RPC_SEPOLIA'] == 'http://127.0.0.1:1234' for _, env in calls)
+
+
+def test_full_pipeline_cannot_inherit_hub_skip(layout, monkeypatch):
+    workspace.prepare('example', 'full', 'fork')
+    monkeypatch.setenv('WSTETH_SKIP_L1', '1')
+    monkeypatch.setattr(workspace.subprocess, 'run', lambda *a, **k: pytest.fail('child started'))
+    with pytest.raises(ValueError, match='unset WSTETH_SKIP_L1'):
+        workspace.execute(['all'])
+
+
 def test_run_identifier_cannot_escape_workspace(layout):
     with pytest.raises(ValueError, match='simple name'):
         workspace.prepare('example', '../../other', 'fork')
@@ -142,7 +206,7 @@ def test_owned_token_sources_are_snapshotted_and_protected(layout):
         workspace.active()
 
 
-@pytest.mark.parametrize('entry', ['script/new.sh', 'src/input.txt', 'justfile', 'foundry.toml'])
+@pytest.mark.parametrize('entry', ['script/new.sh', 'src/input.txt', 'justfile', 'foundry.toml', 'rehearse.py'])
 def test_live_orchestration_drift_blocks_execution(layout, entry):
     operations, _, _ = layout
     workspace.prepare('example', 'first', 'fork')
@@ -248,7 +312,9 @@ def multi_target(target, count):
         hub = network['slug'] == 'sepolia'
         workspace.write_json(target / 'config/chains' / (network['slug'] + '.json'), {
             'chain': {'chain_id': network['chainId'], 'pool_type': 'SiloedLockRelease' if hub else 'BurnMint'},
-            'addresses': {'token': ''},
+            'addresses': {'token': '0x' + '0' * 40},
+            # A scratch spoke names the token the component's 1_Deploy deploys.
+            **({} if hub else {'token_deployment': {'name': 'T', 'symbol': 'T', 'decimals': 18, 'version': '2'}}),
             'remote_lanes': [{'remote_chain_name': n['slug'], 'is_siloed': hub}
                              for n in (leaves if hub else [data['networks']['l1']])],
         })
@@ -275,8 +341,40 @@ def test_pipeline_finishes_deployment_everywhere_before_configuration(layout, mo
     assert sum(r == 'l1-core-dg' for r, _ in calls) == 1
     for recipe in ['ccip-deploy', 'ccip-configure', 'set-pool-gov', 'verify-contracts']:
         assert [env['WSTETH_SKIP_L1'] for r, env in calls if r == recipe] == ['0'] + ['1'] * (count - 1)
+
     assert all(env['WSTETH_SKIP_L1'] == '0' for r, env in calls if r == 'verify-state')
     assert [calls[i][1]['L2_STATE_FILE'] for i in deployed] == [f"state/{n['slug']}.json" for n in leaves]
+
+
+@pytest.mark.parametrize('with_hub', [True, False])
+def test_in_place_pipeline_selects_independent_hub_migration(layout, monkeypatch, with_hub):
+    from types import SimpleNamespace
+    _, _, target = layout
+    data = workspace.read_json(target / 'target.json')
+    data['operation'] = 'in-place-upgrade'
+    data['migration'] = {'hub': {'oldPool': '0x' + '1' * 40}} if with_hub else {}
+    workspace.write_json(target / 'target.json', data)
+    for network in workspace.networks(data):
+        path = target / 'config/chains' / (network['slug'] + '.json')
+        cfg = workspace.read_json(path)
+        cfg['addresses']['token'] = '0x' + '2' * 40
+        workspace.write_json(path, cfg)
+    workspace.prepare('example', 'in-place', 'fork')
+    calls = []
+    def run(command, **kwargs):
+        calls.append(command[-1])
+        return SimpleNamespace(returncode=0)
+    monkeypatch.delenv('L2_CHAIN', raising=False)
+    monkeypatch.setattr(workspace.subprocess, 'run', run)
+    assert workspace.execute(['all']) == 0
+    if with_hub:
+        phases = ['hub-prepare', 'hub-cutover', 'hub-accept-admin', 'base-prepare',
+                  'hub-connect-lane', 'migration-upgrade', 'test-scenarios', 'verify-state']
+        assert [r for r in calls if r in phases] == phases
+        assert not {'ccip-deploy', 'ccip-configure', 'set-pool-gov'}.intersection(calls)
+    else:
+        assert 'hub-prepare' not in calls
+        assert calls.index('ccip-deploy') < calls.index('ccip-configure') < calls.index('set-pool-gov')
 
 
 def test_subset_prunes_run_topology_without_changing_target(layout):
@@ -300,6 +398,43 @@ def test_subset_prunes_run_topology_without_changing_target(layout):
     assert set(policy['chains']) == {'sepolia', 'leaf1'}
     assert policy['chains']['sepolia']['externalResolvers']['provider']['outbound'] == {'leaf1': 'impl'}
     assert policy['chains']['leaf1']['externalResolvers']['provider']['outbound'] == {'sepolia': 'impl'}
+
+
+def test_subset_prunes_deferred_lanes_with_the_topology(layout):
+    # A hub record may defer its spokes' lanes to the owner's proposal (hub-connect-lane); a subset run
+    # keeps the deferral only for the spokes it deploys.
+    operations, _, target = layout
+    multi_target(target, 2)
+    hub = target / 'config/chains/sepolia.json'
+    record = workspace.read_json(hub)
+    record['deferred_lanes'] = ['leaf0', 'leaf1']
+    workspace.write_json(hub, record)
+    workspace.prepare('example', 'one', 'fork', selected_spokes=['leaf1'])
+    run_hub = workspace.read_json(operations / 'config/chains/sepolia.json')
+    assert [l['remote_chain_name'] for l in run_hub['remote_lanes']] == ['leaf1']
+    assert run_hub['deferred_lanes'] == ['leaf1']
+
+
+def test_record_import_preserves_imported_lane_policy_and_metadata(layout):
+    import shutil
+    operations, runs, target = layout
+    record = runs / 'history/imported/chains'
+    shutil.copytree(target / 'config/chains', record)
+    hub = workspace.read_json(record / 'sepolia.json')
+    hub.update(remote_lanes=[{'remote_chain_name': name} for name in ('example', 'old_lane')],
+               imported_lanes={'old_lane': {'rate_limits': {'capacity': '123'}}}, deferred_lanes=['example'])
+    workspace.write_json(record / 'sepolia.json', hub)
+    workspace.write_json(record / 'old_lane.json', {'chain': {'chain_id': 987}, 'ccip': {'chain_selector': 123}})
+    policy = {'chains': {'sepolia': {
+        'lanes': {'example': {'outbound': ['local']}, 'old_lane': {'outbound': [], 'inbound': []}},
+        'localResolver': {'outbound': {'example': 'dummy', 'old_lane': 'none'}},
+        'externalResolvers': {'provider': {'outbound': {'old_lane': 'impl'}}},
+    }}}
+    workspace.write_json(record / 'ccv-policy.json', policy)
+    workspace.prepare('example', 'imported', 'fork', str(record.relative_to(workspace.ROOT)))
+    assert workspace.read_json(operations / 'config/chains/sepolia.json') == hub
+    assert workspace.read_json(operations / 'config/ccv-policy.json') == policy
+    assert (operations / 'config/chains/old_lane.json').read_bytes() == (record / 'old_lane.json').read_bytes()
 
 
 def test_failure_stops_before_later_chains_or_phases(layout, monkeypatch):

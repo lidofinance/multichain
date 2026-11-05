@@ -28,14 +28,70 @@ SAFE_RECIPES = {'build', 'build-l2-artifacts', 'build-ccip', 'fmt', 'fmt-check',
 # In particular, ALL pools must exist before any cross-chain configuration.
 PIPELINES = {
     'all': ['patch-submodules', 'preflight', 'build-l2-artifacts', 'build', 'build-ccip',
-            'forks-check', 'l1-core-dg', 'l2-gov', 'l2-token', 'ccip-deploy',
-            'ccip-configure', 'set-pool-gov', 'test-scenarios', 'verify-state', 'verify-contracts'],
+            'forks-check', 'l1-core-dg', 'core-access', 'l2-gov', 'ccip-deploy',
+            'ccip-configure', 'set-pool-gov', 'verify-access', 'test-access', 'test-scenarios', 'verify-state', 'verify-contracts'],
     'test-leaf': ['verify-state', 'test-scenarios'],
 }
-PER_SPOKE = {'preflight', 'forks-check', 'l2-gov', 'l2-token', 'ccip-deploy',
+PER_SPOKE = {'preflight', 'forks-check', 'l2-gov', 'ccip-deploy',
              'ccip-configure', 'set-pool-gov', 'test-scenarios', 'test-ccv',
-             'verify-state', 'verify-contracts'}
-HUB_ONCE = {'ccip-deploy', 'ccip-configure', 'set-pool-gov', 'verify-contracts'}
+             'verify-state', 'verify-contracts', 'migration-inputs', 'migration-upgrade'}
+HUB_ONCE = {'ccip-deploy', 'ccip-configure', 'set-pool-gov', 'verify-contracts',
+            'migration-inputs', 'migration-upgrade'}
+
+OPERATIONS_SUPPORTED = ('scratch-deployment', 'in-place-upgrade')
+# These inputs belong to target selection or an owning phase, never to the caller's
+# ambient environment. Reject instead of silently discarding a requested override.
+INTERNAL_CONTROLS = frozenset({
+    'WSTETH_BOOTSTRAP', 'WSTETH_DEPLOY_SCOPE', 'WSTETH_HUB_DEPLOY_SCRIPT',
+    'WSTETH_ACCESS_PROFILE', 'WSTETH_ACTORS_FILE', 'HUB_MIGRATION_ONLY',
+    'HUB_ALLOW_UNACCOUNTED', 'HUB_PROPOSER', 'HUB_EXECUTOR', 'HUB_LANE_PROPOSER',
+    'FEE_AGGREGATOR', 'DEFAULT_CONFIG', 'CHAIN_CONFIG', 'LANE', 'PROPOSAL_OUT',
+})
+
+
+def check_pipeline_environment(env, dotenv_path):
+    """Check before invoking just, which loads .env again in the child process.
+
+    Inspect assignment names only: never evaluate shell expressions or report values.
+    Internal phase wrappers can still set these variables after this entry boundary.
+    """
+    conflicts = sorted(INTERNAL_CONTROLS.intersection(env))
+    sources = ['environment: ' + ', '.join(conflicts)] if conflicts else []
+    if dotenv_path.is_file():
+        assignments = set(re.findall(r'^\s*(?:export\s+)?([A-Za-z_][A-Za-z_0-9]*)\s*=',
+                                     dotenv_path.read_text(), re.MULTILINE))
+        conflicts = sorted(INTERNAL_CONTROLS.intersection(assignments))
+        if conflicts:
+            sources.append(str(dotenv_path) + ': ' + ', '.join(conflicts))
+    if sources:
+        raise ValueError('Pipeline controls cannot be supplied by the caller (' + '; '.join(sources)
+                         + '). Remove these assignments; use target configuration and phase recipes.')
+
+
+# In-place hub migrations follow the Explainer: independent hub preparation and Chainlink
+# cutover/acceptance, a tested pre-Base checkpoint, then Base preparation and lane connection.
+# Other in-place targets retain the pair deployment pipeline below.
+PIPELINES_BY_OPERATION = {
+    'scratch-deployment': PIPELINES,
+    'in-place-upgrade': {
+        'all': ['patch-submodules', 'preflight', 'build', 'build-ccip', 'forks-check',
+                'migration-inputs', 'hub-inventory', 'ccip-deploy', 'ccip-configure', 'hub-cutover',
+                'hub-connect-lane', 'set-pool-gov', 'migration-upgrade', 'test-scenarios', 'verify-state'],
+        'test-leaf': ['verify-state', 'test-scenarios'],
+    },
+}
+
+
+HUB_MIGRATION_PIPELINE = ['patch-submodules', 'preflight', 'build', 'build-ccip', 'forks-check',
+    'migration-inputs', 'hub-inventory', 'hub-prepare', 'hub-cutover', 'hub-accept-admin',
+    'base-prepare', 'hub-connect-lane', 'migration-upgrade', 'test-scenarios', 'verify-state']
+
+SEPOLIA_MIGRATION_PIPELINE = [
+    'patch-submodules', 'preflight', 'build', 'build-ccip', 'forks-check',
+    'bootstrap-core', 'l2-gov', 'bootstrap-legacy', 'test-bootstrap',
+    'migration-inputs', 'hub-inventory', 'hub-prepare', 'hub-cutover', 'hub-accept-admin',
+    'bootstrap-connect-remotes', 'base-prepare', 'hub-connect-lane', 'migration-upgrade',
+    'test-existing-lanes', 'test-scenarios', 'verify-state']
 
 
 def spokes(data):
@@ -54,6 +110,15 @@ def networks(data):
     return [data['networks']['l1'], *spokes(data)]
 
 
+ZERO_ADDRESS = '0x' + '0' * 40
+
+
+def token_named(cfg):
+    """Whether the chain config names an existing token (the component deploys one otherwise)."""
+    token = cfg['addresses']['token']
+    return bool(token) and token.lower() != ZERO_ADDRESS
+
+
 def identifier(value):
     if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9._-]*', value):
         raise ValueError('Use a simple name containing letters, digits, dots, underscores or hyphens')
@@ -68,7 +133,7 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2) + '\n')
 
 
-GENERATED = {'out', 'cache', '__pycache__'}
+GENERATED = {'out', 'cache', 'out-pools', 'cache-pools', '__pycache__'}
 # Pinned submodules inside an owned component (components/wsteth-token/lib) are dependencies: the run
 # records their commit, dirty flag and diff via dependencies.json instead of copying the checkout.
 def excluded_owned_path(relative, source):
@@ -108,20 +173,33 @@ def target(name):
     data = read_json(directory / 'target.json')
     if (data.get('schemaVersion') != 1 or data.get('id') != name or
             data.get('orchestration') != 'wsteth-ccip' or
-            data.get('operation') != 'scratch-deployment' or
+            data.get('operation') not in OPERATIONS_SUPPORTED or
             data.get('configDirectory') != 'config'):
-        raise ValueError('Unsupported target: this adapter implements wstETH CCIP scratch deployment only')
+        raise ValueError('Unsupported target: this adapter implements wstETH CCIP scratch deployment and in-place upgrade only')
     if data.get('status') != 'ready':
         raise ValueError('Target is incomplete: configuration and applicable operations must be established first')
     chains = data['networks']
-    if chains['l1']['slug'] != 'sepolia' or chains['l1']['chainId'] != 11155111:
-        raise ValueError('This recipe currently supports Sepolia as its L1')
+    in_place = data['operation'] == 'in-place-upgrade'
+    bootstrap = data.get('bootstrap', {}).get('kind') == 'sepolia-migration'
+    if data.get('bootstrap') and not bootstrap:
+        raise ValueError('Unknown migration bootstrap')
+    if bootstrap and (not in_place or data['environments'] != ['fork'] or
+                      chains['l1'] != {'slug': 'sepolia', 'chainId': 11155111}):
+        raise ValueError('Sepolia migration bootstrap requires an in-place target restricted to forks of Sepolia')
+    if not in_place and (chains['l1']['slug'] != 'sepolia' or chains['l1']['chainId'] != 11155111):
+        raise ValueError('Scratch deployment currently supports Sepolia as its L1')
+    if in_place and not isinstance(data.get('migration'), dict):
+        raise ValueError('An in-place upgrade target names the existing contracts under "migration"')
     for network in networks(data):
         cfg = read_json(directory / 'config/chains' / (network['slug'] + '.json'))
         if cfg['chain']['chain_id'] != network['chainId']:
             raise ValueError('Target network does not match its chain configuration')
-        if cfg.get('deployed') or cfg.get('ccv') or cfg['addresses']['token']:
+        if cfg.get('deployed') or cfg.get('ccv'):
             raise ValueError('Target chain input contains deployment outputs')
+        if token_named(cfg) != (in_place and not bootstrap):
+            raise ValueError('A scratch target leaves addresses.token at address(0); an in-place target names the existing token')
+        if not in_place and cfg['chain'].get('pool_type') == 'BurnMint' and not isinstance(cfg.get('token_deployment'), dict):
+            raise ValueError('A scratch spoke names the token 1_Deploy deploys under token_deployment')
     if 'l2s' in chains:
         leaf_names = [n['slug'] for n in spokes(data)]
         for network in networks(data):
@@ -190,13 +268,20 @@ def activate(name):
 
 def owned_sources(source, data):
     yield source, Path('target')
+    if data.get('accessProfile'):
+        yield OPERATIONS / 'docs/SEPOLIA-FRESH-DEPLOY-ACTORS.json', Path('orchestration/actors.json')
+    if data.get('bootstrap'):
+        yield ROOT / 'targets/wsteth-base-migration-mainnet/test', Path('shared/migration-tests')
+        yield ROOT / 'targets/wsteth-ccip-sepolia-mantle-dev/test', Path('shared/ccv-tests')
     for entry in ('src', 'script', 'patches', 'foundry.toml', 'remappings.txt',
                   'migration-source.json', 'dependencies.json'):
         yield OPERATIONS / entry, Path('orchestration') / entry
-    for entry in ('justfile', 'workspace.py'):
+    for entry in ('justfile', 'workspace.py', 'rehearse.py'):
         yield OPERATIONS / entry, Path(entry)
     if 'wsteth-token' in data.get('components', []):
         yield ROOT / 'components/wsteth-token', Path('components/wsteth-token')
+    if 'l2-bridge-migration' in data.get('components', []):
+        yield ROOT / 'components/l2-bridge-migration', Path('components/l2-bridge-migration')
 
 
 def check_live_sources(directory, data):
@@ -237,6 +322,7 @@ def active():
 
 def prepare(name, run_id, environment, record=None, selected_spokes=None):
     source, data = target(name)
+    l1_slug = data['networks']['l1']['slug']
     leaves = [n['slug'] for n in spokes(data)]
     if selected_spokes is not None:
         if not selected_spokes or len(set(selected_spokes)) != len(selected_spokes) or any(s not in leaves for s in selected_spokes):
@@ -254,7 +340,7 @@ def prepare(name, run_id, environment, record=None, selected_spokes=None):
         if not record_path.is_relative_to(RUNS.resolve()):
             raise ValueError('Existing record must be under runs/wsteth-2.0')
         for network in networks(data):
-            if network['slug'] != 'sepolia' and network['slug'] not in leaves:
+            if network['slug'] != l1_slug and network['slug'] not in leaves:
                 continue
             cfg = read_json(record_path / (network['slug'] + '.json'))
             if cfg['chain']['chain_id'] != network['chainId']:
@@ -275,6 +361,7 @@ def prepare(name, run_id, environment, record=None, selected_spokes=None):
 
 
 def populate_run(source, data, directory, run_id, environment, record_path, leaves):
+    l1_slug = data['networks']['l1']['slug']
     for live, relative in owned_sources(source, data):
         saved = directory / 'inputs' / relative
         saved.parent.mkdir(parents=True, exist_ok=True)
@@ -288,7 +375,7 @@ def populate_run(source, data, directory, run_id, environment, record_path, leav
     if record_path:
         shutil.copytree(record_path, directory / 'inputs/record')
         for network in networks(data):
-            if network['slug'] != 'sepolia' and network['slug'] not in leaves:
+            if network['slug'] != l1_slug and network['slug'] not in leaves:
                 continue
             filename = network['slug'] + '.json'
             shutil.copy2(record_path / filename, directory / 'config/chains' / filename)
@@ -306,7 +393,7 @@ def populate_run(source, data, directory, run_id, environment, record_path, leav
                 if leaf in leaves:
                     shutil.copy2(legacy, directory / 'state' / f'{leaf}.json')
     # Subset selection changes run intent only; the source snapshot remains immutable.
-    selected = {'sepolia', *leaves}
+    selected = {l1_slug, *leaves}
     for network in networks(data):
         filename = directory / 'config/chains' / (network['slug'] + '.json')
         if network['slug'] not in selected:
@@ -314,10 +401,20 @@ def populate_run(source, data, directory, run_id, environment, record_path, leav
             continue
         config = read_json(filename)
         if 'remote_lanes' in config:
-            if record_path and any(l['remote_chain_name'] not in selected for l in config['remote_lanes']):
+            # Lanes the hub took over from an existing pool (imported_lanes) are not target spokes;
+            # an imported record keeps them, with the spoke records the inventory step wrote for them.
+            kept = selected | set(config.get('imported_lanes') or {})
+            if record_path and any(l['remote_chain_name'] not in kept for l in config['remote_lanes']):
                 raise ValueError('Cannot hide existing lanes by importing a record into a smaller topology')
-            config['remote_lanes'] = [l for l in config['remote_lanes'] if l['remote_chain_name'] in selected]
+            config['remote_lanes'] = [l for l in config['remote_lanes'] if l['remote_chain_name'] in kept]
+            if 'deferred_lanes' in config:
+                config['deferred_lanes'] = [l for l in config['deferred_lanes'] if l in kept]
             write_json(filename, config)
+            if record_path:
+                for name in (config.get('imported_lanes') or {}):
+                    imported_record = record_path / (name + '.json')
+                    if imported_record.is_file():
+                        shutil.copy2(imported_record, directory / 'config/chains' / (name + '.json'))
     policy_path = directory / 'config/ccv-policy.json'
     if record_path:
         policy_path.unlink(missing_ok=True)
@@ -328,11 +425,14 @@ def populate_run(source, data, directory, run_id, environment, record_path, leav
     if policy_path.exists():
         policy = read_json(policy_path)
         policy['chains'] = {c: v for c, v in policy['chains'].items() if c in selected}
-        for spec in policy['chains'].values():
-            spec['lanes'] = {c: v for c, v in spec['lanes'].items() if c in selected}
-            spec['localResolver']['outbound'] = {c: v for c, v in spec['localResolver']['outbound'].items() if c in selected}
+        for chain, spec in policy['chains'].items():
+            # Imported lanes remain part of this hub even though they are not target spokes.
+            cfg = read_json(directory / 'config/chains' / (chain + '.json'))
+            kept = selected | set(cfg.get('imported_lanes') or {})
+            spec['lanes'] = {c: v for c, v in spec['lanes'].items() if c in kept}
+            spec['localResolver']['outbound'] = {c: v for c, v in spec['localResolver']['outbound'].items() if c in kept}
             for external in spec.get('externalResolvers', {}).values():
-                external['outbound'] = {c: v for c, v in external['outbound'].items() if c in selected}
+                external['outbound'] = {c: v for c, v in external['outbound'].items() if c in kept}
         write_json(policy_path, policy)
     dependencies = []
     for path in read_json(OPERATIONS / 'dependencies.json'):
@@ -344,10 +444,27 @@ def populate_run(source, data, directory, run_id, environment, record_path, leav
         patch = directory / 'inputs/dependency-diffs' / (dep['path'].replace('/', '__') + '.patch')
         patch.parent.mkdir(parents=True, exist_ok=True)
         patch.write_text(git('diff', '--binary', 'HEAD', cwd=checkout) + '\n')
+        # Diff cannot carry new files. Preserve untracked (including ignored) source files
+        # under compiler/script roots, never node_modules, output trees or environment files.
+        extra = git('ls-files', '--others', '--', 'contracts', 'src', 'script', 'scripts',
+                    'tasks', 'interfaces', 'test', 'tests', cwd=checkout).splitlines()
+        saved_extra = []
+        for name in extra:
+            file = checkout / name
+            if file.suffix not in ('.sol', '.ts', '.js', '.cjs', '.mjs', '.py', '.sh'):
+                continue
+            if set(file.relative_to(checkout).parts) & {'node_modules', 'out', 'cache', '__pycache__'}:
+                continue
+            output = directory / 'inputs/dependency-files' / dep['path'].replace('/', '__') / name
+            output.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(file, output)
+            saved_extra.append(name)
+        dependencies[-1]['sourceFilesOutsideCommit'] = saved_extra
     write_json(directory / 'run.json', {
         'schemaVersion': 1, 'id': run_id, 'target': data['id'],
         'environment': environment, 'l2Chain': leaves[0],
         'l2Chains': leaves,
+        'l1Chain': l1_slug, 'operation': data['operation'],
         'chainStateFiles': True,
         'status': 'prepared', 'preparedAt': datetime.now(timezone.utc).isoformat(),
         'repositoryCommit': git('rev-parse', 'HEAD'),
@@ -367,6 +484,7 @@ def execute(arguments):
     if arguments[0] in SAFE_RECIPES and len(arguments) != 1:
         raise ValueError('Run one build/setup recipe at a time')
     env = dict(os.environ)
+    check_pipeline_environment(env, OPERATIONS / '.env')
     if arguments[0] == 'lint-config' and (OPERATIONS / '.active-run').is_symlink():
         directory, _ = active()
         env['WSTETH_TARGET_DIR'] = str(directory / 'inputs/target')
@@ -379,16 +497,34 @@ def execute(arguments):
         if arguments[0] == 'all' and selected != leaves:
             raise ValueError('all operates on the complete target; unset L2_CHAIN')
         env['L2_CHAIN'] = selected[0]
+        env['L1_CHAIN'] = data.get('l1Chain', 'sepolia')
+        env['WSTETH_OPERATION'] = data.get('operation', 'scratch-deployment')
         env['WSTETH_RUN_ENVIRONMENT'] = data['environment']
         env['WSTETH_TARGET_DIR'] = str(directory / 'inputs/target')
         env['WSTETH_TEST_DIR'] = str(ROOT / 'targets' / data['target'] / 'test')
         env['WSTETH_L2_CHAINS'] = ' '.join(leaves)
-        if arguments[0] in PIPELINES and len(arguments) != 1:
+        pipelines = PIPELINES_BY_OPERATION[env['WSTETH_OPERATION']]
+        target_data = read_json(directory / 'inputs/target/target.json')
+        env.pop('WSTETH_ACCESS_PROFILE', None)
+        env.pop('WSTETH_ACTORS_FILE', None)
+        if target_data.get('accessProfile'):
+            if target_data['accessProfile'] != 'config/access-profile.json' or data['target'] != 'wsteth-ccip-sepolia-mantle-dev':
+                raise ValueError('Controlled testnet profile is restricted to the Sepolia scratch target')
+            env['WSTETH_ACCESS_PROFILE'] = str(directory / 'inputs/target/config/access-profile.json')
+            env['WSTETH_ACTORS_FILE'] = str(directory / 'inputs/orchestration/actors.json')
+        if target_data.get('bootstrap'):
+            env['WSTETH_BOOTSTRAP'] = 'sepolia-migration'
+            pipelines = dict(pipelines, all=SEPOLIA_MIGRATION_PIPELINE)
+        elif env['WSTETH_OPERATION'] == 'in-place-upgrade' and target_data.get('migration', {}).get('hub'):
+            pipelines = dict(pipelines, all=HUB_MIGRATION_PIPELINE)
+        if arguments[0] in pipelines and len(arguments) != 1:
             raise ValueError('Pipeline recipes take no arguments')
         skip_hub = env.get('WSTETH_SKIP_L1', '0')
         if skip_hub not in ('0', '1'):
             raise ValueError('WSTETH_SKIP_L1 must be 0 or 1')
-        for recipe in PIPELINES.get(arguments[0], [arguments[0]]):
+        if arguments[0] == 'all' and skip_hub == '1':
+            raise ValueError('all operates on the complete target; unset WSTETH_SKIP_L1; use a phase recipe for a spoke retry')
+        for recipe in pipelines.get(arguments[0], [arguments[0]]):
             for index, leaf in enumerate(selected if recipe in PER_SPOKE else selected[:1]):
                 child = dict(env, L2_CHAIN=leaf,
                              WSTETH_SKIP_L1=('1' if index or skip_hub == '1' else '0') if recipe in HUB_ONCE else '0')

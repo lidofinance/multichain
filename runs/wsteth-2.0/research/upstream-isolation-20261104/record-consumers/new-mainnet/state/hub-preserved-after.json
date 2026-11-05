@@ -1,0 +1,177 @@
+{
+  "lanes": {
+    "abstract": {
+      "pools": [
+        "0x38ad0414b523fa344429ff14dac305e4fb6ab248"
+      ],
+      "token": "0x000000000000000000000000313f663e79ef202251a28f0252c254842d5abc6a",
+      "box": "0xcc05f2eb27f592d3fff3bcf40a1e86c015cdc7ab",
+      "outbound": {
+        "enabled": true,
+        "capacity": "2",
+        "rate": "1"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "26400000000000004",
+        "rate": "1"
+      },
+      "owner": "0xbecd653bd319a0e3f3c23a19a67c3d3747d286ea"
+    },
+    "bitlayer": {
+      "pools": [
+        "0xc78210649af8a450c0f6e98107a0b614a3198359"
+      ],
+      "token": "0x0000000000000000000000005659b4c62897fa36c05780cd96c2d5c0a5602488",
+      "box": "0xa0ba126e57ffa62ea42aa1c6a6016fa8a7a16539",
+      "outbound": {
+        "enabled": true,
+        "capacity": "114000000000000000000",
+        "rate": "32000000000000000"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "114000000000000000000",
+        "rate": "32000000000000000"
+      },
+      "owner": "0xbecd653bd319a0e3f3c23a19a67c3d3747d286ea"
+    },
+    "ink": {
+      "pools": [
+        "0x2dc99af320bc317c567f24ee95811dcbd5983dfd"
+      ],
+      "token": "0x000000000000000000000000e561152e8d3f618b386ef4dd6e3fb980eb2f9e61",
+      "box": "0xcc05f2eb27f592d3fff3bcf40a1e86c015cdc7ab",
+      "outbound": {
+        "enabled": true,
+        "capacity": "2",
+        "rate": "1"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "264000000000000",
+        "rate": "1"
+      },
+      "owner": "0xbecd653bd319a0e3f3c23a19a67c3d3747d286ea"
+    },
+    "jovay": {
+      "pools": [
+        "0x1c2f528e3beeff81bc03cc63e64db131d18be7fa"
+      ],
+      "token": "0x0000000000000000000000002dc99af320bc317c567f24ee95811dcbd5983dfd",
+      "box": "0xcc05f2eb27f592d3fff3bcf40a1e86c015cdc7ab",
+      "outbound": {
+        "enabled": true,
+        "capacity": "2",
+        "rate": "1"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "220000000000000",
+        "rate": "1"
+      },
+      "owner": "0xbecd653bd319a0e3f3c23a19a67c3d3747d286ea"
+    },
+    "megaeth": {
+      "pools": [
+        "0x15c03488b29e27d62baf10e30b0c474bf60e0264"
+      ],
+      "token": "0x000000000000000000000000601ac63637933d88285a025c685ac4e9a92a98da",
+      "box": "0xcc05f2eb27f592d3fff3bcf40a1e86c015cdc7ab",
+      "outbound": {
+        "enabled": true,
+        "capacity": "2000000000000000000000",
+        "rate": "23148148140000000"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "2000000000000000000000",
+        "rate": "23148148140000000"
+      },
+      "owner": "0xbecd653bd319a0e3f3c23a19a67c3d3747d286ea"
+    },
+    "monad": {
+      "pools": [
+        "0x2f2e55517aac64c4066f6eb333b4cb072ed00e8a"
+      ],
+      "token": "0x00000000000000000000000010aeaf63194db8d453d4d85a06e5efe1dd0b5417",
+      "box": "0xcc05f2eb27f592d3fff3bcf40a1e86c015cdc7ab",
+      "outbound": {
+        "enabled": true,
+        "capacity": "2000000000000000000000",
+        "rate": "23148148140000000"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "2200000000000000262144",
+        "rate": "25462962954000004"
+      },
+      "owner": "0xbecd653bd319a0e3f3c23a19a67c3d3747d286ea"
+    },
+    "plasma": {
+      "pools": [
+        "0xa4b1d393104a5ef340154c337009156aa0e83bd8"
+      ],
+      "token": "0x000000000000000000000000481e638105407be40c2f2e2e006de272d05930d0",
+      "box": "0xcc05f2eb27f592d3fff3bcf40a1e86c015cdc7ab",
+      "outbound": {
+        "enabled": true,
+        "capacity": "2",
+        "rate": "1"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "220000000000000",
+        "rate": "1"
+      },
+      "owner": "0xbecd653bd319a0e3f3c23a19a67c3d3747d286ea"
+    },
+    "robinhood": {
+      "pools": [
+        "0x1c2f528e3beeff81bc03cc63e64db131d18be7fa"
+      ],
+      "token": "0x0000000000000000000000002dc99af320bc317c567f24ee95811dcbd5983dfd",
+      "box": "0xcc5ba15fa275e5407d328861c56ddceded1250c8",
+      "outbound": {
+        "enabled": true,
+        "capacity": "2200000000000000000000",
+        "rate": "25462962962962962"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "1500000000000000000000",
+        "rate": "17361111111111111"
+      },
+      "owner": "0xbecd653bd319a0e3f3c23a19a67c3d3747d286ea"
+    },
+    "zerog": {
+      "pools": [
+        "0xfee991bb8695a336f5c4ab00062beed4b5783f4f"
+      ],
+      "token": "0x000000000000000000000000161a128567bf0c005b58211757f7e46eed983f02",
+      "box": "0xec7cb3964edcca7b7925a7d159e033d1fc1dd0ab",
+      "outbound": {
+        "enabled": true,
+        "capacity": "114000000000000000000",
+        "rate": "32000000000000000"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "114000000000000000000",
+        "rate": "32000000000000000"
+      },
+      "owner": "0xbecd653bd319a0e3f3c23a19a67c3d3747d286ea"
+    }
+  },
+  "balances": {
+    "0xcc05f2eb27f592d3fff3bcf40a1e86c015cdc7ab": "16512586992555507958720",
+    "0xa0ba126e57ffa62ea42aa1c6a6016fa8a7a16539": "105063567385275758",
+    "0xcc5ba15fa275e5407d328861c56ddceded1250c8": "44493573873920312918",
+    "0xec7cb3964edcca7b7925a7d159e033d1fc1dd0ab": "13044622506851971"
+  },
+  "registry": [
+    "0xBEcd653Bd319A0E3F3C23A19A67c3d3747D286ea",
+    "0x0000000000000000000000000000000000000000",
+    "0x3bE031BAC33897d92076cD02f1643a717EdF60A6"
+  ]
+}

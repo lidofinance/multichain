@@ -37,7 +37,7 @@ with in the CCIP deployment scripts:
 
 Compiler for the token, `TransparentUpgradeableProxy` and `ProxyAdmin`: Solidity 0.8.26,
 EVM `paris`, via-IR, optimizer 80,000 runs, `bytecode_hash = "none"`.
-The orchestration's `token` profile uses the same settings for the deployed implementation.
+The CCIP component builds the deployed token with its release profile and package-context remappings.
 All three dependencies are public, pinned submodules; the token build does not require CCIP
 access or pnpm. Remapping auto-detection is off in every build here, so the compiler metadata
 depends only on the pinned sources and the listed remappings, not on which sibling packages
@@ -76,14 +76,27 @@ OpenZeppelin 5.x `EIP712`, whose two storage strings would otherwise occupy line
 fails when the compiled layout drifts from it, and the unit tests assert the namespace constants and
 that slots 3–255 stay empty.
 
-This component supports **fresh deployments**, not an in-place upgrade of the existing
-Optimism/Arbitrum/Base fleet. Preserving ERC20 and Lido slots is necessary but does not migrate
-bridge authority to roles. A fleet proxy already at `Versioned == 2` cannot use this build's
-four-argument `initialize`: `_initializeContractVersionTo(2)` rejects its existing version,
-and no `DEFAULT_ADMIN_ROLE` is seated. An upgrade would remove the old bridge authority without
-establishing mint/burn roles. Such a migration requires a separately designed, authorized migration
-initializer, atomic upgrade-and-initialization, and migration tests against the exact prior
-implementation and state. These layout checks do not establish that migration's readiness.
+Fresh deployments use the four-argument `initialize`. The tested in-place upgrade path starts
+from lido-l2 `ERC20Bridged`, contract version 0 (the Base/Arbitrum lineage), and uses
+`finalizeUpgrade_v3(version, admin)` instead: it keeps the stored
+name, symbol, balances and allowances, seeds the EIP-5267 metadata from the stored name, moves the
+Lido contract version to 3 and seats `DEFAULT_ADMIN_ROLE`. It is callable only by the proxy admin
+(EIP-1967 admin slot), i.e. from `proxy__upgradeToAndCall` / `ProxyAdmin.upgradeAndCall`, so the
+upgrade should still be atomic but a non-atomic one does not open an admin-seating window. The
+upgrade removes the old `bridge` authority; the legacy bridge then needs `MINTER_ROLE` and
+`BURNER_ROLE` (it mints in `finalizeDeposit` and burns through `burnFrom` in legacy withdrawals)
+until governance moves the bridge to CCIP-only and revokes them. `increaseAllowance` and
+`decreaseAllowance` are kept for ABI parity with the deployed lido-l2 token. Fresh deployments
+initialize at contract version 3 as well (since 2026-10-25), so a fresh proxy and an upgraded fleet
+proxy running this implementation report the same version and a future `finalizeUpgrade_v4` has one
+starting point. The four-argument `initialize` refuses a proxy whose metadata is already stored, so it
+cannot seat an administrator on a fleet proxy between a plain upgrade and `finalizeUpgrade_v3`
+(review finding, 2026-10-21). `test/WstethTokenMigration.t.sol` drives the upgrade from a test-only
+copy of the lido-l2 082e7eb token behind an `OssifiableProxy` double (`test/legacy/`), through the
+proxy admin, the ProxyAdmin path, the non-atomic window and the version-0 starting point.
+A synthetic version-2 slot test checks only version dispatch: it does not reproduce Optimism
+lido-l2-with-steth v2 metadata or initializer state, so that migration is not yet qualified;
+`components/l2-bridge-migration` carries the fork test against the real Base bytecode.
 
 Implementations built from the earlier OpenZeppelin 4.7.3 edition (linear `_initialized` at slot 3,
 roles at 104/154) are **not** storage-compatible with this one; a proxy initialized with that build
@@ -97,7 +110,8 @@ just wsteth-token-test
 ```
 
 Deployment and verification procedures remain in `orchestration/wsteth-ccip`;
-see its `FOUNDRY_PROFILE=token` build and `script/03_l2_token.sh`.
+see `script/04_ccip_deploy.sh` (fresh deployments) and `script/06_migration_upgrade.sh`
+(in-place fork rehearsals).
 
 ## Provenance
 
@@ -109,3 +123,13 @@ The Foundry suite adapts upstream metadata, permit, initialization and proxy
 behavior checks, and adds role authorization, upgrade and storage-layout checks for the
 maintained token. Migration verification compares ABI, storage layout and executable bytecode;
 source-path changes can alter Solidity metadata hashes.
+
+## Package publication
+
+`package.json` packages `contracts/` and `LICENSE` as `@lido/wsteth-token` 0.1.0.
+The CCIP pin at `f10eb8a` predates this manifest and cannot supply a standalone package.
+Before a clean package-manager install can replace the local sync, publish a multichain commit
+containing this manifest and the reviewed sources, update the dependency and lockfile in CCIP
+to that immutable commit, then update the superproject CCIP pin. A working-tree manifest does
+not repair an older Git revision. Until then, `sync-ccip-packages.sh` deliberately materializes
+the reviewed local sources and their real manifest for rehearsals.

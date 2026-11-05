@@ -23,7 +23,12 @@ echo "▸ core dir:  ${CORE_DIR}"
 # in place BEFORE this deploy compiles wstETH — a patched-vs-pristine core yields DIFFERENT
 # bytecode at the same address. Applied here (not only in `just init`) so no path reaches the
 # deploy unpatched.
-CORE_DIR="${CORE_DIR}" bash "${HERE}/00_patch_submodules.sh"
+if [ "${WSTETH_PRISTINE_TOKEN:-0}" = 1 ]; then
+    git -C "${CORE_DIR}" diff --exit-code HEAD -- contracts/0.6.12/WstETH.sol >/dev/null \
+        || { echo 'Pristine bootstrap requires the upstream WstETH source'; exit 1; }
+else
+    CORE_DIR="${CORE_DIR}" bash "${HERE}/00_patch_submodules.sh"
+fi
 
 # Preflight: right chain + deployer funded on the fork (anvil funds dev accounts, but be safe).
 assert_chain_id "${L1_RPC}" 11155111 "Sepolia"
@@ -120,6 +125,11 @@ for a in 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 0x3C44CdDdB6a900fa2b585dd299
 done
 echo "▸ DG committees seated from ACTORS_MNEMONIC[4..10] (no anvil keys)"
 export SCRATCH_DEPLOY_CONFIG="${SCRATCH_PARAMS}"
+if [ -n "${WSTETH_ACCESS_PROFILE:-}" ]; then
+    node "${HERE}/testnet/prepare.cjs" core-params \
+        "${CORE_DIR}/scripts/scratch/deploy-params-testnet.toml" "${SCRATCH_PARAMS}"
+    echo '▸ controlled testnet: sole DAO voter, private committees and bounded delays'
+fi
 # Core's final state-mate check pins the LDO totalSupply to the DEFAULT params' holder sum
 # (scripts/scratch/state-mate/scratch.yaml, the only quoted 19+-digit totalSupply). Recompute it
 # from the params we actually deploy with, so the check stays meaningful instead of being skipped.
@@ -183,7 +193,9 @@ fi
 export STATE_MATE_CHECK="${STATE_MATE_CHECK:-off}"
 [ "${STATE_MATE_CHECK}" = "off" ] && echo "▸ core's own state-mate check disabled (broken upstream on this core revision)"
 
-bash scripts/dao-deploy.sh
+# A nested upstream just recipe echoes its --private-key argument. Filter before
+# any output reaches the terminal or the run log; pipefail preserves deploy failures.
+bash scripts/dao-deploy.sh 2>&1 | node "${HERE}/redact-output.cjs"
 # mine.ts uses the anvil/hardhat-node `hardhat_mine` cheat to advance blocks — fork-only. On a live
 # RPC that method doesn't exist (ProviderError) and would abort the script AFTER a successful deploy,
 # before we extract addresses. Live chains mine on their own, so skip it there.
@@ -241,17 +253,18 @@ fi
 # fails with an obvious message rather than five steps later inside the TAR registration.
 L1_WSTETH="$(jq -r '.wstETH' "${STATE_DIR}/l1.json")"
 CCIP_ADMIN="$(cast call "${L1_WSTETH}" "getCCIPAdmin()(address)" --rpc-url "${L1_RPC}" 2>/dev/null || true)"
-if [ -z "${CCIP_ADMIN}" ]; then
+if [ "${WSTETH_PRISTINE_TOKEN:-0}" = 1 ]; then
+    [ -z "${CCIP_ADMIN}" ] || { echo 'Pristine wstETH unexpectedly exposes getCCIPAdmin'; exit 1; }
+    echo '✓ pristine wstETH: registration requires the Chainlink registry owner'
+elif [ -z "${CCIP_ADMIN}" ]; then
     echo "✗ wstETH ${L1_WSTETH} has no getCCIPAdmin() — patches/core/0001 missing from this build."
     echo "  Run 'just patch-submodules', then redeploy (the hook is set in the constructor)."
     exit 1
-fi
-if ! eq "${CCIP_ADMIN}" "${DEPLOYER_ADDRESS}"; then
+elif ! eq "${CCIP_ADMIN}" "${DEPLOYER_ADDRESS}"; then
     echo "✗ wstETH getCCIPAdmin() = ${CCIP_ADMIN}, expected the deployer ${DEPLOYER_ADDRESS}."
     echo "  Step 07 registerAdminViaGetCCIPAdmin would revert CanOnlySelfRegister."
     exit 1
 fi
-echo "✓ wstETH getCCIPAdmin() = deployer (patch 0001 in effect)"
 
 # When activation is on, fail here rather than discovering isStopped on the first stake.
 # Core's isTruthyEnv accepts 1/true/yes/on (case-insensitive).

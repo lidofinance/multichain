@@ -1,0 +1,18 @@
+Prepared isolation-record-new-mainnet (fork); no deployment or network operation performed.
+Snapshotted all chains to config/chains.live-new-mainnet; active records preserved
+Prepared isolation-record-new-mainnet-roundtrip (fork); no deployment or network operation performed.
+Prepared isolation-record-new-sepolia (fork); no deployment or network operation performed.
+Snapshotted all chains to config/chains.live-new-sepolia; active records preserved
+Prepared isolation-record-new-sepolia-roundtrip (fork); no deployment or network operation performed.
+Prepared isolation-record-historical-mainnet (fork); no deployment or network operation performed.
+Snapshotted all chains to config/chains.live-historical-mainnet; active records preserved
+Prepared isolation-record-historical-mainnet-roundtrip (fork); no deployment or network operation performed.
+Prepared isolation-record-historical-sepolia (fork); no deployment or network operation performed.
+Snapshotted all chains to config/chains.live-historical-sepolia; active records preserved
+Prepared isolation-record-historical-sepolia-roundtrip (fork); no deployment or network operation performed.
+{
+  "new-mainnet": "passed",
+  "new-sepolia": "passed",
+  "historical-mainnet": "passed",
+  "historical-sepolia": "passed"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@lido/wsteth-token",
+  "version": "0.1.0",
+  "description": "Lido non-rebasing L2 wstETH token with role-based minting and burning",
+  "license": "GPL-3.0-only",
+  "files": ["contracts", "LICENSE"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lidofinance/multichain.git",
+    "directory": "components/wsteth-token"
+  }
+}

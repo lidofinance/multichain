@@ -1,0 +1,335 @@
+# state-mate run — 2026-10-28T11:08:12+0100
+# git:        f10eb8a
+# record:     config/chains
+# L2_CHAIN:   base
+# L1 RPC:     http://127.0.0.1:8557
+# L2 RPC:     http://127.0.0.1:8558
+# config:     wsteth.base.yaml + wsteth.deployed.yaml + wsteth.inputs.base.yaml
+
+# l1 table checks at block 26290512
+# l2 table checks at block 53196209
+  ✓ ethereum: getAllLockBoxConfigs (1 rows; enumeration order ignored)
+  ✓ ethereum: getSupportedChains (1 rows; enumeration order ignored)
+  ✓ ethereum: getAllCCVConfigs (1 rows; enumeration order ignored)
+  ✓ ethereum: getAllOutboundImplementations (1 rows; enumeration order ignored)
+  ✓ ethereum: getAllInboundImplementations (1 rows; enumeration order ignored)
+  ✓ base: getSupportedChains (1 rows; enumeration order ignored)
+  ✓ base: getAllCCVConfigs (1 rows; enumeration order ignored)
+  ✓ base: getAllOutboundImplementations (1 rows; enumeration order ignored)
+  ✓ base: getAllInboundImplementations (1 rows; enumeration order ignored)
+Bound 20 maintained ABIs to deployment chain IDs and addresses
+Loaded 24 deployed address(es) from ../../orchestration/wsteth-ccip/config/state-mate/wsteth.deployed.yaml
+Loaded 19 input anchor(s) from ../../orchestration/wsteth-ccip/config/state-mate/wsteth.inputs.base.yaml
+Validating /Users/arwer/projects/lido/multichain/orchestration/wsteth-ccip/config/state-mate/wsteth.base.yaml against schema...
+✔ Schema validation passed
+
+
+ABI checking
+⚠ No explorerHostname in the /Users/arwer/projects/lido/multichain/orchestration/wsteth-ccip/config/state-mate/wsteth.base.yaml, ABIs cannot be downloaded for l1
+⚠ No explorerHostname in the /Users/arwer/projects/lido/multichain/orchestration/wsteth-ccip/config/state-mate/wsteth.base.yaml, ABIs cannot be downloaded for l2
+
+Contract: l1/l1TokenPool (SiloedLockReleaseTokenPool, 0x394244C5608Ff98454e65f97e5DcA390c89E2b5b)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l1/l1TokenPool/checks
+│    .owner: ...[1G[2K│  ✔ .owner: 0x2E36a81613F2D11087D48B724f5997D70660c243
+│    .typeAndVersion: ...[1G[2K│  ✔ .typeAndVersion: SiloedLockReleaseTokenPool 2.0.0
+│    .getToken: ...[1G[2K│  ✔ .getToken: 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0
+│    .getTokenDecimals: ...[1G[2K│  ✔ .getTokenDecimals: 18
+│    .getDynamicConfig: ...[1G[2K│  ✔ .getDynamicConfig: ["0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D","0x0000000000000000000000000000000000000000","0x0000000000000000000000000000000000000000"]
+│    .getRmnProxy: ...[1G[2K│  ✔ .getRmnProxy: 0x411dE17f12D1A34ecC7F45f49844626267c75e81
+│    .getAllowedFinalityConfig: ...[1G[2K│  ✔ .getAllowedFinalityConfig: 0x00000000
+│    .getAdvancedPoolHooks: ...[1G[2K│  ✔ .getAdvancedPoolHooks: 0xd74bD7d0377A3ac24FEcD699E1a9362981fBF6c8
+│    .isSupportedChain(15971525489660198786): ...[1G[2K│  ✔ .isSupportedChain(15971525489660198786): true
+│  ⚠ .getSupportedChains: skipped
+│    .getTokenTransferFeeConfig(0x0000000000000000000000000000000000000000,15971525489660198786,0x00000000,0x): ...[1G[2K│  ✔ .getTokenTransferFeeConfig(0x0000000000000000000000000000000000000000,15971525489660198786,0x00000000,0x): ["150000","32","0","0","0","0",true]
+│    .getCurrentRateLimiterState(15971525489660198786,false): ...[1G[2K│  ✔ .getCurrentRateLimiterState(15971525489660198786,false): [["330000000000000000000","1793181939",true,"330000000000000000000","3819444444444444"],["500000000000000000000","1793181939",true,"500000000000000000000","5787037037037037"]]
+│    .getRemotePools(15971525489660198786): ...[1G[2K│  ✔ .getRemotePools(15971525489660198786): ["0x000000000000000000000000ad430041ecaafc73da0c7074e8d47759e3c4447b"]
+│    .getRemoteToken(15971525489660198786): ...[1G[2K│  ✔ .getRemoteToken(15971525489660198786): 0x000000000000000000000000c1cba3fcea344f92d9239c08c0568f6f2f0ee452
+│    .getLockBox(15971525489660198786): ...[1G[2K│  ✔ .getLockBox(15971525489660198786): 0x9b89f8Be1a5dAB7EfB6Fc0841610a66d0e58bc82
+│  ⚠ .getAllLockBoxConfigs: skipped
+└── ✔ 15 checks passed, 2 skipped
+
+Contract: l1/l1AdvancedPoolHooks (PausableAdvancedPoolHooks, 0xd74bD7d0377A3ac24FEcD699E1a9362981fBF6c8)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l1/l1AdvancedPoolHooks/checks
+│    .owner: ...[1G[2K│  ✔ .owner: 0x2E36a81613F2D11087D48B724f5997D70660c243
+│    .typeAndVersion: ...[1G[2K│  ✔ .typeAndVersion: PausableAdvancedPoolHooks 2.0.0
+│    .getThresholdAmount: ...[1G[2K│  ✔ .getThresholdAmount: 0
+│    .getCCVConfig(15971525489660198786): ...[1G[2K│  ✔ .getCCVConfig(15971525489660198786): [["0x3f724844973A8e5F669499D366943A676F6EF7CE"],[],["0x3f724844973A8e5F669499D366943A676F6EF7CE"],[]]
+│    .getCCVConfig(5009297550715157269): ...[1G[2K│  ✔ .getCCVConfig(5009297550715157269): [[],[],[],[]]
+│  ⚠ .getAllCCVConfigs: skipped
+│    .paused: ...[1G[2K│  ✔ .paused: false
+│    .getDisabledRemoteLanes: ...[1G[2K│  ✔ .getDisabledRemoteLanes: []
+│    .getAllAuthorizedCallers: ...[1G[2K│  ✔ .getAllAuthorizedCallers: ["0x394244C5608Ff98454e65f97e5DcA390c89E2b5b"]
+│    .getAllowListEnabled: ...[1G[2K│  ✔ .getAllowListEnabled: false
+│    .getAllowList: ...[1G[2K│  ✔ .getAllowList: []
+│    .getPolicyEngine: ...[1G[2K│  ✔ .getPolicyEngine: 0x0000000000000000000000000000000000000000
+│    .getRequiredCCVs(0x0000000000000000000000000000000000000000,15971525489660198786,0,0x00000000,0x,0): ...[1G[2K│  ✔ .getRequiredCCVs(0x0000000000000000000000000000000000000000,15971525489660198786,0,0x00000000,0x,0): ["0x3f724844973A8e5F669499D366943A676F6EF7CE"]
+│    .getRequiredCCVs(0x0000000000000000000000000000000000000000,15971525489660198786,0,0x00000000,0x,1): ...[1G[2K│  ✔ .getRequiredCCVs(0x0000000000000000000000000000000000000000,15971525489660198786,0,0x00000000,0x,1): ["0x3f724844973A8e5F669499D366943A676F6EF7CE"]
+│    .getRequiredCCVs(0x0000000000000000000000000000000000000000,15971525489660198786,1000000000000000000000000,0x00000000,0x,0): ...[1G[2K│  ✔ .getRequiredCCVs(0x0000000000000000000000000000000000000000,15971525489660198786,1000000000000000000000000,0x00000000,0x,0): ["0x3f724844973A8e5F669499D366943A676F6EF7CE"]
+│    .getRequiredCCVs(0x0000000000000000000000000000000000000000,15971525489660198786,1000000000000000000000000,0x00000000,0x,1): ...[1G[2K│  ✔ .getRequiredCCVs(0x0000000000000000000000000000000000000000,15971525489660198786,1000000000000000000000000,0x00000000,0x,1): ["0x3f724844973A8e5F669499D366943A676F6EF7CE"]
+│    .hasRole(0x7f98a0e24ed1942884d585f32c620f96c452e61b245177d9f9487de0affd4f34,0xEB00000000000000000000000000000000000001): ...[1G[2K│  ✔ .hasRole(0x7f98a0e24ed1942884d585f32c620f96c452e61b245177d9f9487de0affd4f34,0xEB00000000000000000000000000000000000001): true
+│    .hasRole(0x7f98a0e24ed1942884d585f32c620f96c452e61b245177d9f9487de0affd4f34,0x3C3C000000000000000000000000000000000001): ...[1G[2K│  ✔ .hasRole(0x7f98a0e24ed1942884d585f32c620f96c452e61b245177d9f9487de0affd4f34,0x3C3C000000000000000000000000000000000001): false
+│    .hasRole(0xec1f75c5122589454a3320a699577d0872e543705c4d7ed3b6b412d40bdcfa37,0xEB00000000000000000000000000000000000001): ...[1G[2K│  ✔ .hasRole(0xec1f75c5122589454a3320a699577d0872e543705c4d7ed3b6b412d40bdcfa37,0xEB00000000000000000000000000000000000001): false
+│    .hasRole(0xec1f75c5122589454a3320a699577d0872e543705c4d7ed3b6b412d40bdcfa37,0x3C3C000000000000000000000000000000000001): ...[1G[2K│  ✔ .hasRole(0xec1f75c5122589454a3320a699577d0872e543705c4d7ed3b6b412d40bdcfa37,0x3C3C000000000000000000000000000000000001): false
+└── ✔ 20 checks passed, 1 skipped
+
+Contract: l1/l1LidoTimelock (LidoTimelock, 0x2E36a81613F2D11087D48B724f5997D70660c243)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l1/l1LidoTimelock/checks
+│    .hasRole(0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775,0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c): ...[1G[2K│  ✔ .hasRole(0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775,0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c): true
+│    .hasRole(0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775,0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266): ...[1G[2K│  ✔ .hasRole(0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775,0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266): false
+│    .hasRole(0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1,0x3C3C000000000000000000000000000000000001): ...[1G[2K│  ✔ .hasRole(0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1,0x3C3C000000000000000000000000000000000001): true
+│    .hasRole(0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63,0x843Dd677364C0C5aFb95cCe6F2482DfF5C57C25a): ...[1G[2K│  ✔ .hasRole(0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63,0x843Dd677364C0C5aFb95cCe6F2482DfF5C57C25a): true
+│    .hasRole(0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783,0xEB00000000000000000000000000000000000001): ...[1G[2K│  ✔ .hasRole(0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783,0xEB00000000000000000000000000000000000001): true
+│    .hasRole(0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783,0x3C3C000000000000000000000000000000000001): ...[1G[2K│  ✔ .hasRole(0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783,0x3C3C000000000000000000000000000000000001): true
+│    .hasRole(0xce2f696aef83187109029ccf4f286f2f4e5f25b398771f9a808d6e70b045e2bb,0xEB00000000000000000000000000000000000001): ...[1G[2K│  ✔ .hasRole(0xce2f696aef83187109029ccf4f286f2f4e5f25b398771f9a808d6e70b045e2bb,0xEB00000000000000000000000000000000000001): true
+│    .hasRole(0xce2f696aef83187109029ccf4f286f2f4e5f25b398771f9a808d6e70b045e2bb,0x3C3C000000000000000000000000000000000001): ...[1G[2K│  ✔ .hasRole(0xce2f696aef83187109029ccf4f286f2f4e5f25b398771f9a808d6e70b045e2bb,0x3C3C000000000000000000000000000000000001): false
+│    .hasRole(0xa1b2b8005de234c4b8ce8cd0be058239056e0d54f6097825b5117101469d5a8d,0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c): ...[1G[2K│  ✔ .hasRole(0xa1b2b8005de234c4b8ce8cd0be058239056e0d54f6097825b5117101469d5a8d,0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c): false
+│    .getRoleMemberCount(0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775): ...[1G[2K│  ✔ .getRoleMemberCount(0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775): 1
+│    .getRoleMemberCount(0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1): ...[1G[2K│  ✔ .getRoleMemberCount(0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1): 1
+│    .getRoleMemberCount(0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63): ...[1G[2K│  ✔ .getRoleMemberCount(0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63): 1
+│    .getRoleMemberCount(0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783): ...[1G[2K│  ✔ .getRoleMemberCount(0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783): 2
+│    .getRoleMemberCount(0xce2f696aef83187109029ccf4f286f2f4e5f25b398771f9a808d6e70b045e2bb): ...[1G[2K│  ✔ .getRoleMemberCount(0xce2f696aef83187109029ccf4f286f2f4e5f25b398771f9a808d6e70b045e2bb): 1
+│    .getRoleMemberCount(0xa1b2b8005de234c4b8ce8cd0be058239056e0d54f6097825b5117101469d5a8d): ...[1G[2K│  ✔ .getRoleMemberCount(0xa1b2b8005de234c4b8ce8cd0be058239056e0d54f6097825b5117101469d5a8d): 0
+│    .getMinDelay: ...[1G[2K│  ✔ .getMinDelay: 259200
+│    .getExpiryPeriod: ...[1G[2K│  ✔ .getExpiryPeriod: 1209600
+│    .getEpoch: ...[1G[2K│  ✔ .getEpoch: 0
+│    .isProposalQueueHalted: ...[1G[2K│  ✔ .isProposalQueueHalted: false
+│    .getBlockedFunctionSelectorCount: ...[1G[2K│  ✔ .getBlockedFunctionSelectorCount: 5
+│    .getBlockedFunctionSelectorAt(0): ...[1G[2K│  ✔ .getBlockedFunctionSelectorAt(0): 0xf2fde38b
+│    .getBlockedFunctionSelectorAt(1): ...[1G[2K│  ✔ .getBlockedFunctionSelectorAt(1): 0xddadfa8e
+│    .getBlockedFunctionSelectorAt(2): ...[1G[2K│  ✔ .getBlockedFunctionSelectorAt(2): 0x4f1ef286
+│    .getBlockedFunctionSelectorAt(3): ...[1G[2K│  ✔ .getBlockedFunctionSelectorAt(3): 0x2f2ff15d
+│    .getBlockedFunctionSelectorAt(4): ...[1G[2K│  ✔ .getBlockedFunctionSelectorAt(4): 0xd547741f
+└── ✔ 26 checks passed
+
+Contract: l1/l1LockBox (ERC20LockBox, 0x9b89f8Be1a5dAB7EfB6Fc0841610a66d0e58bc82)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l1/l1LockBox/checks
+│    .owner: ...[1G[2K│  ✔ .owner: 0x2E36a81613F2D11087D48B724f5997D70660c243
+│    .typeAndVersion: ...[1G[2K│  ✔ .typeAndVersion: ERC20LockBox 2.0.0
+│    .getToken: ...[1G[2K│  ✔ .getToken: 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0
+│    .getAllAuthorizedCallers: ...[1G[2K│  ✔ .getAllAuthorizedCallers: ["0x394244C5608Ff98454e65f97e5DcA390c89E2b5b","0x9de443AdC5A411E83F1878Ef24C3F52C61571e72"]
+└── ✔ 5 checks passed
+
+Contract: l1/l1TokenAdminRegistry (TokenAdminRegistry, 0xb22764f98dD05c789929716D677382Df22C05Cb6)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l1/l1TokenAdminRegistry/checks
+│    .getTokenConfig(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0): ...[1G[2K│  ✔ .getTokenConfig(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0): ["0x2E36a81613F2D11087D48B724f5997D70660c243","0x0000000000000000000000000000000000000000","0x394244C5608Ff98454e65f97e5DcA390c89E2b5b"]
+└── ✔ 2 checks passed
+
+Contract: l1/l1MessageIdVerifier (DummyMessageIdVerifier, 0xB4F62b1AC2Eda340E2F53A1969eE04eeC403a77A)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l1/l1MessageIdVerifier/checks
+│    .owner: ...[1G[2K│  ✔ .owner: 0x2E36a81613F2D11087D48B724f5997D70660c243
+│    .typeAndVersion: ...[1G[2K│  ✔ .typeAndVersion: DummyMessageIdVerifier 1.0.0
+│    .versionTag: ...[1G[2K│  ✔ .versionTag: 0xdecafbad
+│    .getAllowedFinalityConfig: ...[1G[2K│  ✔ .getAllowedFinalityConfig: 0x00000000
+│    .getStorageLocations: ...[1G[2K│  ✔ .getStorageLocations: ["dummy://message-id-verifier"]
+│  ⚠ .getDynamicConfig: skipped
+│    .getRemoteChainConfig(15971525489660198786): ...[1G[2K│  ✔ .getRemoteChainConfig(15971525489660198786): [["0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D","15971525489660198786",false,"0","1","36"],[]]
+│    .getRemoteChainConfig(5009297550715157269): ...[1G[2K│  ✔ .getRemoteChainConfig(5009297550715157269): [["0x0000000000000000000000000000000000000000","5009297550715157269",false,"0","0","0"],[]]
+└── ✔ 8 checks passed, 1 skipped
+
+Contract: l1/l1VerifierResolver (VersionedVerifierResolver, 0x3f724844973A8e5F669499D366943A676F6EF7CE)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l1/l1VerifierResolver/checks
+│    .owner: ...[1G[2K│  ✔ .owner: 0x2E36a81613F2D11087D48B724f5997D70660c243
+│    .typeAndVersion: ...[1G[2K│  ✔ .typeAndVersion: VersionedVerifierResolver 2.0.0
+│  ⚠ .getFeeAggregator: skipped
+│  ⚠ .getAllOutboundImplementations: skipped
+│  ⚠ .getAllInboundImplementations: skipped
+│    .getOutboundImplementation(15971525489660198786,0x): ...[1G[2K│  ✔ .getOutboundImplementation(15971525489660198786,0x): 0xB4F62b1AC2Eda340E2F53A1969eE04eeC403a77A
+│    .getOutboundImplementation(5009297550715157269,0x): ...[1G[2K│  ✔ .getOutboundImplementation(5009297550715157269,0x): 0x0000000000000000000000000000000000000000
+│    .getInboundImplementation(0xdecafbad): ...[1G[2K│  ✔ .getInboundImplementation(0xdecafbad): 0xB4F62b1AC2Eda340E2F53A1969eE04eeC403a77A
+│    .getInboundImplementation(0x00000000): ...[1G[2K│  ✔ .getInboundImplementation(0x00000000): 0x0000000000000000000000000000000000000000
+└── ✔ 7 checks passed, 3 skipped
+
+Contract: l1/l1LegacyBridge (L1MigrationBridge, 0x9de443AdC5A411E83F1878Ef24C3F52C61571e72)
+  implementation: ...[1G[2K✔ implementation: 0x261B703e553B24f6D971Cd9Bad331FaB60340639
+  proxyAdmin: ...[1G[2K✔ proxyAdmin: 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
+├── l1/l1LegacyBridge/checks
+│    .getBridgeMode: ...[1G[2K│  ✔ .getBridgeMode: 0
+│    .isInitialized: ...[1G[2K│  ✔ .isInitialized: true
+│    .isDepositsEnabled: ...[1G[2K│  ✔ .isDepositsEnabled: true
+│    .isWithdrawalsEnabled: ...[1G[2K│  ✔ .isWithdrawalsEnabled: true
+│    .hasRole(0x0000000000000000000000000000000000000000000000000000000000000000,0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c): ...[1G[2K│  ✔ .hasRole(0x0000000000000000000000000000000000000000000000000000000000000000,0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c): true
+│    .hasRole(0x0000000000000000000000000000000000000000000000000000000000000000,0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266): ...[1G[2K│  ✔ .hasRole(0x0000000000000000000000000000000000000000000000000000000000000000,0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266): false
+│    .l1Token: ...[1G[2K│  ✔ .l1Token: 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0
+│    .l2Token: ...[1G[2K│  ✔ .l2Token: 0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452
+│    .l2TokenBridge: ...[1G[2K│  ✔ .l2TokenBridge: 0xac9D11cD4D7eF6e54F14643a393F68Ca014287AB
+│    .messenger: ...[1G[2K│  ✔ .messenger: 0x866E82a600A1414e583f7F13623F1aC5d58b0Afa
+│    .ccipRouter: ...[1G[2K│  ✔ .ccipRouter: 0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D
+│    .ccipDestinationChainSelector: ...[1G[2K│  ✔ .ccipDestinationChainSelector: 15971525489660198786
+│    .ccipTokenAdminRegistry: ...[1G[2K│  ✔ .ccipTokenAdminRegistry: 0xb22764f98dD05c789929716D677382Df22C05Cb6
+│    .ccipTokenPool: ...[1G[2K│  ✔ .ccipTokenPool: 0x394244C5608Ff98454e65f97e5DcA390c89E2b5b
+│    .ccipLockBox: ...[1G[2K│  ✔ .ccipLockBox: 0x9b89f8Be1a5dAB7EfB6Fc0841610a66d0e58bc82
+│    .isActivated: ...[1G[2K│  ✔ .isActivated: false
+│    .isClosed: ...[1G[2K│  ✔ .isClosed: false
+└── ✔ 19 checks passed
+
+Contract: l2/l2TokenPool (BurnMintTokenPool, 0xad430041ecaaFc73dA0c7074E8d47759E3C4447B)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l2/l2TokenPool/checks
+│    .owner: ...[1G[2K│  ✔ .owner: 0x9baFbdAe9d4FbF709dD2a126D5Cb5dDE7F004659
+│    .typeAndVersion: ...[1G[2K│  ✔ .typeAndVersion: BurnMintTokenPool 2.0.0
+│    .getToken: ...[1G[2K│  ✔ .getToken: 0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452
+│    .getTokenDecimals: ...[1G[2K│  ✔ .getTokenDecimals: 18
+│    .getDynamicConfig: ...[1G[2K│  ✔ .getDynamicConfig: ["0x881e3A65B4d4a04dD529061dd0071cf975F58bCD","0x0000000000000000000000000000000000000000","0x0000000000000000000000000000000000000000"]
+│    .getRmnProxy: ...[1G[2K│  ✔ .getRmnProxy: 0xC842c69d54F83170C42C4d556B4F6B2ca53Dd3E8
+│    .getAllowedFinalityConfig: ...[1G[2K│  ✔ .getAllowedFinalityConfig: 0x00000000
+│    .getAdvancedPoolHooks: ...[1G[2K│  ✔ .getAdvancedPoolHooks: 0xe1c5884afDc29302d9C23bfD902321Db63B72DCd
+│    .isSupportedChain(5009297550715157269): ...[1G[2K│  ✔ .isSupportedChain(5009297550715157269): true
+│  ⚠ .getSupportedChains: skipped
+│    .getTokenTransferFeeConfig(0x0000000000000000000000000000000000000000,5009297550715157269,0x00000000,0x): ...[1G[2K│  ✔ .getTokenTransferFeeConfig(0x0000000000000000000000000000000000000000,5009297550715157269,0x00000000,0x): ["150000","32","0","0","0","0",true]
+│    .getCurrentRateLimiterState(5009297550715157269,false): ...[1G[2K│  ✔ .getCurrentRateLimiterState(5009297550715157269,false): [["330000000000000000000","1793181962",true,"330000000000000000000","3819444444444444"],["500000000000000000000","1793181962",true,"500000000000000000000","5787037037037037"]]
+│    .getRemotePools(5009297550715157269): ...[1G[2K│  ✔ .getRemotePools(5009297550715157269): ["0x000000000000000000000000394244c5608ff98454e65f97e5dca390c89e2b5b"]
+│    .getRemoteToken(5009297550715157269): ...[1G[2K│  ✔ .getRemoteToken(5009297550715157269): 0x0000000000000000000000007f39c581f595b53c5cb19bd0b3f8da6c935e2ca0
+└── ✔ 14 checks passed, 1 skipped
+
+Contract: l2/l2AdvancedPoolHooks (PausableAdvancedPoolHooks, 0xe1c5884afDc29302d9C23bfD902321Db63B72DCd)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l2/l2AdvancedPoolHooks/checks
+│    .owner: ...[1G[2K│  ✔ .owner: 0x9baFbdAe9d4FbF709dD2a126D5Cb5dDE7F004659
+│    .typeAndVersion: ...[1G[2K│  ✔ .typeAndVersion: PausableAdvancedPoolHooks 2.0.0
+│    .getThresholdAmount: ...[1G[2K│  ✔ .getThresholdAmount: 0
+│    .getCCVConfig(5009297550715157269): ...[1G[2K│  ✔ .getCCVConfig(5009297550715157269): [["0xA3BDef36A68a854C408a781787EE80cC98D086E4"],[],["0xA3BDef36A68a854C408a781787EE80cC98D086E4"],[]]
+│    .getCCVConfig(15971525489660198786): ...[1G[2K│  ✔ .getCCVConfig(15971525489660198786): [[],[],[],[]]
+│  ⚠ .getAllCCVConfigs: skipped
+│    .paused: ...[1G[2K│  ✔ .paused: false
+│    .getDisabledRemoteLanes: ...[1G[2K│  ✔ .getDisabledRemoteLanes: []
+│    .getAllAuthorizedCallers: ...[1G[2K│  ✔ .getAllAuthorizedCallers: ["0xad430041ecaaFc73dA0c7074E8d47759E3C4447B"]
+│    .getAllowListEnabled: ...[1G[2K│  ✔ .getAllowListEnabled: false
+│    .getAllowList: ...[1G[2K│  ✔ .getAllowList: []
+│    .getPolicyEngine: ...[1G[2K│  ✔ .getPolicyEngine: 0x0000000000000000000000000000000000000000
+│    .getRequiredCCVs(0x0000000000000000000000000000000000000000,5009297550715157269,0,0x00000000,0x,0): ...[1G[2K│  ✔ .getRequiredCCVs(0x0000000000000000000000000000000000000000,5009297550715157269,0,0x00000000,0x,0): ["0xA3BDef36A68a854C408a781787EE80cC98D086E4"]
+│    .getRequiredCCVs(0x0000000000000000000000000000000000000000,5009297550715157269,0,0x00000000,0x,1): ...[1G[2K│  ✔ .getRequiredCCVs(0x0000000000000000000000000000000000000000,5009297550715157269,0,0x00000000,0x,1): ["0xA3BDef36A68a854C408a781787EE80cC98D086E4"]
+│    .getRequiredCCVs(0x0000000000000000000000000000000000000000,5009297550715157269,1000000000000000000000000,0x00000000,0x,0): ...[1G[2K│  ✔ .getRequiredCCVs(0x0000000000000000000000000000000000000000,5009297550715157269,1000000000000000000000000,0x00000000,0x,0): ["0xA3BDef36A68a854C408a781787EE80cC98D086E4"]
+│    .getRequiredCCVs(0x0000000000000000000000000000000000000000,5009297550715157269,1000000000000000000000000,0x00000000,0x,1): ...[1G[2K│  ✔ .getRequiredCCVs(0x0000000000000000000000000000000000000000,5009297550715157269,1000000000000000000000000,0x00000000,0x,1): ["0xA3BDef36A68a854C408a781787EE80cC98D086E4"]
+│    .hasRole(0x7f98a0e24ed1942884d585f32c620f96c452e61b245177d9f9487de0affd4f34,0xEB00000000000000000000000000000000008453): ...[1G[2K│  ✔ .hasRole(0x7f98a0e24ed1942884d585f32c620f96c452e61b245177d9f9487de0affd4f34,0xEB00000000000000000000000000000000008453): true
+│    .hasRole(0x7f98a0e24ed1942884d585f32c620f96c452e61b245177d9f9487de0affd4f34,0x3C3C000000000000000000000000000000008453): ...[1G[2K│  ✔ .hasRole(0x7f98a0e24ed1942884d585f32c620f96c452e61b245177d9f9487de0affd4f34,0x3C3C000000000000000000000000000000008453): false
+│    .hasRole(0xec1f75c5122589454a3320a699577d0872e543705c4d7ed3b6b412d40bdcfa37,0xEB00000000000000000000000000000000008453): ...[1G[2K│  ✔ .hasRole(0xec1f75c5122589454a3320a699577d0872e543705c4d7ed3b6b412d40bdcfa37,0xEB00000000000000000000000000000000008453): false
+│    .hasRole(0xec1f75c5122589454a3320a699577d0872e543705c4d7ed3b6b412d40bdcfa37,0x3C3C000000000000000000000000000000008453): ...[1G[2K│  ✔ .hasRole(0xec1f75c5122589454a3320a699577d0872e543705c4d7ed3b6b412d40bdcfa37,0x3C3C000000000000000000000000000000008453): false
+└── ✔ 20 checks passed, 1 skipped
+
+Contract: l2/l2LidoTimelock (LidoTimelock, 0x9baFbdAe9d4FbF709dD2a126D5Cb5dDE7F004659)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l2/l2LidoTimelock/checks
+│    .hasRole(0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775,0x0E37599436974a25dDeEdF795C848d30Af46eaCF): ...[1G[2K│  ✔ .hasRole(0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775,0x0E37599436974a25dDeEdF795C848d30Af46eaCF): true
+│    .hasRole(0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775,0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266): ...[1G[2K│  ✔ .hasRole(0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775,0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266): false
+│    .hasRole(0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1,0x3C3C000000000000000000000000000000008453): ...[1G[2K│  ✔ .hasRole(0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1,0x3C3C000000000000000000000000000000008453): true
+│    .hasRole(0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63,0x66d1d5b5104691F92c2181d031c4c4C453067ea0): ...[1G[2K│  ✔ .hasRole(0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63,0x66d1d5b5104691F92c2181d031c4c4C453067ea0): true
+│    .hasRole(0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783,0xEB00000000000000000000000000000000008453): ...[1G[2K│  ✔ .hasRole(0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783,0xEB00000000000000000000000000000000008453): true
+│    .hasRole(0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783,0x3C3C000000000000000000000000000000008453): ...[1G[2K│  ✔ .hasRole(0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783,0x3C3C000000000000000000000000000000008453): true
+│    .hasRole(0xce2f696aef83187109029ccf4f286f2f4e5f25b398771f9a808d6e70b045e2bb,0xEB00000000000000000000000000000000008453): ...[1G[2K│  ✔ .hasRole(0xce2f696aef83187109029ccf4f286f2f4e5f25b398771f9a808d6e70b045e2bb,0xEB00000000000000000000000000000000008453): true
+│    .hasRole(0xce2f696aef83187109029ccf4f286f2f4e5f25b398771f9a808d6e70b045e2bb,0x3C3C000000000000000000000000000000008453): ...[1G[2K│  ✔ .hasRole(0xce2f696aef83187109029ccf4f286f2f4e5f25b398771f9a808d6e70b045e2bb,0x3C3C000000000000000000000000000000008453): false
+│    .hasRole(0xa1b2b8005de234c4b8ce8cd0be058239056e0d54f6097825b5117101469d5a8d,0x0E37599436974a25dDeEdF795C848d30Af46eaCF): ...[1G[2K│  ✔ .hasRole(0xa1b2b8005de234c4b8ce8cd0be058239056e0d54f6097825b5117101469d5a8d,0x0E37599436974a25dDeEdF795C848d30Af46eaCF): false
+│    .getRoleMemberCount(0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775): ...[1G[2K│  ✔ .getRoleMemberCount(0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775): 1
+│    .getRoleMemberCount(0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1): ...[1G[2K│  ✔ .getRoleMemberCount(0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1): 1
+│    .getRoleMemberCount(0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63): ...[1G[2K│  ✔ .getRoleMemberCount(0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63): 1
+│    .getRoleMemberCount(0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783): ...[1G[2K│  ✔ .getRoleMemberCount(0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783): 2
+│    .getRoleMemberCount(0xce2f696aef83187109029ccf4f286f2f4e5f25b398771f9a808d6e70b045e2bb): ...[1G[2K│  ✔ .getRoleMemberCount(0xce2f696aef83187109029ccf4f286f2f4e5f25b398771f9a808d6e70b045e2bb): 1
+│    .getRoleMemberCount(0xa1b2b8005de234c4b8ce8cd0be058239056e0d54f6097825b5117101469d5a8d): ...[1G[2K│  ✔ .getRoleMemberCount(0xa1b2b8005de234c4b8ce8cd0be058239056e0d54f6097825b5117101469d5a8d): 0
+│    .getMinDelay: ...[1G[2K│  ✔ .getMinDelay: 259200
+│    .getExpiryPeriod: ...[1G[2K│  ✔ .getExpiryPeriod: 1209600
+│    .getEpoch: ...[1G[2K│  ✔ .getEpoch: 0
+│    .isProposalQueueHalted: ...[1G[2K│  ✔ .isProposalQueueHalted: false
+│    .getBlockedFunctionSelectorCount: ...[1G[2K│  ✔ .getBlockedFunctionSelectorCount: 5
+│    .getBlockedFunctionSelectorAt(0): ...[1G[2K│  ✔ .getBlockedFunctionSelectorAt(0): 0xf2fde38b
+│    .getBlockedFunctionSelectorAt(1): ...[1G[2K│  ✔ .getBlockedFunctionSelectorAt(1): 0xddadfa8e
+│    .getBlockedFunctionSelectorAt(2): ...[1G[2K│  ✔ .getBlockedFunctionSelectorAt(2): 0x4f1ef286
+│    .getBlockedFunctionSelectorAt(3): ...[1G[2K│  ✔ .getBlockedFunctionSelectorAt(3): 0x2f2ff15d
+│    .getBlockedFunctionSelectorAt(4): ...[1G[2K│  ✔ .getBlockedFunctionSelectorAt(4): 0xd547741f
+└── ✔ 26 checks passed
+
+Contract: l2/l2TokenAdminRegistry (TokenAdminRegistry, 0x6f6C373d09C07425BaAE72317863d7F6bb731e37)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l2/l2TokenAdminRegistry/checks
+│    .getTokenConfig(0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452): ...[1G[2K│  ✔ .getTokenConfig(0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452): ["0x9baFbdAe9d4FbF709dD2a126D5Cb5dDE7F004659","0x0000000000000000000000000000000000000000","0xad430041ecaaFc73dA0c7074E8d47759E3C4447B"]
+└── ✔ 2 checks passed
+
+Contract: l2/l2WstETH (L2WstETH, 0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452)
+  implementation: ...[1G[2K✔ implementation: 0x52faD155dF3eFe753ed54D8bA36ffD32816cA590
+  proxyAdmin: ...[1G[2K✔ proxyAdmin: 0x0E37599436974a25dDeEdF795C848d30Af46eaCF
+├── l2/l2WstETH/checks
+│    .name: ...[1G[2K│  ✔ .name: Wrapped liquid staked Ether 2.0
+│    .symbol: ...[1G[2K│  ✔ .symbol: wstETH
+│    .decimals: ...[1G[2K│  ✔ .decimals: 18
+│    .getContractVersion: ...[1G[2K│  ✔ .getContractVersion: 3
+│    .hasRole(0x0000000000000000000000000000000000000000000000000000000000000000,0x0E37599436974a25dDeEdF795C848d30Af46eaCF): ...[1G[2K│  ✔ .hasRole(0x0000000000000000000000000000000000000000000000000000000000000000,0x0E37599436974a25dDeEdF795C848d30Af46eaCF): true
+│    .hasRole(0x0000000000000000000000000000000000000000000000000000000000000000,0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266): ...[1G[2K│  ✔ .hasRole(0x0000000000000000000000000000000000000000000000000000000000000000,0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266): false
+│    .hasRole(0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6,0xad430041ecaaFc73dA0c7074E8d47759E3C4447B): ...[1G[2K│  ✔ .hasRole(0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6,0xad430041ecaaFc73dA0c7074E8d47759E3C4447B): true
+│    .hasRole(0x3c11d16cbaffd01df69ce1c404f6340ee057498f5f00246190ea54220576a848,0xad430041ecaaFc73dA0c7074E8d47759E3C4447B): ...[1G[2K│  ✔ .hasRole(0x3c11d16cbaffd01df69ce1c404f6340ee057498f5f00246190ea54220576a848,0xad430041ecaaFc73dA0c7074E8d47759E3C4447B): true
+│    .hasRole(0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6,0xac9D11cD4D7eF6e54F14643a393F68Ca014287AB): ...[1G[2K│  ✔ .hasRole(0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6,0xac9D11cD4D7eF6e54F14643a393F68Ca014287AB): true
+│    .hasRole(0x3c11d16cbaffd01df69ce1c404f6340ee057498f5f00246190ea54220576a848,0xac9D11cD4D7eF6e54F14643a393F68Ca014287AB): ...[1G[2K│  ✔ .hasRole(0x3c11d16cbaffd01df69ce1c404f6340ee057498f5f00246190ea54220576a848,0xac9D11cD4D7eF6e54F14643a393F68Ca014287AB): true
+│    .getRoleMemberCount(0x0000000000000000000000000000000000000000000000000000000000000000): ...[1G[2K│  ✔ .getRoleMemberCount(0x0000000000000000000000000000000000000000000000000000000000000000): 1
+│    .getRoleMemberCount(0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6): ...[1G[2K│  ✔ .getRoleMemberCount(0x9f2df0fed2c77648de5860a4cc508cd0818c85b8b8a1ab4ceeef8d981c8956a6): 2
+│    .getRoleMemberCount(0x3c11d16cbaffd01df69ce1c404f6340ee057498f5f00246190ea54220576a848): ...[1G[2K│  ✔ .getRoleMemberCount(0x3c11d16cbaffd01df69ce1c404f6340ee057498f5f00246190ea54220576a848): 2
+└── ✔ 15 checks passed
+
+Contract: l2/l2MessageIdVerifier (DummyMessageIdVerifier, 0xaF49b5193Cfb5f800575e9b271992B26AA8d9f8A)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l2/l2MessageIdVerifier/checks
+│    .owner: ...[1G[2K│  ✔ .owner: 0x9baFbdAe9d4FbF709dD2a126D5Cb5dDE7F004659
+│    .typeAndVersion: ...[1G[2K│  ✔ .typeAndVersion: DummyMessageIdVerifier 1.0.0
+│    .versionTag: ...[1G[2K│  ✔ .versionTag: 0xdecafbad
+│    .getAllowedFinalityConfig: ...[1G[2K│  ✔ .getAllowedFinalityConfig: 0x00000000
+│    .getStorageLocations: ...[1G[2K│  ✔ .getStorageLocations: ["dummy://message-id-verifier"]
+│  ⚠ .getDynamicConfig: skipped
+│    .getRemoteChainConfig(5009297550715157269): ...[1G[2K│  ✔ .getRemoteChainConfig(5009297550715157269): [["0x881e3A65B4d4a04dD529061dd0071cf975F58bCD","5009297550715157269",false,"0","1","36"],[]]
+│    .getRemoteChainConfig(15971525489660198786): ...[1G[2K│  ✔ .getRemoteChainConfig(15971525489660198786): [["0x0000000000000000000000000000000000000000","15971525489660198786",false,"0","0","0"],[]]
+└── ✔ 8 checks passed, 1 skipped
+
+Contract: l2/l2VerifierResolver (VersionedVerifierResolver, 0xA3BDef36A68a854C408a781787EE80cC98D086E4)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l2/l2VerifierResolver/checks
+│    .owner: ...[1G[2K│  ✔ .owner: 0x9baFbdAe9d4FbF709dD2a126D5Cb5dDE7F004659
+│    .typeAndVersion: ...[1G[2K│  ✔ .typeAndVersion: VersionedVerifierResolver 2.0.0
+│  ⚠ .getFeeAggregator: skipped
+│  ⚠ .getAllOutboundImplementations: skipped
+│  ⚠ .getAllInboundImplementations: skipped
+│    .getOutboundImplementation(5009297550715157269,0x): ...[1G[2K│  ✔ .getOutboundImplementation(5009297550715157269,0x): 0xaF49b5193Cfb5f800575e9b271992B26AA8d9f8A
+│    .getOutboundImplementation(15971525489660198786,0x): ...[1G[2K│  ✔ .getOutboundImplementation(15971525489660198786,0x): 0x0000000000000000000000000000000000000000
+│    .getInboundImplementation(0xdecafbad): ...[1G[2K│  ✔ .getInboundImplementation(0xdecafbad): 0xaF49b5193Cfb5f800575e9b271992B26AA8d9f8A
+│    .getInboundImplementation(0x00000000): ...[1G[2K│  ✔ .getInboundImplementation(0x00000000): 0x0000000000000000000000000000000000000000
+└── ✔ 7 checks passed, 3 skipped
+
+Contract: l2/l2LegacyBridge (L2MigrationBridge, 0xac9D11cD4D7eF6e54F14643a393F68Ca014287AB)
+  implementation: ...[1G[2K✔ implementation: 0x01cf086Be1D7cd36d8927E683Dc90757AD339a3A
+  proxyAdmin: ...[1G[2K✔ proxyAdmin: 0x0E37599436974a25dDeEdF795C848d30Af46eaCF
+├── l2/l2LegacyBridge/checks
+│    .getBridgeMode: ...[1G[2K│  ✔ .getBridgeMode: 0
+│    .isInitialized: ...[1G[2K│  ✔ .isInitialized: true
+│    .isDepositsEnabled: ...[1G[2K│  ✔ .isDepositsEnabled: true
+│    .isWithdrawalsEnabled: ...[1G[2K│  ✔ .isWithdrawalsEnabled: true
+│    .hasRole(0x0000000000000000000000000000000000000000000000000000000000000000,0x0E37599436974a25dDeEdF795C848d30Af46eaCF): ...[1G[2K│  ✔ .hasRole(0x0000000000000000000000000000000000000000000000000000000000000000,0x0E37599436974a25dDeEdF795C848d30Af46eaCF): true
+│    .hasRole(0x0000000000000000000000000000000000000000000000000000000000000000,0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266): ...[1G[2K│  ✔ .hasRole(0x0000000000000000000000000000000000000000000000000000000000000000,0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266): false
+│    .l1Token: ...[1G[2K│  ✔ .l1Token: 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0
+│    .l2Token: ...[1G[2K│  ✔ .l2Token: 0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452
+│    .l1TokenBridge: ...[1G[2K│  ✔ .l1TokenBridge: 0x9de443AdC5A411E83F1878Ef24C3F52C61571e72
+│    .messenger: ...[1G[2K│  ✔ .messenger: 0x4200000000000000000000000000000000000007
+│    .ccipRouter: ...[1G[2K│  ✔ .ccipRouter: 0x881e3A65B4d4a04dD529061dd0071cf975F58bCD
+│    .ccipDestinationChainSelector: ...[1G[2K│  ✔ .ccipDestinationChainSelector: 5009297550715157269
+│    .ccipTokenAdminRegistry: ...[1G[2K│  ✔ .ccipTokenAdminRegistry: 0x6f6C373d09C07425BaAE72317863d7F6bb731e37
+│    .ccipTokenPool: ...[1G[2K│  ✔ .ccipTokenPool: 0xad430041ecaaFc73dA0c7074E8d47759E3C4447B
+│    .isActivated: ...[1G[2K│  ✔ .isActivated: false
+│    .isClosed: ...[1G[2K│  ✔ .isClosed: false
+└── ✔ 18 checks passed
+
+Contract: l2/l2OptimismBridgeExecutor (OptimismBridgeExecutor, 0x0E37599436974a25dDeEdF795C848d30Af46eaCF)
+  implementation: ...[1G[2K✔ implementation: not a proxy
+├── l2/l2OptimismBridgeExecutor/checks
+│    .getEthereumGovernanceExecutor: ...[1G[2K│  ✔ .getEthereumGovernanceExecutor: 0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c
+│    .getDelay: ...[1G[2K│  ✔ .getDelay: 0
+│    .getGracePeriod: ...[1G[2K│  ✔ .getGracePeriod: 86400
+│    .getMinimumDelay: ...[1G[2K│  ✔ .getMinimumDelay: 0
+│    .getMaximumDelay: ...[1G[2K│  ✔ .getMaximumDelay: 1
+│    .getGuardian: ...[1G[2K│  ✔ .getGuardian: 0x0000000000000000000000000000000000000000
+└── ✔ 7 checks passed
+
+✔ Total: 219 checks passed, 13 skipped
+
+# LidoTimelock evidence — see step 08 §4b and the governance scenarios
+  ✓ L1 timelock: queue open, min delay 259200s, blocked selectors 0xf2fde38b,0xddadfa8e,0x4f1ef286,0x2f2ff15d,0xd547741f
+  ✓ L2 timelock: queue open, min delay 259200s, blocked selectors 0xf2fde38b,0xddadfa8e,0x4f1ef286,0x2f2ff15d,0xd547741f

@@ -71,7 +71,7 @@ contract WstethTokenTest is Test {
 
     function testMetadataAndAtomicInitialization() public view {
         assertEq(token.name(), NAME); assertEq(token.symbol(), "wstETH"); assertEq(token.decimals(), 18);
-        assertEq(token.getContractVersion(), 2);
+        assertEq(token.getContractVersion(), 3);
         assertTrue(token.hasRole(token.DEFAULT_ADMIN_ROLE(), address(this)));
         assertEq(implementationOf(address(proxy)), address(implementation));
         assertEq(proxyAdmin.owner(), address(this));
@@ -280,14 +280,13 @@ contract WstethTokenTest is Test {
     }
 
     function testLidoUnstructuredSlotsAreUnchanged() public view {
-        // These constants are what the deployed fleet (Optimism, Arbitrum, Base) reads today; an
-        // future migration depends on these staying put, AND on a separate migration initializer
-        // to seat roles on an already-v2 proxy. This build supports fresh deployments. Proxies initialized
-        // with the earlier OpenZeppelin 4.x build (Mantle Sepolia dev: `_initialized` in linear slot 3,
+        // These constants are what the deployed fleet (Optimism, Arbitrum, Base) reads today; the
+        // in-place migration (`finalizeUpgrade_v3`, see WstethTokenMigration.t.sol) depends on them
+        // staying put. Proxies initialized with the earlier OpenZeppelin 4.x build (Mantle Sepolia dev: `_initialized` in linear slot 3,
         // roles at 104/154) are NOT upgrade targets for this implementation — they keep their roles in
         // slots this code never reads — and must be redeployed (README, "Storage layout").
         bytes32 version = keccak256("lido.Versioned.contractVersion");
-        assertEq(uint256(vm.load(address(proxy), version)), 2);
+        assertEq(uint256(vm.load(address(proxy), version)), 3);
         bytes32 metadata = keccak256("ERC20Metdata.dynamicMetadata");
         assertTrue(vm.load(address(proxy), metadata) != bytes32(0)); // name string head
         bytes32 eip5267 = keccak256("PermitExtension.eip5267MetadataSlot");

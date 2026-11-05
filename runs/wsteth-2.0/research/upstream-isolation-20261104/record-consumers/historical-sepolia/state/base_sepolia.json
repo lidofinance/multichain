@@ -1,0 +1,18 @@
+{
+  "chainId": 84532,
+  "l2Chain": "base_sepolia",
+  "opExec": "0x95b032D4F90a79E9eeCDdDAEcfb3E58a19cC9480",
+  "ethereumGovernanceExecutor": "0x349116A5970fD5ebAf46fEf095C85FF5c96cBEE0",
+  "wstETH": "0x1fbb35e57c6937dd7eadd3f0749d494e53666d12",
+  "wstETHImpl": "0x130101355c0edec66ecb519cdb04F6AEc845c179",
+  "legacyBridge": "0x33c71c79d1a4a1d065865b6a7db87ed2fd5df86e",
+  "legacyBridgeImplementation": "0x1121097BB818810456E61B56E599fC053e256e27",
+  "messenger": "0x4200000000000000000000000000000000000007",
+  "tokenName": "Wrapped liquid staked Ether 2.0",
+  "tokenSymbol": "wstETH",
+  "totalSupplyAtInput": "100000000000000000000",
+  "emergencyBrakes": "0xEB00000000000000000000000000000000000001",
+  "timelock": "0xa469716B7C69e66Ef0Ce752135f27b7d8E0bb45c",
+  "callProxy": "0xe7e06Fa29FBc4Da0aa0b1A55a9B3784F60006b79",
+  "migrationBridgeImplementation": "0x8D7D4fD8E08EB5Df2731d09dD66245e8a3932946"
+}

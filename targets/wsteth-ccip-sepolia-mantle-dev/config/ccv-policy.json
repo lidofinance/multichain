@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "chains": {
+    "sepolia": {
+      "lanes": {
+        "mantle_sepolia": {
+          "outbound": [
+            "local",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ],
+          "inbound": [
+            "local",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ]
+        },
+        "base_sepolia": {
+          "outbound": [
+            "local",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ],
+          "inbound": [
+            "local",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ]
+        }
+      },
+      "localResolver": {
+        "outbound": {
+          "mantle_sepolia": "dummy",
+          "base_sepolia": "dummy"
+        },
+        "inbound": {
+          "0xdecafbad": "dummy"
+        }
+      },
+      "externalResolvers": {
+        "0x8f3ee3c77D2B27c32306a89D367654F959Db223D": {
+          "outbound": {
+            "mantle_sepolia": "0x5295455B4fD7010DB3729456f2C33ca8f2c2BF1d",
+            "base_sepolia": "0x5295455B4fD7010DB3729456f2C33ca8f2c2BF1d"
+          },
+          "inbound": {
+            "0xe9a05a20": "0x5295455B4fD7010DB3729456f2C33ca8f2c2BF1d"
+          }
+        }
+      }
+    },
+    "mantle_sepolia": {
+      "lanes": {
+        "sepolia": {
+          "outbound": [
+            "local",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ],
+          "inbound": [
+            "local",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ]
+        }
+      },
+      "localResolver": {
+        "outbound": {
+          "sepolia": "dummy"
+        },
+        "inbound": {
+          "0xdecafbad": "dummy"
+        }
+      },
+      "externalResolvers": {
+        "0x8f3ee3c77D2B27c32306a89D367654F959Db223D": {
+          "outbound": {
+            "sepolia": "0x5Ec7F9e1b74D3ee88ABfe58C41445eb92B7c3969"
+          },
+          "inbound": {
+            "0xe9a05a20": "0x5Ec7F9e1b74D3ee88ABfe58C41445eb92B7c3969"
+          }
+        }
+      }
+    },
+    "base_sepolia": {
+      "lanes": {
+        "sepolia": {
+          "outbound": [
+            "local",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ],
+          "inbound": [
+            "local",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ]
+        }
+      },
+      "localResolver": {
+        "outbound": {
+          "sepolia": "dummy"
+        },
+        "inbound": {
+          "0xdecafbad": "dummy"
+        }
+      },
+      "externalResolvers": {
+        "0x8f3ee3c77D2B27c32306a89D367654F959Db223D": {
+          "outbound": {
+            "sepolia": "0xEdB3Af523b8e348B8c12218d47bA8FfBeeD967ea"
+          },
+          "inbound": {
+            "0xe9a05a20": "0xEdB3Af523b8e348B8c12218d47bA8FfBeeD967ea"
+          }
+        }
+      }
+    }
+  }
+}

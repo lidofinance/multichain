@@ -1,0 +1,288 @@
+{
+  "validationRevision": "aa8c35238a0de98db96e27d3f2b1f68ff5244e91",
+  "status": "passed",
+  "pythonTests": 144,
+  "solidityTests": 5,
+  "lines": {
+    "isolation-clean-20261104-02-mainnet": {
+      "line": "mainnet",
+      "runId": "isolation-clean-20261104-02-mainnet",
+      "status": "passed",
+      "startedAt": "2026-11-04T12:21:08.538627+00:00",
+      "exitCode": 0,
+      "checks": {
+        "hubCheckpoint": {
+          "passed": 9,
+          "skipped": [
+            "test_lane_connection_batch_cannot_be_executed_again",
+            "test_the_base_lane_is_isolated_from_the_imported_lanes",
+            "test_the_base_lane_was_connected_by_a_lido_timelock_proposal"
+          ]
+        },
+        "scenarios": {
+          "passed": 14,
+          "skipped": []
+        },
+        "stateMate": {
+          "passed": 342,
+          "delegatedChecksPassed": 9
+        }
+      },
+      "scope": "full pipeline",
+      "finishedAt": "2026-11-04T12:22:52.504848+00:00"
+    },
+    "isolation-clean-20261104-02-sepolia": {
+      "line": "sepolia",
+      "runId": "isolation-clean-20261104-02-sepolia",
+      "status": "passed",
+      "startedAt": "2026-11-04T12:22:52.511433+00:00",
+      "exitCode": 0,
+      "checks": {
+        "hubCheckpoint": {
+          "passed": 9,
+          "skipped": [
+            "test_lane_connection_batch_cannot_be_executed_again",
+            "test_the_base_lane_is_isolated_from_the_imported_lanes",
+            "test_the_base_lane_was_connected_by_a_lido_timelock_proposal"
+          ]
+        },
+        "scenarios": {
+          "passed": 20,
+          "skipped": []
+        },
+        "stateMate": {
+          "passed": 255,
+          "delegatedChecksPassed": 9
+        },
+        "bootstrap": {
+          "passed": 4,
+          "skipped": []
+        },
+        "existingLanes": [
+          {
+            "lane": "monad",
+            "result": "passed",
+            "amount": "1000000000000000000"
+          },
+          {
+            "lane": "sepolia_optimism",
+            "result": "passed",
+            "amount": "1000000000000000000"
+          }
+        ]
+      },
+      "scope": "full pipeline",
+      "finishedAt": "2026-11-04T12:25:42.735328+00:00"
+    },
+    "isolation-clean-scratch-20261104-01": {
+      "line": "scratch",
+      "runId": "isolation-clean-scratch-20261104-01",
+      "status": "passed",
+      "startedAt": "2026-11-04T12:26:39.989328+00:00",
+      "through": "set-pool-gov",
+      "exitCode": 0,
+      "checks": {
+        "sepolia": {
+          "status": "passed",
+          "owners": {
+            "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916": "0xF3c85083b4CedDee02618deF51f13cEB4d178b06",
+            "0x027DBf1d0bD1e83d2181163cD9eFabf8cdcea4Af": "0xF3c85083b4CedDee02618deF51f13cEB4d178b06",
+            "0xBbBCd784e62C6E298Fb2eA0EA8fCe30Bf4a47d92": "0xF3c85083b4CedDee02618deF51f13cEB4d178b06",
+            "0x732E09722d032324D416FA6a9C7F4A37231A53fD": "0xF3c85083b4CedDee02618deF51f13cEB4d178b06",
+            "0xd31bb568B417123Dbb6A09014B3337Dde0Eea7A1": "0xF3c85083b4CedDee02618deF51f13cEB4d178b06",
+            "0x90d4461fbA6c0Ace66f68421CA6ceEF2388FE99b": "0xF3c85083b4CedDee02618deF51f13cEB4d178b06"
+          },
+          "registry": [
+            "0xF3c85083b4CedDee02618deF51f13cEB4d178b06",
+            "0x0000000000000000000000000000000000000000",
+            "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916"
+          ],
+          "roles": {
+            "ADMIN_ROLE": [
+              "0x349116A5970fD5ebAf46fEf095C85FF5c96cBEE0"
+            ],
+            "PROPOSER_ROLE": [
+              "0x1D72FbCcfC86C88E23771d6D58a8F1Cb77186d1d"
+            ],
+            "EXECUTOR_ROLE": [
+              "0xD1FE3AE2EC32f9BDDeC5b44166617A85A0b6e495"
+            ],
+            "CANCELLER_ROLE": [
+              "0x608056b8d596da5816146014E88DFfDECAF59DcD",
+              "0x1D72FbCcfC86C88E23771d6D58a8F1Cb77186d1d"
+            ],
+            "BYPASSER_ROLE": [],
+            "PROPOSAL_QUEUE_HALT_ROLE": [
+              "0x608056b8d596da5816146014E88DFfDECAF59DcD"
+            ]
+          },
+          "tokenRoles": {}
+        },
+        "mantle_sepolia": {
+          "status": "passed",
+          "owners": {
+            "0xEa207062B60bB2b34402C8807B06CcDb3ee35D50": "0x5FC256aBed9C3c425C1AD281E3F8a1B7F88279d3",
+            "0x174F4240C8605f2CCf5D9979F75595Cc7e6510a0": "0x5FC256aBed9C3c425C1AD281E3F8a1B7F88279d3",
+            "0xeD512e40649B221Ce67e5C9399904C6C5b5E80da": "0x5FC256aBed9C3c425C1AD281E3F8a1B7F88279d3",
+            "0x1Ac7265B69402AFf447A1397D608f687C3F1b11F": "0x5FC256aBed9C3c425C1AD281E3F8a1B7F88279d3"
+          },
+          "registry": [
+            "0x5FC256aBed9C3c425C1AD281E3F8a1B7F88279d3",
+            "0x0000000000000000000000000000000000000000",
+            "0xEa207062B60bB2b34402C8807B06CcDb3ee35D50"
+          ],
+          "roles": {
+            "ADMIN_ROLE": [
+              "0x89968fe8cceA229F5564A83431f89ffaBbE62Df5"
+            ],
+            "PROPOSER_ROLE": [
+              "0x1D72FbCcfC86C88E23771d6D58a8F1Cb77186d1d"
+            ],
+            "EXECUTOR_ROLE": [
+              "0x55bB3a852Beb6c3cfACb209383087c6916F8CF49"
+            ],
+            "CANCELLER_ROLE": [
+              "0x608056b8d596da5816146014E88DFfDECAF59DcD",
+              "0x1D72FbCcfC86C88E23771d6D58a8F1Cb77186d1d"
+            ],
+            "BYPASSER_ROLE": [],
+            "PROPOSAL_QUEUE_HALT_ROLE": [
+              "0x608056b8d596da5816146014E88DFfDECAF59DcD"
+            ]
+          },
+          "tokenRoles": {
+            "MINTER_ROLE": "0xEa207062B60bB2b34402C8807B06CcDb3ee35D50",
+            "BURNER_ROLE": "0xEa207062B60bB2b34402C8807B06CcDb3ee35D50"
+          }
+        },
+        "base_sepolia": {
+          "status": "passed",
+          "owners": {
+            "0x4b44164848e9D39BB128Ca404fbCC846120c0F6b": "0x0633DE68D5007A220E0201132FE16625B5cf60e2",
+            "0x1fbb35e57c6937dd7EADD3f0749D494E53666D12": "0x0633DE68D5007A220E0201132FE16625B5cf60e2",
+            "0x1121097BB818810456E61B56E599fC053e256e27": "0x0633DE68D5007A220E0201132FE16625B5cf60e2",
+            "0xAAC40536b69c72db395859248Afe30e74c447670": "0x0633DE68D5007A220E0201132FE16625B5cf60e2"
+          },
+          "registry": [
+            "0x0633DE68D5007A220E0201132FE16625B5cf60e2",
+            "0x0000000000000000000000000000000000000000",
+            "0x4b44164848e9D39BB128Ca404fbCC846120c0F6b"
+          ],
+          "roles": {
+            "ADMIN_ROLE": [
+              "0x95b032D4F90a79E9eeCDdDAEcfb3E58a19cC9480"
+            ],
+            "PROPOSER_ROLE": [
+              "0x1D72FbCcfC86C88E23771d6D58a8F1Cb77186d1d"
+            ],
+            "EXECUTOR_ROLE": [
+              "0x71007e77092457dbf2844512e126E54872426F02"
+            ],
+            "CANCELLER_ROLE": [
+              "0x608056b8d596da5816146014E88DFfDECAF59DcD",
+              "0x1D72FbCcfC86C88E23771d6D58a8F1Cb77186d1d"
+            ],
+            "BYPASSER_ROLE": [],
+            "PROPOSAL_QUEUE_HALT_ROLE": [
+              "0x608056b8d596da5816146014E88DFfDECAF59DcD"
+            ]
+          },
+          "tokenRoles": {
+            "MINTER_ROLE": "0x4b44164848e9D39BB128Ca404fbCC846120c0F6b",
+            "BURNER_ROLE": "0x4b44164848e9D39BB128Ca404fbCC846120c0F6b"
+          }
+        }
+      },
+      "scope": "through set-pool-gov",
+      "finishedAt": "2026-11-04T12:29:43.901346+00:00"
+    }
+  },
+  "recordConsumers": {
+    "new-mainnet": {
+      "status": "passed",
+      "source": "/private/tmp/wsteth-upstream-isolation-20261104/runs/wsteth-2.0/workspaces/isolation-clean-20261104-01-mainnet/deployments/fork/ethereum-base/2026-11-04_13-15-47/chains",
+      "importedLanes": [
+        "abstract",
+        "bitlayer",
+        "ink",
+        "jovay",
+        "megaeth",
+        "monad",
+        "plasma",
+        "robinhood",
+        "zerog"
+      ],
+      "deferredLanes": [
+        "base"
+      ],
+      "checks": [
+        "archive import",
+        "complete records and policy equality",
+        "state-mate projection",
+        "snapshot-record",
+        "snapshot re-import"
+      ]
+    },
+    "new-sepolia": {
+      "status": "passed",
+      "source": "/private/tmp/wsteth-upstream-isolation-20261104/runs/wsteth-2.0/workspaces/isolation-clean-20261104-01-sepolia/deployments/fork/sepolia-base_sepolia/2026-11-04_13-20-46/chains",
+      "importedLanes": [
+        "monad",
+        "sepolia_optimism"
+      ],
+      "deferredLanes": [
+        "base_sepolia"
+      ],
+      "checks": [
+        "archive import",
+        "complete records and policy equality",
+        "state-mate projection",
+        "snapshot-record",
+        "snapshot re-import"
+      ]
+    },
+    "historical-mainnet": {
+      "status": "passed",
+      "source": "/Users/arwer/projects/lido/multichain/runs/wsteth-2.0/workspaces/migration-lines-20261103-10-mainnet/deployments/fork/ethereum-base/2026-11-03_17-41-29/chains",
+      "importedLanes": [
+        "abstract",
+        "bitlayer",
+        "ink",
+        "jovay",
+        "megaeth",
+        "monad",
+        "plasma",
+        "robinhood",
+        "zerog"
+      ],
+      "deferredLanes": [
+        "base"
+      ],
+      "checks": [
+        "archive import",
+        "complete records and policy equality",
+        "state-mate projection",
+        "snapshot-record",
+        "snapshot re-import"
+      ]
+    },
+    "historical-sepolia": {
+      "status": "passed",
+      "source": "/Users/arwer/projects/lido/multichain/runs/wsteth-2.0/workspaces/migration-lines-20261103-10-sepolia/deployments/fork/sepolia-base_sepolia/2026-11-03_17-45-02/chains",
+      "importedLanes": [
+        "monad",
+        "sepolia_optimism"
+      ],
+      "deferredLanes": [
+        "base_sepolia"
+      ],
+      "checks": [
+        "archive import",
+        "complete records and policy equality",
+        "state-mate projection",
+        "snapshot-record",
+        "snapshot re-import"
+      ]
+    }
+  }
+}

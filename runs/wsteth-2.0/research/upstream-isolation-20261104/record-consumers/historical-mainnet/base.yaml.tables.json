@@ -1,0 +1,163 @@
+[
+  {
+    "side": "l1",
+    "chain": "ethereum",
+    "target": "0x3bE031BAC33897d92076cD02f1643a717EdF60A6",
+    "getter": "getAllLockBoxConfigs",
+    "result": [
+      [
+        "15971525489660198786",
+        "0x9732d45E09e5688fa9c54555ca168c8b2A8bc022"
+      ],
+      [
+        "3577778157919314504",
+        "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB"
+      ],
+      [
+        "7937294810946806131",
+        "0xa0BA126e57Ffa62ea42aA1C6A6016fA8A7A16539"
+      ],
+      [
+        "3461204551265785888",
+        "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB"
+      ],
+      [
+        "1523760397290643893",
+        "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB"
+      ],
+      [
+        "6093540873831549674",
+        "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB"
+      ],
+      [
+        "8481857512324358265",
+        "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB"
+      ],
+      [
+        "9335212494177455608",
+        "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB"
+      ],
+      [
+        "6180753054346818345",
+        "0xcc5Ba15FA275e5407d328861C56DDCedEd1250c8"
+      ],
+      [
+        "4426351306075016396",
+        "0xeC7Cb3964EdcCa7B7925A7D159e033D1fC1DD0AB"
+      ]
+    ]
+  },
+  {
+    "side": "l1",
+    "chain": "ethereum",
+    "target": "0x3bE031BAC33897d92076cD02f1643a717EdF60A6",
+    "getter": "getSupportedChains",
+    "result": [
+      "15971525489660198786",
+      "3577778157919314504",
+      "7937294810946806131",
+      "3461204551265785888",
+      "1523760397290643893",
+      "6093540873831549674",
+      "8481857512324358265",
+      "9335212494177455608",
+      "6180753054346818345",
+      "4426351306075016396"
+    ]
+  },
+  {
+    "side": "l1",
+    "chain": "ethereum",
+    "target": "0xfbAE3675db48b700dd7b0c9c21A147096780E862",
+    "getter": "getAllCCVConfigs",
+    "result": [
+      [
+        "15971525489660198786",
+        [
+          "0x236A113712AFE2c052E0f3bcf562030ab0eAB908"
+        ],
+        [],
+        [
+          "0x236A113712AFE2c052E0f3bcf562030ab0eAB908"
+        ],
+        []
+      ]
+    ]
+  },
+  {
+    "side": "l1",
+    "chain": "ethereum",
+    "target": "0x236A113712AFE2c052E0f3bcf562030ab0eAB908",
+    "getter": "getAllOutboundImplementations",
+    "result": [
+      [
+        "15971525489660198786",
+        "0x5b6ea72F83541FC270E90873DB8B53F209Ed9C72"
+      ]
+    ]
+  },
+  {
+    "side": "l1",
+    "chain": "ethereum",
+    "target": "0x236A113712AFE2c052E0f3bcf562030ab0eAB908",
+    "getter": "getAllInboundImplementations",
+    "result": [
+      [
+        "0xdecafbad",
+        "0x5b6ea72F83541FC270E90873DB8B53F209Ed9C72"
+      ]
+    ]
+  },
+  {
+    "side": "l2",
+    "chain": "base",
+    "target": "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB",
+    "getter": "getSupportedChains",
+    "result": [
+      "5009297550715157269"
+    ]
+  },
+  {
+    "side": "l2",
+    "chain": "base",
+    "target": "0xa0BA126e57Ffa62ea42aA1C6A6016fA8A7A16539",
+    "getter": "getAllCCVConfigs",
+    "result": [
+      [
+        "5009297550715157269",
+        [
+          "0xeC7Cb3964EdcCa7B7925A7D159e033D1fC1DD0AB"
+        ],
+        [],
+        [
+          "0xeC7Cb3964EdcCa7B7925A7D159e033D1fC1DD0AB"
+        ],
+        []
+      ]
+    ]
+  },
+  {
+    "side": "l2",
+    "chain": "base",
+    "target": "0xeC7Cb3964EdcCa7B7925A7D159e033D1fC1DD0AB",
+    "getter": "getAllOutboundImplementations",
+    "result": [
+      [
+        "5009297550715157269",
+        "0xcc5Ba15FA275e5407d328861C56DDCedEd1250c8"
+      ]
+    ]
+  },
+  {
+    "side": "l2",
+    "chain": "base",
+    "target": "0xeC7Cb3964EdcCa7B7925A7D159e033D1fC1DD0AB",
+    "getter": "getAllInboundImplementations",
+    "result": [
+      [
+        "0xdecafbad",
+        "0xcc5Ba15FA275e5407d328861C56DDCedEd1250c8"
+      ]
+    ]
+  }
+]

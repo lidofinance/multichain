@@ -1,0 +1,40 @@
+{
+  "addresses": {
+    "token": "0x1fbb35e57c6937dd7eadd3f0749d494e53666d12"
+  },
+  "ccip": {
+    "chain_selector": "10344971235874465080",
+    "registry_module_owner": "0x176ae8C6C11DD2c031B924CE1A0A43188035f3f6",
+    "rmn_proxy": "0x99360767a4705f68CcCb9533195B761648d6d807",
+    "router": "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93",
+    "token_admin_registry": "0x736D0bBb318c1B27Ff686cd19804094E66250e17"
+  },
+  "ccv": {
+    "message_id_verifier": "0x8373D2ED6996dd5F2e60b057160C0589967a4500",
+    "verifier_resolver": "0xEad3bec7B7c36139cAf5dD3b650FdE84cdbAcB0F"
+  },
+  "chain": {
+    "chain_id": 84532,
+    "chain_name": "base_sepolia",
+    "pool_type": "BurnMint"
+  },
+  "deployed": {
+    "advanced_pool_hooks": "0xCdCd079A1cf6c45F58CC0AAF3FC3fddEf9dBA4E7",
+    "call_proxy": "0xe7e06Fa29FBc4Da0aa0b1A55a9B3784F60006b79",
+    "lock_boxes": [],
+    "timelock": "0xa469716B7C69e66Ef0Ce752135f27b7d8E0bb45c",
+    "token_pool": "0x8feC64801c4d0755Ad6F76B1655E29e665DFCf07"
+  },
+  "governance_addresses": {
+    "chainlink_mcms": "0x3C3C000000000000000000000000000000000001",
+    "emergency_brakes": "0xEB00000000000000000000000000000000000001",
+    "lido_dao_agent": "0x95b032D4F90a79E9eeCDdDAEcfb3E58a19cC9480",
+    "deployer": "0xe528a15071e6c5af0c1ed8e6ec647ce9ec510597"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "sepolia"
+    }
+  ]
+}

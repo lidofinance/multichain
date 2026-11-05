@@ -1,0 +1,33 @@
+{
+  "addresses": {
+    "token": "0xE561152E8d3f618b386EF4dD6E3fb980Eb2f9e61"
+  },
+  "ccip": {
+    "chain_selector": "3461204551265785888",
+    "router": "0xca7c90A52B44E301AC01Cb5EB99b2fD99339433A",
+    "rmn_proxy": "0x3A293fa336E118900AD0f2EcfeC0DAa6A4DeDaA1",
+    "token_admin_registry": "0xEb062d21c713A3d940BB0FaECFdC387d6Ea23697",
+    "registry_module_owner": "0x04c5046A1f4E3fFf094c26dFCAA75eF293932f18"
+  },
+  "chain": {
+    "chain_id": 57073,
+    "chain_name": "ink"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "ethereum"
+    }
+  ],
+  "deployed": {
+    "token_pool": "0x2dC99af320BC317c567f24eE95811dcbd5983DfD"
+  },
+  "imported": {
+    "source_pool": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+    "block": 26335529,
+    "selector": "3461204551265785888",
+    "internal_id": "ethereum-mainnet-ink-1",
+    "display_name": "Ink",
+    "note": "spoke of a lane the hub takes over from the existing pool; not deployed by this run — only what 2_Configure reads from a remote record"
+  }
+}

@@ -7,10 +7,10 @@
 # `forge verify-contract --guess-constructor-args` FROM THE PROJECT THAT DEPLOYED them (so
 # compiler settings match the deploy artifacts):
 #   • root project          — OpExec ([profile.govexec]: solc 0.8.10),
-#                             L2 wstETH impl ([profile.token]: OZ 5.0.2, solc 0.8.26)
-#   • ../../components/wsteth-token — TransparentUpgradeableProxy + ProxyAdmin
+#                             L2 wstETH impl + TransparentUpgradeableProxy + ProxyAdmin (deployed by
+#                             the component's 1_Deploy from its @lido/wsteth-token package, ccip-compile)
 #                             (default profile: OZ 5.3.0, solc 0.8.26)
-#   • ../../components/ccip/chains/evm   — pools, hooks, lockboxes, POM (ERC1967Proxy + impl), CCV contracts
+#   • ../../components/ccip/chains/evm   — pools, hooks, lockboxes, LidoTimelock + CallProxy, CCV contracts
 #   • ../../components/core (hardhat)    — Lido core via its own `verify:deployed` task (deployed-local.json);
 #                             entries without a `contract` field (the dg:* ones) are skipped by it
 #   • dual-governance       — via ITS OWN DeployConfigurable script in --resume --verify mode
@@ -127,6 +127,9 @@ impl_of() {
 }
 
 CCIP_PROJ="${CCIP_EVM}"
+# The component's release compiler profile — the one step 04/05/07 deploy with (see
+# run_ccip_script), so the verifier compiles the same bytecode.
+CCIP_PROFILE="ccip-compile"
 # Real source paths inside the ccip project (per its remappings.txt; pnpm layout).
 CL="node_modules/@chainlink/contracts-ccip/chains/evm/contracts"
 OZ53="node_modules/@openzeppelin/contracts-5.3.0"
@@ -134,26 +137,27 @@ OZ53="node_modules/@openzeppelin/contracts-5.3.0"
 # verify_ccip_stack <chainid> <rpc> <cfg> <pool_fqn>
 verify_ccip_stack() {
     local cid="$1" rpc="$2" cfg="$3" pool_fqn="$4"
-    local pool hooks pom resolver verifier
+    local pool hooks timelock call_proxy resolver verifier
     pool="$(jq -r '.deployed.token_pool // empty' "${cfg}")"
     hooks="$(jq -r '.deployed.advanced_pool_hooks // empty' "${cfg}")"
-    pom="$(jq -r '.deployed.pool_operation_manager // empty' "${cfg}")"
+    timelock="$(jq -r '.deployed.timelock // empty' "${cfg}")"
+    call_proxy="$(jq -r '.deployed.call_proxy // empty' "${cfg}")"
     resolver="$(jq -r '.ccv.verifier_resolver // empty' "${cfg}")"
     verifier="$(jq -r '.ccv.message_id_verifier // empty' "${cfg}")"
 
-    vc "${cid}" "${rpc}" "${CCIP_PROJ}" - "${pool}"  "${pool_fqn}" "token pool"
-    vc "${cid}" "${rpc}" "${CCIP_PROJ}" - "${hooks}" "contracts/lido-hvmv/PausableAdvancedPoolHooks.sol:PausableAdvancedPoolHooks" "pool hooks"
-    if [ -n "${pom}" ] && [ "${pom}" != "null" ]; then
-        local pom_impl; pom_impl="$(impl_of "${pom}" "${rpc}")"
-        vc "${cid}" "${rpc}" "${CCIP_PROJ}" - "${pom_impl}" "contracts/lido-hvmv/PoolOperationManager.sol:PoolOperationManager" "POM impl"
-        vc "${cid}" "${rpc}" "${CCIP_PROJ}" - "${pom}" "${OZ53}/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy" "POM proxy"
-    fi
-    vc "${cid}" "${rpc}" "${CCIP_PROJ}" - "${resolver}" "${CL}/ccvs/VersionedVerifierResolver.sol:VersionedVerifierResolver" "CCV resolver"
-    vc "${cid}" "${rpc}" "${CCIP_PROJ}" - "${verifier}" "contracts/lido-hvmv/ccvs/DummyMessageIdVerifier.sol:DummyMessageIdVerifier" "CCV msg-id verifier"
+    vc "${cid}" "${rpc}" "${CCIP_PROJ}" "${CCIP_PROFILE}" "${pool}"  "${pool_fqn}" "token pool"
+    vc "${cid}" "${rpc}" "${CCIP_PROJ}" "${CCIP_PROFILE}" "${hooks}" "contracts/lido-hvmv/PausableAdvancedPoolHooks.sol:PausableAdvancedPoolHooks" "pool hooks"
+    # The timelock and its CallProxy are 0.8.19 artifacts the component deploys from
+    # ccip-owner-contracts (Artifact.deploy): verify them from the same project and profile.
+    vc "${cid}" "${rpc}" "${CCIP_PROJ}" "${CCIP_PROFILE}" "${timelock}" "contracts/lido-hvmv/LidoTimelock.sol:LidoTimelock" "LidoTimelock"
+    vc "${cid}" "${rpc}" "${CCIP_PROJ}" "${CCIP_PROFILE}" "${call_proxy}" "node_modules/@chainlink/ccip-owner-contracts/src/CallProxy.sol:CallProxy" "CallProxy" \
+        "$(cast abi-encode 'f(address)' "${timelock}")"
+    vc "${cid}" "${rpc}" "${CCIP_PROJ}" "${CCIP_PROFILE}" "${resolver}" "${CL}/ccvs/VersionedVerifierResolver.sol:VersionedVerifierResolver" "CCV resolver"
+    vc "${cid}" "${rpc}" "${CCIP_PROJ}" "${CCIP_PROFILE}" "${verifier}" "contracts/lido-hvmv/ccvs/DummyMessageIdVerifier.sol:DummyMessageIdVerifier" "CCV msg-id verifier"
     # Lockboxes (L1 siloed hub only; empty array on L2).
     local lb
     for lb in $(jq -r '.deployed.lock_boxes[]?.lock_box' "${cfg}"); do
-        vc "${cid}" "${rpc}" "${CCIP_PROJ}" - "${lb}" "${CL}/pools/ERC20LockBox.sol:ERC20LockBox" "lockbox"
+        vc "${cid}" "${rpc}" "${CCIP_PROJ}" "${CCIP_PROFILE}" "${lb}" "${CL}/pools/ERC20LockBox.sol:ERC20LockBox" "lockbox"
     done
 }
 
@@ -236,21 +240,17 @@ else
             "$(jq -r '.wstETHProxyAdmin // empty' "${L2_STATE_FILE}")" "${L2_TOKEN_PROXY_INFO}"
         case "${L2_TOKEN_PROXY_KIND}" in
         transparent)
-            vc "${L2_CHAIN_ID}" "${L2_RPC}" "${ROOT}" token "$(jq -r '.wstETHImpl // empty' "${L2_STATE_FILE}")" \
-                "../../components/wsteth-token/contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit" "wstETH impl"
-            # The OZ 5.3.0 proxy + ProxyAdmin were compiled from the token project's root (the submodule
-            # sits in its lib/, so the metadata carries relative source names); verify from that root with
-            # the same artifacts step 03 deployed. The build is idempotent and cheap.
-            TOKEN_ROOT="${ROOT}/../../components/wsteth-token"
-            OZ53_PROXY="lib/openzeppelin-contracts-5.3.0/contracts/proxy/transparent"
-            forge build --root "${TOKEN_ROOT}" --silent \
-                "${OZ53_PROXY}/TransparentUpgradeableProxy.sol" "${OZ53_PROXY}/ProxyAdmin.sol"
-            vc "${L2_CHAIN_ID}" "${L2_RPC}" "${TOKEN_ROOT}" - "${L2_TOKEN_PROXY}" \
-                "${OZ53_PROXY}/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy" "wstETH proxy"
+            # The token, its proxy and the ProxyAdmin were deployed by the component's 1_Deploy, which
+            # compiles the token from its @lido/wsteth-token package and the OZ 5.3.0 proxy from its own
+            # node_modules — verify from that project with the same profile.
+            vc "${L2_CHAIN_ID}" "${L2_RPC}" "${CCIP_PROJ}" "${CCIP_PROFILE}" "$(jq -r '.wstETHImpl // empty' "${L2_STATE_FILE}")" \
+                "node_modules/@lido/wsteth-token/contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit" "wstETH impl"
+            vc "${L2_CHAIN_ID}" "${L2_RPC}" "${CCIP_PROJ}" "${CCIP_PROFILE}" "${L2_TOKEN_PROXY}" \
+                "${OZ53}/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy" "wstETH proxy"
             # The ProxyAdmin is CREATED BY the proxy constructor, so Etherscan has no creation tx to guess
             # its constructor args from: pass them (initialOwner = OpExec) explicitly.
-            vc "${L2_CHAIN_ID}" "${L2_RPC}" "${TOKEN_ROOT}" - "$(jq -r '.wstETHProxyAdmin // empty' "${L2_STATE_FILE}")" \
-                "${OZ53_PROXY}/ProxyAdmin.sol:ProxyAdmin" "wstETH ProxyAdmin" \
+            vc "${L2_CHAIN_ID}" "${L2_RPC}" "${CCIP_PROJ}" "${CCIP_PROFILE}" "$(jq -r '.wstETHProxyAdmin // empty' "${L2_STATE_FILE}")" \
+                "${OZ53}/proxy/transparent/ProxyAdmin.sol:ProxyAdmin" "wstETH ProxyAdmin" \
                 "$(cast abi-encode 'f(address)' "$(jq -r '.opExec' "${L2_STATE_FILE}")")"
             ;;
         legacy)
@@ -295,11 +295,8 @@ audit_ccip_stack() {
     local cid="$1" rpc="$2" cfg="$3"
     audit "${cid}" "$(jq -r '.deployed.token_pool // empty' "${cfg}")" "token pool"
     audit "${cid}" "$(jq -r '.deployed.advanced_pool_hooks // empty' "${cfg}")" "pool hooks"
-    local pom; pom="$(jq -r '.deployed.pool_operation_manager // empty' "${cfg}")"
-    if [ -n "${pom}" ]; then
-        audit "${cid}" "${pom}" "POM proxy"
-        audit "${cid}" "$(impl_of "${pom}" "${rpc}")" "POM impl"
-    fi
+    audit "${cid}" "$(jq -r '.deployed.timelock // empty' "${cfg}")" "LidoTimelock"
+    audit "${cid}" "$(jq -r '.deployed.call_proxy // empty' "${cfg}")" "CallProxy"
     audit "${cid}" "$(jq -r '.ccv.verifier_resolver // empty' "${cfg}")" "CCV resolver"
     audit "${cid}" "$(jq -r '.ccv.message_id_verifier // empty' "${cfg}")" "CCV msg-id verifier"
     local lb

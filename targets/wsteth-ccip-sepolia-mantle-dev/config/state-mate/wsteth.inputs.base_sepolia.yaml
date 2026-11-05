@@ -1,0 +1,36 @@
+# Inputs for the wiring-only config/state-mate/wsteth.yaml (state-mate `.inputs` feature), for the
+# sepolia–base_sepolia pair. Passed explicitly via --inputs in step 08, which also asserts every value here
+# against the deploy record (config/chains/*.json) and fails loudly on drift.
+#
+#   config:    project-chosen role holders — distinct testnet actors derived from ACTORS_MNEMONIC
+#              (.env, gitignored): account 1 = Emergency Brakes (timelock canceller + proposal-queue
+#              halter, hooks pauser), account 2 = Chainlink MCMS (timelock proposer + canceller).
+#              The same two on every chain of the scratch target. NOT the deploying EOA: that one
+#              is stamped per run from the CREATE records into the address book.
+#   externals: Chainlink-owned CCIP infrastructure we reference, never deploy (router,
+#              TokenAdminRegistry, RMN proxy per chain) and the CCIP chain selectors; step 04
+#              hydrates the record from the Chainlink API, so a published-infra move stops the run
+#              here instead of silently redirecting the checks.
+config:
+  - &emergencyBrakes "0x608056b8d596da5816146014E88DFfDECAF59DcD"
+  - &chainlinkMcms "0x1D72FbCcfC86C88E23771d6D58a8F1Cb77186d1d"
+  - &l2EmergencyBrakes "0x608056b8d596da5816146014E88DFfDECAF59DcD"
+  - &l2ChainlinkMcms "0x1D72FbCcfC86C88E23771d6D58a8F1Cb77186d1d"
+  # LidoTimelock role cardinalities 1_Deploy produces: PROPOSAL_QUEUE_HALT_ROLE = {emergency_brakes},
+  # CANCELLER_ROLE = {emergency_brakes, chainlink_mcms}, per chain (each timelock has its own pair).
+  # Step 08 derives the expected counts from the records so an EXTRA holder — which per-address
+  # hasRole checks cannot see — cannot verify green.
+  - &haltRoleMemberCount "1"
+  - &cancellerRoleMemberCount "2"
+  - &l2CancellerRoleMemberCount "2"
+externals:
+  - &l1ChainId 11155111
+  - &l2ChainId 84532
+  - &l1CCIPRouter "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59"          # sepolia — ccip.router
+  - &l1TokenAdminRegistry "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82"  # sepolia — ccip.token_admin_registry
+  - &l2CCIPRouter "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93"          # base_sepolia — ccip.router
+  - &l2TokenAdminRegistry "0x736D0bBb318c1B27Ff686cd19804094E66250e17"  # base_sepolia — ccip.token_admin_registry
+  - &l1RmnProxy "0xba3f6251de62dED61Ff98590cB2fDf6871FbB991"              # sepolia — ccip.rmn_proxy
+  - &l2RmnProxy "0x99360767a4705f68CcCb9533195B761648d6d807"              # base_sepolia — ccip.rmn_proxy
+  - &l1ChainSelector 16015286601757825753
+  - &l2ChainSelector 10344971235874465080

@@ -1,0 +1,13 @@
+# forge scenarios — 2026-10-28T11:06:09+0100
+# git:      f10eb8a
+# L2_CHAIN: base
+# record:   config/chains
+
+No files changed, compilation skipped
+
+Ran 2 tests for /Users/arwer/projects/lido/multichain/targets/wsteth-base-migration-mainnet/test/scenario/RealBaseMigration.t.sol:RealBaseMigrationTest
+[PASS] test_levers_pause_halt_bypass_blocked() (gas: 1407970)
+[PASS] test_runbook_one_vote() (gas: 27975083)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 59.68s (28.59s CPU time)
+
+Ran 1 test suite in 59.68s (59.68s CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)

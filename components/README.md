@@ -13,6 +13,7 @@ classified separately under [libs/](../libs/README.md).
 | `core/` | Lido core and Dual Governance scratch deployment |
 | `ccip/` | CCIP pools, hooks, POMs, verifiers, and upstream deployment scripts |
 | `wsteth-token/` | Locally maintained non-rebasing token, its proxy artifact imports, and unit tests |
+| `l2-bridge-migration/` | lido-l2 OP-stack bridge implementations (Base, Ethereum) copied from the deployed commit and extended with the CCIP migration mode switch; contracts, unit tests and a fork smoke test, nothing deployed |
 | `governance-crosschain-bridges/` | Governance executor sources used by the imported Mantle procedure |
 | `openzeppelin-contracts-5.0.2/` | Public OpenZeppelin 5.0.2: token implementation interfaces and utilities |
 | `openzeppelin-contracts-upgradeable-5.0.2/` | Public OpenZeppelin upgradeable 5.0.2: the token's `AccessControlEnumerableUpgradeable` base |

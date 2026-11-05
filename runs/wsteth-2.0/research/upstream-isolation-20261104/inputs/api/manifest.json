@@ -1,0 +1,18 @@
+{
+  "https://docs.chain.link/api/ccip/v1/chains?environment=mainnet&outputKey=chainId": {
+    "file": "mainnet-chainId.json",
+    "sha256": "2558aac1f4d3db64e183fb844dcbcea77888eafee7d38b3ad580c5ef4f18f5c1"
+  },
+  "https://docs.chain.link/api/ccip/v1/chains?environment=mainnet&outputKey=selector": {
+    "file": "mainnet-selector.json",
+    "sha256": "b6550f046aa98dc5b99ab7ba0eb5583ded22413f47efc5128feb8e5449358553"
+  },
+  "https://docs.chain.link/api/ccip/v1/chains?environment=testnet&outputKey=chainId": {
+    "file": "testnet-chainId.json",
+    "sha256": "a1f8435d25819f167034511e441c90948a96b28f1305470cf2aa76ba606d82bd"
+  },
+  "https://docs.chain.link/api/ccip/v1/chains?environment=testnet&outputKey=selector": {
+    "file": "testnet-selector.json",
+    "sha256": "44db6e487c5c21ab2a966903e06ecaf1d50abac394a3a00c5b4b53f94c711898"
+  }
+}

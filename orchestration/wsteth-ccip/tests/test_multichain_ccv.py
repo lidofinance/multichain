@@ -1,5 +1,6 @@
 """Exercise complete hub expectations and governance migration calldata offline."""
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -23,7 +24,7 @@ def records(tmp_path):
     for index, chain in enumerate(['sepolia', 'mantle_sepolia', 'base_sepolia']):
         record = json.loads((TARGET / f'chains/{chain}.json').read_text())
         record.update(ccv={'message_id_verifier': addr(index * 10 + 1), 'verifier_resolver': addr(index * 10 + 2)},
-                      deployed={'pool_operation_manager': addr(index * 10 + 3), 'advanced_pool_hooks': addr(index * 10 + 4), 'token_pool': addr(index * 10 + 6)})
+                      deployed={'timelock': addr(index * 10 + 3), 'call_proxy': addr(index * 10 + 7), 'advanced_pool_hooks': addr(index * 10 + 4), 'token_pool': addr(index * 10 + 6)})
         record['governance_addresses']['lido_dao_agent'] = addr(index * 10 + 5)
         data[chain] = record
     data['sepolia']['deployed']['lock_boxes'] = [
@@ -46,10 +47,14 @@ def node(script, *args, check=True):
 def compose_projection(output, leaf):
     # Exercise state-mate's actual sibling loader, including its no-unused-anchor rule.
     shell = (SCRIPTS / '08_verify_state.sh').read_text()
-    book = shell.split('cat > "${DEPLOYED}" <<EOF\n', 1)[1].split('\nEOF', 1)[0]
-    book = re.sub(r'\$\{[^}]+\}', addr(999), book)
+    start = shell.index('{\ncat <<EOF\n# GENERATED')
+    end = shell.index('} > "${DEPLOYED}"', start) + len('} > "${DEPLOYED}"')
+    emission = shell[start:end]
     deployed = output.parent / 'deployed.yaml'
-    deployed.write_text(book)
+    env = os.environ.copy()
+    env.update({name: addr(999) for name in re.findall(r'\$\{(\w+)\}', emission)})
+    env.update(IN_PLACE='0', DEPLOYED=str(deployed))
+    subprocess.run(['/bin/bash', '-eu', '-c', emission], env=env, check=True)
     inputs = TARGET / 'state-mate' / ('wsteth.inputs.yaml' if leaf == 'mantle_sepolia' else f'wsteth.inputs.{leaf}.yaml')
     subprocess.run(['node', '--require', 'ts-node/register', '--require', 'tsconfig-paths/register', '-e', '''
 const fs = require('node:fs');
@@ -71,7 +76,7 @@ def test_state_projection_keeps_complete_hub_for_each_leaf(records):
         assert '8236463271206331221' in text
         assert '10344971235874465080' in text
         assert addr(100) in (Path(str(out) + '.tables.json')).read_text() and addr(101) in (Path(str(out) + '.tables.json')).read_text()
-        assert '*l1PoolOperationManager' in text  # existing ownership checks survive
+        assert '*l1LidoTimelock' in text  # existing ownership checks survive
         assert '*l2WstETHImpl' in text  # existing implementation checks survive
         compose_projection(out, leaf)
         # A stale mapping for the local selector or unknown version must still be probed.
@@ -136,8 +141,9 @@ def test_replace_verifier_orders_inbound_then_outbound_then_retirement(records):
     assert [a['phase'][0] for a in actions] == list('111222444')
     assert all(a['arguments'] == [['0xdecafbad', ZERO]] for a in actions[-3:])
     for action in actions:
-        assert action['to'] == data[action['chain']]['deployed']['pool_operation_manager']
-        decoded = subprocess.check_output(['cast', 'decode-calldata', 'directCall(address,uint256,bytes)', action['data']], text=True)
+        assert action['to'] == data[action['chain']]['deployed']['timelock']
+        assert action['requiredCaller'] == data[action['chain']]['governance_addresses']['lido_dao_agent']
+        decoded = subprocess.check_output(['cast', 'decode-calldata', 'bypasserExecuteBatch((address,uint256,bytes)[])', action['data']], text=True)
         assert action['target'].lower() in decoded.lower()
 
 
@@ -164,16 +170,16 @@ def test_provider_onboarding_covers_both_directions_and_all_spokes(records):
         for lane in spec['lanes'].values():
             lane['inbound'].append(resolver)
             lane['outbound'].append(resolver)
-        spec['externalResolvers'] = {resolver: {
+        spec.setdefault('externalResolvers', {})[resolver] = {
             'outbound': {r: impl for r in spec['lanes']},
             'inbound': {'0x12345678': impl},
-        }}
+        }
     (directory / 'after.json').write_text(json.dumps(policy))
     node('plan-ccv-update.cjs', directory, directory / 'before.json', directory / 'after.json', directory / 'plan.json')
     actions = json.loads((directory / 'plan.json').read_text())['actions']
     assert len(actions) == 3
     assert sum(len(a['arguments']) for a in actions) == 4
-    assert all(len(lane[1]) == len(lane[3]) == 2 for a in actions for lane in a['arguments'])
+    assert all(len(lane[1]) == len(lane[3]) == 3 for a in actions for lane in a['arguments'])
     node('render-multichain-state.cjs', TARGET / 'state-mate/wsteth.yaml', directory,
          directory / 'after.json', 'base_sepolia', directory / 'out.yaml')
     text = (directory / 'out.yaml').read_text()
@@ -221,7 +227,8 @@ def test_snapshot_keeps_all_records_and_requires_matching_state(records, missing
         if not (missing_state and chain == 'base_sepolia'):
             (directory / f'state/{state_name}.json').write_text(json.dumps({
                 'wstETH': record['addresses']['token'],
-                'poolOperationManager': record['deployed']['pool_operation_manager'],
+                'timelock': record['deployed']['timelock'],
+                'callProxy': record['deployed']['call_proxy'],
             }))
     if has_policy:
         (directory / 'config/ccv-policy.json').write_text((directory / 'before.json').read_text())
@@ -316,3 +323,55 @@ const provider = {getStorage: async () => word(entry.proxyAdmin), call: async ()
     assert result.returncode == 0, result.stdout + result.stderr
     if transparent:
         assert 'proxyAdminOwner' in result.stdout
+
+
+def test_imported_lanes_share_one_lockbox_without_ccvs(records):
+    # Two lanes the hub took over from an existing pool: unsiloed, so one shared lockbox; no required
+    # CCVs and no local outbound implementation; their records carry only what 2_Configure reads.
+    directory, data = records
+    hub = data['sepolia']
+    imported = {'ink': ('3461204551265785888', 57073), 'plasma': ('9335212494177455608', 9745)}
+    for name, (selector, chain_id) in imported.items():
+        (directory / f'{name}.json').write_text(json.dumps({
+            'addresses': {'token': addr(500)}, 'chain': {'chain_id': chain_id, 'chain_name': name},
+            'ccip': {'chain_selector': selector, 'router': addr(501), 'rmn_proxy': addr(502),
+                     'token_admin_registry': addr(503), 'registry_module_owner': addr(504)},
+            'remote_lanes': [{'is_siloed': False, 'remote_chain_name': 'sepolia'}],
+            'deployed': {'token_pool': addr(505)},
+            'imported': {'source_pool': addr(506), 'block': 1, 'selector': selector}}))
+        hub['remote_lanes'].append({'is_siloed': False, 'remote_chain_name': name})
+        hub['deployed']['lock_boxes'].append({'remote_chain_name': name, 'lock_box': addr(102)})
+    hub['imported_lanes'] = {name: {'remote_pools': [addr(505)], 'required_ccvs': 'none', 'rate_limits': {
+        'outbound': {'enabled': True, 'capacity': '2', 'rate': '1'},
+        'inbound': {'enabled': True, 'capacity': '3', 'rate': '1'}}} for name in imported}
+    (directory / 'sepolia.json').write_text(json.dumps(hub))
+    policy = json.loads((directory / 'before.json').read_text())
+    for name in imported:
+        policy['chains']['sepolia']['lanes'][name] = {'outbound': [], 'inbound': []}
+        policy['chains']['sepolia']['localResolver']['outbound'][name] = 'none'
+    (directory / 'before.json').write_text(json.dumps(policy))
+    out = directory / 'imported.yaml'
+    node('render-multichain-state.cjs', TARGET / 'state-mate/wsteth.yaml', directory, directory / 'before.json', 'base_sepolia', out)
+    tables = {(t['chain'], t['getter']): t['result'] for t in json.loads(Path(str(out) + '.tables.json').read_text())}
+    assert ['3461204551265785888', addr(102)] in tables[('sepolia', 'getAllLockBoxConfigs')]
+    assert ['9335212494177455608', addr(102)] in tables[('sepolia', 'getAllLockBoxConfigs')]
+    assert len(tables[('sepolia', 'getSupportedChains')]) == 4
+    assert all(row[0] not in {s for s, _ in imported.values()} for row in tables[('sepolia', 'getAllCCVConfigs')])
+    assert all(row[0] not in {s for s, _ in imported.values()} for row in tables[('sepolia', 'getAllOutboundImplementations')])
+    text = out.read_text()
+    assert 'l1LockBox1' in text and 'l1LockBox2' in text and 'l1LockBox3' not in text  # Mantle's own + the shared one
+    assert 'lockbox of lane(s) ink, plasma' in text
+    assert addr(505) in text and "'2'" in text or '"2"' in text  # imported remote pool and limits are asserted
+    compose_projection(out, 'base_sepolia')
+    # A lane without required CCVs must also declare no local outbound implementation, and only such a lane.
+    policy['chains']['sepolia']['localResolver']['outbound']['ink'] = 'dummy'
+    (directory / 'before.json').write_text(json.dumps(policy))
+    result = node('render-multichain-state.cjs', TARGET / 'state-mate/wsteth.yaml', directory, directory / 'before.json', 'base_sepolia', out, check=False)
+    assert result.returncode != 0 and 'no local outbound implementation' in result.stderr
+    # Two siloed lanes sharing a lockbox are still rejected.
+    hub['remote_lanes'] = [dict(l, is_siloed=True) if l['remote_chain_name'] == 'ink' else l for l in hub['remote_lanes']]
+    (directory / 'sepolia.json').write_text(json.dumps(hub))
+    policy['chains']['sepolia']['localResolver']['outbound']['ink'] = 'none'
+    (directory / 'before.json').write_text(json.dumps(policy))
+    result = node('render-multichain-state.cjs', TARGET / 'state-mate/wsteth.yaml', directory, directory / 'before.json', 'base_sepolia', out, check=False)
+    assert result.returncode != 0 and 'distinct lockbox' in result.stderr

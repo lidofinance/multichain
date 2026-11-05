@@ -1,0 +1,33 @@
+{
+  "addresses": {
+    "token": "0x161a128567BF0C005b58211757F7e46eed983F02"
+  },
+  "ccip": {
+    "chain_selector": "4426351306075016396",
+    "router": "0x0aA145a62153190B8f0D3cA00c441e451529f755",
+    "rmn_proxy": "0xBF38331E34ef7f248020611bB31Be0576D06413D",
+    "token_admin_registry": "0x051665f2455116e929b9972c36d23070F5054Ce0",
+    "registry_module_owner": "0x91339eb99C4c2Be9A071203DD99E014A3189FD29"
+  },
+  "chain": {
+    "chain_id": 16661,
+    "chain_name": "zerog"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "ethereum"
+    }
+  ],
+  "deployed": {
+    "token_pool": "0xFEe991bB8695a336f5C4ab00062BEEd4b5783f4F"
+  },
+  "imported": {
+    "source_pool": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+    "block": 26335529,
+    "selector": "4426351306075016396",
+    "internal_id": "0g-mainnet",
+    "display_name": "0G",
+    "note": "spoke of a lane the hub takes over from the existing pool; not deployed by this run — only what 2_Configure reads from a remote record"
+  }
+}

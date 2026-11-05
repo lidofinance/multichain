@@ -7,7 +7,7 @@ import {Client} from "@chainlink/contracts-ccip/libraries/Client.sol";
 import {Pool} from "@chainlink/contracts-ccip/libraries/Pool.sol";
 import {RateLimiter} from "@chainlink/contracts-ccip/libraries/RateLimiter.sol";
 
-import {BridgeScenarioBase, IPom, IPausableHooks} from "./BridgeScenarioBase.sol";
+import {BridgeScenarioBase, IPausableHooks} from "./BridgeScenarioBase.sol";
 
 /// @notice The deployed Chainlink 1.2.0 Router surface we read (NOT write): resolve the real,
 /// DON-served 1.5 OnRamp/OffRamp for a lane, and (optionally) originate a real ccipSend.
@@ -342,12 +342,11 @@ contract RealLaneBridgeTest is BridgeScenarioBase {
         assertEq(_outboundTokens(l1), expected, "outbound bucket did not refill at the configured rate");
     }
 
-    /// @notice A paused hook blocks the send even on the real lane: the DAO (POM admin) pauses the
-    /// pool hooks via POM.directCall; the real OnRamp's lockOrBurn then reverts in the preflight hook.
+    /// @notice A paused hook blocks the send even on the real lane: the DAO (timelock admin) pauses
+    /// the pool hooks through the bypass; the real OnRamp's lockOrBurn then reverts in the preflight hook.
     function test_paused_hook_blocks_real_onramp_lock() public {
         vm.selectFork(l1Fork);
-        vm.prank(l1.govAdmin);
-        IPom(l1.pom).directCall(l1.hooks, 0, abi.encodeCall(IPausableHooks.pauseCrossChainTransfers, ()));
+                _bypass(l1, l1.hooks, abi.encodeCall(IPausableHooks.pauseCrossChainTransfers, ()));
 
         uint256 amount = 1e18;
         deal(l1.token, l1.pool, IERC20(l1.token).balanceOf(l1.pool) + amount, true);

@@ -12,14 +12,17 @@ if (Object.keys(before.records).sort().join() !== Object.keys(after.records).sor
 const encode = (sig, ...args) => execFileSync('cast', ['calldata', sig, ...args], {encoding: 'utf8'}).trim();
 const tupleList = values => '[' + values.map(v => '(' + v.map(x => Array.isArray(x) ? '[' + x.join(',') + ']' : x).join(',') + ')').join(',') + ']';
 const actions = [];
+// Every CCV contract is owned by the chain's LidoTimelock. The DAO (its admin: Agent on L1, the
+// governance executor on L2) acts at once through the bypass; the generated call is the timelock
+// batch the DAO submits, carrying the owner call as its single entry.
 function action(chain, phase, target, signature, values) {
   const record = after.records[chain];
   const calldata = encode(signature, tupleList(values));
   actions.push({chain, chainId: record.chain.chain_id, phase,
     requiredCaller: address(record.governance_addresses.lido_dao_agent),
-    to: address(record.deployed.pool_operation_manager), value: '0',
+    to: address(record.deployed.timelock), value: '0',
     target, signature, arguments: values,
-    data: encode('directCall(address,uint256,bytes)', target, '0', calldata)});
+    data: encode('bypasserExecuteBatch((address,uint256,bytes)[])', `[(${target},0,${calldata})]`)});
 }
 const changes = (oldEntries, entries) => {
   const old = new Map(oldEntries.map(([k, v]) => [k.toLowerCase(), v.toLowerCase()]));
@@ -46,7 +49,7 @@ actions.sort((a, b) => a.phase.localeCompare(b.phase));
 const digest = p => crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 fs.writeFileSync(output, JSON.stringify({schemaVersion: 1,
   beforePolicySha256: digest(beforePath), afterPolicySha256: digest(afterPath),
-  notice: 'UNEXECUTED. Verify current ownership, policy and deployed code before governance submission. Prepare provider contracts/services first. Coordinate all chains with paused outbound transfers and an explicit in-flight-message policy. A retained dummy inbound version remains an unauthenticated path; retiring it can strand old messages. These calls target POM and must originate from its DAO admin; L2 requires the L1-to-L2 governance route. External provider contracts are NOT configured by this plan.',
+  notice: 'UNEXECUTED. Verify current ownership, policy and deployed code before governance submission. Prepare provider contracts/services first. Coordinate all chains with paused outbound transfers and an explicit in-flight-message policy. A retained dummy inbound version remains an unauthenticated path; retiring it can strand old messages. These calls target the bypass of the LidoTimelock and must originate from its admin, the DAO (Agent on L1, the governance executor on L2 through the L1-to-L2 governance route). External provider contracts are NOT configured by this plan.',
   providerExpectations: Object.fromEntries(Object.entries(after.resolved).map(([c, s]) => [c, s.external])),
   actions}, null, 2) + '\n');
 console.log(`Wrote ${actions.length} unexecuted governance calls to ${output}`);

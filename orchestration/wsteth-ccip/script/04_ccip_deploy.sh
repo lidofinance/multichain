@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
-# Step 04 — deploy the CCIP 2.0 pool stack on each chain by driving the vendored ccip
-# submodule's 1_Deploy.s.sol. L1 = SiloedLockRelease (siloed hub), L2 = BurnMint (spoke).
-# CCIP infra addresses are auto-hydrated from the Chainlink API (FFI) into the chain configs.
+# Step 04 — deploy the CCIP 2.0 stack on each chain with the component's own 1_Deploy.s.sol
+# (components/ccip, run as its README documents: from its project root, release compiler profile,
+# its default_config.json). L1 = SiloedLockRelease hub with one lockbox per lane, L2 = BurnMint
+# spoke. CCIP infra addresses are hydrated from the Chainlink API (FFI) into the chain records.
+#
+# What this step contributes is the environment, not deployment logic:
+#   • the scratch principals the component takes as parameters — the hub token and the L1 Agent
+#     (step 01), the L2 governance executor (step 02) — are written into the run's chain records;
+#   • on a scratch spoke the record keeps addresses.token = address(0) and carries token_deployment,
+#     so 1_Deploy deploys the Lido wstETH token (ERC20BridgedPermit behind a TransparentUpgradeableProxy
+#     whose ProxyAdmin the executor owns) and records it under .deployed.token*;
+#   • the deployment identities step 08 verifies against are pinned from the broadcast CREATE
+#     records (script/record-deployment.cjs).
+# A chain whose record already carries this run's deployment is skipped, so a re-run after a failed
+# spoke leaves the finished hub alone; a deployment this run did not broadcast is refused.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,90 +24,85 @@ cd "${ROOT}"
 
 # Apply the remaining local submodule patches (currently core only, idempotent). Keeping this gate
 # here makes a standalone step 04 fail if the scratch stack would be built from an inconsistent
-# vendor tree. PoolOperationManager itself is pristine upstream: GUARDIAN_ROLE has been removed.
+# vendor tree. The ccip component is pristine upstream; check_ccip_base_shape guards its shape.
 bash "${HERE}/00_patch_submodules.sh"
+# The component compiles the Lido token from its npm package, pinned by commit in its package.json.
+# Until the token under review is released, keep that package equal to the working tree.
+bash "${HERE}/sync-ccip-packages.sh"
 
 for f in state/l1.json "${L2_STATE_FILE}"; do [ -f "$f" ] || { echo "✗ missing $f (run earlier steps)"; exit 1; }; done
 assert_l2_state_chain
-L1_WSTETH=$(jq -r .wstETH state/l1.json); AGENT=$(jq -r .agent state/l1.json)
-L2_WSTETH=$(jq -r .wstETH "${L2_STATE_FILE}"); OPEXEC=$(jq -r .opExec "${L2_STATE_FILE}")
 
-# Populate only this run's chain records; never import another run's cached CCIP data.
+scope="${WSTETH_DEPLOY_SCOPE:-both}"
+case "$scope" in both|hub|spoke) ;; *) echo "Invalid WSTETH_DEPLOY_SCOPE"; exit 1;; esac
+ZERO_ADDRESS="0x0000000000000000000000000000000000000000"
+
+# seed_cfg <chain> <state file>: the environment's principals become the record's parameters.
+# Which side supplies the token follows from the record's shape, never from what the state file
+# happens to hold: a record with token_deployment is a scratch spoke whose token 1_Deploy deploys,
+# so it keeps addresses.token = address(0) and a token already named in the state (an earlier
+# deployment's, copied into this run) is an error, not an input; any other record bridges the token
+# the environment supplies (the hub token from the scratch core, both tokens of an in-place target).
 seed_cfg() {
-    local name="$1" token="$2" agent="$3"
-    jq_inplace "${CFG_DIR}/${name}.json" --arg t "${token}" --arg a "${agent}" \
-        '.addresses.token=$t | .governance_addresses.lido_dao_agent=$a'
+    local name="$1" state="$2" cfg="${CFG_DIR}/$1.json"
+    local dao token
+    dao="$(jq -er 'if .agent then .agent else .opExec end' "${state}")"
+    jq_inplace "${cfg}" --arg a "${dao}" '.governance_addresses.lido_dao_agent=$a'
+    token="$(jq -r '.wstETH // empty' "${state}")"
+    if jq -e '.token_deployment' "${cfg}" >/dev/null; then
+        [ -z "${token}" ] || {
+            echo "✗ ${name}: ${state} already names token ${token}, but the record deploys its token (token_deployment)."
+            echo "  That is an earlier deployment's state; prepare a new run instead of pointing a new pool at it."
+            exit 1; }
+        [ "$(jq -r '.addresses.token' "${cfg}")" = "${ZERO_ADDRESS}" ] || {
+            echo "✗ ${name}: the record carries token_deployment and a non-zero addresses.token — fix the target"; exit 1; }
+    else
+        [ -n "${token}" ] || {
+            echo "✗ ${name}: no token in ${state} and no token_deployment in the record — nothing for 1_Deploy to bridge"; exit 1; }
+        jq_inplace "${cfg}" --arg t "${token}" '.addresses.token=$t'
+    fi
 }
-if [ "${WSTETH_SKIP_L1:-0}" != 1 ]; then
-    seed_cfg sepolia "$L1_WSTETH" "$AGENT"
-fi
-# Preserve the complete target topology: the hub deploy creates one lockbox per lane.
-seed_cfg "${L2_CHAIN}" "$L2_WSTETH" "$OPEXEC"
 
-# Pair guard: if the L1 pool already exists on-chain but has no lockbox for THIS L2, the record
-# belongs to another pair — run_deploy's skip logic would keep the stale pool and never create
-# this pair's lockbox.
-L1_POOL_EXISTING="$(jq -r '.deployed.token_pool // empty' "${CFG_DIR}/sepolia.json")"
-if [ -n "${L1_POOL_EXISTING}" ] && has_code "${L1_POOL_EXISTING}" "${L1_RPC}"; then
-    if ! jq -e --arg l2 "${L2_CHAIN}" '.deployed.lock_boxes[]? | select(.remote_chain_name == $l2)' \
-            "${CFG_DIR}/sepolia.json" >/dev/null; then
-        echo "✗ L1 pool ${L1_POOL_EXISTING} is deployed for a different pair (no ${L2_CHAIN} lockbox in the record)."
-        echo "  Add a distinct lockbox through the incremental governance procedure in docs/MULTICHAIN-OPERATIONS.md."
-        echo "  Bootstrap deployment does not migrate an already handed-over hub."
-        exit 1
-    fi
-fi
+# deployed_in_this_run <chain>: the record carries a deployment AND this run's broadcast holds its
+# receipts. 1_Deploy refuses a record that already carries a deployment, so a chain in this state is
+# finished and skipped — which lets a re-run after a failed spoke leave the finished hub alone. A
+# record that carries a deployment without receipts in this run (an imported record) is refused:
+# this step deploys, it does not adopt.
+deployed_in_this_run() {
+    local name="$1" cfg="${CFG_DIR}/$1.json" pool receipts
+    pool="$(jq -r '.deployed.token_pool // empty' "${cfg}")"
+    [ -n "${pool}" ] && [ "${pool}" != "${ZERO_ADDRESS}" ] || return 1
+    receipts="broadcast/ccip/1_Deploy.s.sol/$(jq -r '.chain.chain_id' "${cfg}")/run-latest.json"
+    [ -f "${receipts}" ] || {
+        echo "✗ ${name}: the record already carries a deployment (pool ${pool}) that this run did not broadcast."
+        echo "  Prepare a new run to deploy; to verify an existing deployment, import its record instead."
+        exit 1; }
+    return 0
+}
 
-SKIPPED_DEPLOY_CHAINS=()
-run_deploy() {
-    local name="$1" rpc="$2"
-    local cfg="${CFG_DIR}/${name}.json"
-    local existing; existing="$(jq -r '.deployed.token_pool // empty' "${cfg}")"
-    # Gate on on-chain code (like steps 02/03), not just the config record, so a fresh/reset fork
-    # isn't skipped just because the committed config still carries a stale .deployed block.
-    if [ -n "${existing}" ] && has_code "${existing}" "${rpc}"; then
-        # Code at the stale address isn't proof it's OUR pool: after a fork reset the deployer
-        # nonce can shift and land an unrelated contract on this address. Confirm by calling the
-        # pool's getToken() and matching the configured token before trusting the skip.
-        local got
-        got="$(cast call "${existing}" 'getToken()(address)' --rpc-url "${rpc}" 2>/dev/null || true)"
-        if [ -n "${got}" ] && eq "${got}" "$(jq -r '.addresses.token' "${cfg}")"; then
-            echo "▸ ${name}: token_pool ${existing} already deployed on-chain; skipping 1_Deploy."
-            SKIPPED_DEPLOY_CHAINS+=("${name}")
-            return
-        fi
-        echo "▸ ${name}: ${existing} has code but is not our pool (getToken mismatch); redeploying."
+# deploy_chain <chain> <state file> <rpc>: seed the record, then 1_Deploy.
+deploy_chain() {
+    local name="$1" state="$2" rpc="$3"
+    if deployed_in_this_run "${name}"; then
+        echo "▸ ${name}: 1_Deploy already done in this run (pool $(jq -r '.deployed.token_pool' "${CFG_DIR}/${name}.json")); skip."
+        return
     fi
-    # Redeploying (no real pool on-chain, e.g. a reset fork): the committed config may still carry
-    # stale deploy OUTPUTS (.deployed/.ccv) which make 1_Deploy refuse ("token_pool exists in
-    # config"). Drop them so it deploys fresh; keep .ccip (FFI-hydrated live infra, valid on the fork).
-    if [ -n "${existing}" ]; then
-        jq_inplace "${cfg}" 'del(.deployed) | del(.ccv)'
-        echo "▸ ${name}: cleared stale .deployed/.ccv before redeploy."
-    fi
+    seed_cfg "${name}" "${state}"
     echo "▸ 1_Deploy on ${name} (${rpc})"
     run_ccip_script "${name}" "${rpc}" "1_Deploy.s.sol:DeployScript"
 }
 
-if [ "${WSTETH_SKIP_L1:-0}" != 1 ]; then
-    run_deploy sepolia "${L1_RPC}"
+if [ "${WSTETH_SKIP_L1:-0}" != 1 ] && [ "$scope" != spoke ]; then
+    deploy_chain "${L1_CHAIN}" state/l1.json "${L1_RPC}"
 fi
-run_deploy "${L2_CHAIN}" "${L2_RPC}"
-
-# Stamp the key that actually signed the deploy into the record, so step 08's deployer-revocation
-# checks bind to the real deployer — not to whatever DEPLOYER_ADDRESS happens to be exported in the
-# verifying environment (default: anvil account 0, which would pass vacuously).
-DEPLOYER_FROM_KEY="$(cast wallet address --private-key "${DEPLOYER_PRIVATE_KEY}")"
-STAMP_FILES=("${L2_CFG_CANON}")
-if [ "${WSTETH_SKIP_L1:-0}" != 1 ]; then STAMP_FILES+=(config/chains/sepolia.json); fi
-for f in "${STAMP_FILES[@]}"; do
-    jq_inplace "${f}" --arg d "${DEPLOYER_FROM_KEY}" '.governance_addresses.deployer = $d'
-done
+if [ "$scope" != hub ]; then deploy_chain "${L2_CHAIN}" "${L2_STATE_FILE}" "${L2_RPC}"; fi
 
 echo ""
-node "${HERE}/record-pom-implementations.cjs" "${SKIPPED_DEPLOY_CHAINS[@]+${SKIPPED_DEPLOY_CHAINS[@]}}"
+node "${HERE}/record-deployment.cjs"
 echo "✓ step 04 done."
-echo "L1 pool:  $(jq -r '.deployed.token_pool' config/chains/sepolia.json)  (lockboxes: $(jq -r '.deployed.lock_boxes|length' config/chains/sepolia.json))"
-echo "L1 POM:   $(jq -r '.deployed.pool_operation_manager' config/chains/sepolia.json)"
-echo "L2 pool:  $(jq -r '.deployed.token_pool' "${L2_CFG_CANON}")"
-echo "L2 POM:   $(jq -r '.deployed.pool_operation_manager' "${L2_CFG_CANON}")"
+echo "L1 pool:      $(jq -r '.deployed.token_pool' "${L1_CFG_CANON}")  (lockboxes: $(jq -r '.deployed.lock_boxes|length' "${L1_CFG_CANON}"))"
+echo "L1 timelock:  $(jq -r '.deployed.timelock' "${L1_CFG_CANON}")  (CallProxy $(jq -r '.deployed.call_proxy' "${L1_CFG_CANON}"))"
+[ "$scope" != hub ] || exit 0
+echo "L2 token:     $(record_token "${L2_CFG_CANON}")"
+echo "L2 pool:      $(jq -r '.deployed.token_pool' "${L2_CFG_CANON}")"
+echo "L2 timelock:  $(jq -r '.deployed.timelock' "${L2_CFG_CANON}")  (CallProxy $(jq -r '.deployed.call_proxy' "${L2_CFG_CANON}"))"

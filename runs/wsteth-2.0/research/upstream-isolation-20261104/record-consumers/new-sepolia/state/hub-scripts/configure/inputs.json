@@ -1,0 +1,9 @@
+{
+  "runId": "isolation-clean-20261104-01-sepolia",
+  "chainId": 11155111,
+  "inputsHash": "4c97e42046d8b67afc7788b5182fbdf60d915aed26a5dfd02b4956f377bdb01d",
+  "sourceRevision": "07ae438b0028f14d1ccce9072e3f53b8b14e8a09",
+  "buildProvenanceSha256": "0a48d97a65417c7e03bdf355f76fec6415523e430e51342c0512c85e4e3239e5",
+  "action": "configure",
+  "dryRun": false
+}

@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "ccipStatus": "",
+  "ccipRevision": "07ae438b0028f14d1ccce9072e3f53b8b14e8a09",
+  "ownedTestsPassed": 7,
+  "upstreamTimingFailuresReproduced": 2,
+  "unchangedProductionContracts": 11,
+  "testSourceSha256": "faf4a8cdc6c499df5a9429f6b25bdbb62e21839323bc7f352946baa3c800207f"
+}

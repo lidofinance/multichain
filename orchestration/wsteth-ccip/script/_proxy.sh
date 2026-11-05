@@ -1,4 +1,4 @@
-# Proxy-admin helpers shared by steps 03, 07, 08 and 10.
+# Proxy-admin helpers shared by steps 08 and 10 (and the migration path of step 06).
 # The deployment record selects the kind: a wstETHProxyAdmin pin means transparent;
 # no pin means historical OssifiableProxy. RPC errors never select a fallback kind.
 # Requires from _common.sh: eq.

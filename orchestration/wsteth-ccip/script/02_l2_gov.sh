@@ -8,6 +8,14 @@ ROOT="$(cd "${HERE}/.." && pwd)"
 cd "${ROOT}"
 . "${HERE}/_common.sh"
 : "${DEPLOYER_PRIVATE_KEY:?set DEPLOYER_PRIVATE_KEY}"
+if [ -n "${WSTETH_ACCESS_PROFILE:-}" ]; then
+    node "${HERE}/testnet/prepare.cjs" check
+    export OPEXEC_DELAY="$(jq -r .timing.l2Executor "${WSTETH_ACCESS_PROFILE}")"
+    # Match mainnet Optimism/Mantle bounds; the constructor requires max > min.
+    export OPEXEC_MIN_DELAY=0 OPEXEC_MAX_DELAY=1
+    export OPEXEC_GRACE_PERIOD="$(jq -r .timing.executionGrace "${WSTETH_ACCESS_PROFILE}")"
+    export OPEXEC_GUARDIAN="${DEPLOYER_ADDRESS}"
+fi
 
 [ -f state/l1.json ] || { echo "✗ run step 01 first (state/l1.json missing)"; exit 1; }
 AGENT="$(jq -r '.agent' state/l1.json)"
@@ -19,7 +27,7 @@ fund "${DEPLOYER_ADDRESS}" "${L2_RPC}"
 
 # Idempotency: skip only if opExec already deployed AND still pinned to the current Agent.
 # Code alone isn't enough (cf. step 04's getToken probe): after an L1-only reset, step 01 mints a
-# NEW Agent while the old opExec survives on L2 — skipping then would wire steps 03–07 to an
+# NEW Agent while the old opExec survives on L2 — skipping then would wire steps 04–07 to an
 # executor whose ethereumGovernanceExecutor is the dead Agent, breaking L1→L2 governance.
 if [ -f "${L2_STATE_FILE}" ]; then
     EXISTING="$(jq -r '.opExec // empty' "${L2_STATE_FILE}")"
@@ -41,7 +49,7 @@ L1_AGENT="${AGENT}" OPEXEC_OUT="${OPEXEC_OUT}" \
     --rpc-url "${L2_RPC}" --broadcast -vvv
 
 OPEXEC="$(cat "${OPEXEC_OUT}")"
-# Merge into an existing ${L2_STATE_FILE} (preserving keys like wstETH/wstETHImpl that step 03 adds —
+# Merge into an existing ${L2_STATE_FILE} (preserving keys like wstETH/wstETHImpl that step 04 records —
 # overwriting the file fresh would drop them on a re-run after a fork reset).
 [ -f "${L2_STATE_FILE}" ] || echo '{}' > "${L2_STATE_FILE}"
 jq_inplace "${L2_STATE_FILE}" --arg op "${OPEXEC}" --arg agent "${AGENT}" \

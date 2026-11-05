@@ -10,12 +10,12 @@
 #   patches/core/  → ../../components/core   0001 TESTNET-ONLY getCCIPAdmin()/setCCIPAdmin() on wstETH (changes
 #                               DEPLOYED BYTECODE; what lets step 07 self-register into the real
 #                               Chainlink TAR), 0002 hardhat local-devnet fixed gas limit.
-#   patches/ccip/  → ../../components/ccip  token/TAR deployment handover fixes; POM remains upstream.
-#                             Its former guardian-unseating patch was retired after
-#                             lido-proposals removed GUARDIAN_ROLE from PoolOperationManager and
-#                             its deployment inputs entirely.
-#   components/wsteth-token is locally maintained and has no submodule patches.
-#   Its ABI and on-chain authority checks live in step 03.
+#   patches/ccip/  → retired on 2026-10-22 with the move to branch lido-2.0-expiry (LidoTimelock);
+#                             see docs/retired-patches/ccip/ and patches/README.md. The branch is
+#                             used unpatched; check_ccip_base_shape below guards its shape.
+#   components/wsteth-token is locally maintained and has no submodule patches. The ccip component
+#   compiles it from its @lido/wsteth-token package (script/sync-ccip-packages.sh keeps that
+#   package equal to the working tree until the token is released) and deploys it in 1_Deploy.
 #
 # Idempotent: a patch already present in the working tree is detected and skipped. apply/revert are
 # all-or-nothing per submodule — every patch is classified before the tree is touched, so a patch
@@ -123,73 +123,16 @@ patch_submodule() {
     done
 }
 
-# The CCIP POM is intentionally unmodified, so the deployment patch probes cannot detect a stale
-# checkout after the parent repo's gitlink moves. Check the deployment-critical source properties
-# directly before any caller can compile and broadcast a POM from the wrong vendor revision.
+# The vendored CCIP governance sources (LidoTimelock, the hooks and the deployment scripts) carry
+# no local patches, so the patch probes cannot detect a stale checkout after the parent repo's
+# gitlink moves. Check the deployment-critical source properties directly before any caller can
+# compile and broadcast a timelock from the wrong vendor revision.
 check_ccip_base_shape() {
     local sub="${ROOT}/../../components/ccip"
     [ -e "${sub}/.git" ] || return 0
 
-    local expected_rev
-    # The index also covers a newly added or intentionally updated, uncommitted gitlink.
-    expected_rev="$(git -C "${ROOT}/../.." ls-files --stage -- components/ccip | awk '$1 == "160000" && $3 == "0" {print $2}')"
-    if [ -z "${expected_rev}" ]; then
-        echo "  ✗ components/ccip: missing or conflicted gitlink in the parent index"
+    if ! python3 "${HERE}/ccip_build.py" guard; then
         FAIL=1
-        return
-    fi
-    local actual_rev
-    actual_rev="$(git -C "${sub}" rev-parse HEAD)"
-    local pom="${sub}/chains/evm/contracts/lido-hvmv/PoolOperationManager.sol"
-    local deploy="${sub}/chains/evm/contracts/lido-hvmv/script/deployment/1_Deploy.s.sol"
-    local bad=0
-
-    if [ "${actual_rev}" != "${expected_rev}" ]; then
-        echo "  ✗ ../../components/ccip: ${actual_rev} checked out; expected pinned ${expected_rev}"
-        bad=1
-    fi
-    if ! git -C "${sub}" diff --quiet -- "${pom#${sub}/}" \
-            || ! git -C "${sub}" diff --cached --quiet -- "${pom#${sub}/}"; then
-        echo "  ✗ ../../components/ccip: PoolOperationManager has local modifications"
-        bad=1
-    fi
-
-    if [ ! -f "${pom}" ] || [ ! -f "${deploy}" ]; then
-        echo "  ✗ ../../components/ccip: current checkout does not contain the POM deployment sources"
-        FAIL=1
-        return
-    fi
-
-    grep -q 'UUPSUpgradeable' "${pom}" \
-        || { echo "  ✗ ../../components/ccip: PoolOperationManager is not UUPSUpgradeable"; bad=1; }
-    grep -q '__UUPSUpgradeable_init();' "${pom}" \
-        || { echo "  ✗ ../../components/ccip: PoolOperationManager does not initialize its UUPS base"; bad=1; }
-    # Exact gitlink and pristine POM checks above bind the proposal model to the reviewed
-    # revision. ABI compatibility is checked during compilation/state verification, without
-    # depending on private parameter names or formatting of the upstream storage declaration.
-    for role in PROPOSAL_QUEUE_HALT_ROLE CROSS_CHAIN_TRANSFERS_PAUSE_ROLE PROPOSAL_QUEUE_RESTART_ROLE CROSS_CHAIN_TRANSFERS_UNPAUSE_ROLE; do
-        grep -q "bytes32 public constant ${role}" "${pom}" \
-            || { echo "  ✗ ../../components/ccip: missing operational role ${role}"; bad=1; }
-    done
-    grep -q 'function isSelectorBlocked(' "${pom}" \
-        || { echo "  ✗ ../../components/ccip: missing boolean selector-blocking API"; bad=1; }
-    if grep -qE 'enum ProposalMode|function (veto|approve)\(' "${pom}"; then
-        echo "  ✗ ../../components/ccip: retired proposal modes/veto/approve API is present"
-        bad=1
-    fi
-    grep -qE 'internal view override onlyRole\(DEFAULT_ADMIN_ROLE\)' "${pom}" \
-        || { echo "  ✗ ../../components/ccip: _authorizeUpgrade is not DEFAULT_ADMIN_ROLE-only"; bad=1; }
-    if grep -qE '^[[:space:]]*bytes32 public constant GUARDIAN_ROLE|^[[:space:]]*address guardian;' "${pom}" \
-            || grep -qE '^[[:space:]]*guardian:' "${deploy}"; then
-        echo "  ✗ ../../components/ccip: legacy PoolOperationManager guardian authority is present"
-        bad=1
-    fi
-
-    if [ "${bad}" = "1" ]; then
-        echo "    update ../../components/ccip to the parent repo's pinned UUPS-capable revision before deploying"
-        FAIL=1
-    else
-        echo "  ✔ ../../components/ccip base: UUPS admin gate present; legacy guardian authority absent"
     fi
 }
 

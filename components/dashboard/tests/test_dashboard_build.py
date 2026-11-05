@@ -14,7 +14,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from build_dashboard import ROOT, EvidenceHTML, build, ledger_networks, ldo_metadata, network_types_metadata, steth_metadata, testnet_metadata, main, ledger_source
+from build_dashboard import ROOT, EvidenceHTML, build, ledger_networks, ldo_metadata, network_types_metadata, steth_metadata, testnet_metadata as get_testnet_metadata, main, ledger_source
 
 
 def addr(n):
@@ -333,21 +333,21 @@ class DashboardBuildTests(unittest.TestCase):
             snapshot = copy.deepcopy(original)
             snapshot['live'][field] = value
             with self.subTest(field=field, value=value), self.assertRaises(ValueError):
-                testnet_metadata(snapshot)
+                get_testnet_metadata(snapshot)
         chain = str(original['live']['lane'][0])
         for field in ('tokenAddress', 'poolAddress'):
             snapshot = copy.deepcopy(original)
             snapshot['live']['tokens'][chain][field] = addr(0)
             with self.assertRaises(ValueError):
-                testnet_metadata(snapshot)
+                get_testnet_metadata(snapshot)
         snapshot = copy.deepcopy(original)
         snapshot['live']['seeds'][chain].pop(0)
         with self.assertRaisesRegex(ValueError, 'exactly one testnet seed'):
-            testnet_metadata(snapshot)
+            get_testnet_metadata(snapshot)
         snapshot = copy.deepcopy(original)
         snapshot['live']['tokens'][chain]['tokenAddress'] = addr(777)
         with self.assertRaisesRegex(ValueError, 'disagree'):
-            testnet_metadata(snapshot)
+            get_testnet_metadata(snapshot)
 
     def test_malformed_snapshot_types_fail_cleanly_through_cli(self):
         original = json.loads((ROOT / 'components/dashboard/config/testnet-deployment.json').read_text())
@@ -396,7 +396,7 @@ class DashboardBuildTests(unittest.TestCase):
         pool = snapshot['live']['tokens'][chain]['poolAddress']
         snapshot['live']['seeds'][chain][0][0] = pool.lower()
         with self.assertRaisesRegex(ValueError, 'Duplicate testnet seed address'):
-            testnet_metadata(snapshot)
+            get_testnet_metadata(snapshot)
 
     def test_evidence_rejects_active_or_unbalanced_html_before_writing(self):
         with tempfile.TemporaryDirectory() as tmp:

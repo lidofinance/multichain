@@ -8,11 +8,14 @@
 /.active-run
 # Regenerable compiler and install outputs
 out/
-out-token/
 out-govexec/
 cache/
-cache-token/
 cache-govexec/
+out-migration/
+cache-migration/
+out-hub-migration/
+cache-hub-migration/
+/tests/fixtures/hub-migration/runtime/
 node_modules/
 *.log
 .DS_Store
