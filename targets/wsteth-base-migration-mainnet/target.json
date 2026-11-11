@@ -68,7 +68,7 @@
       "default": "2026-10-21",
       "l1.emergencyBrakes": "2026-10-26",
       "l2s.base.emergencyBrakes": "2026-10-26",
-      "l1.hub": "2026-10-30"
+      "l1.hub": "2026-11-11"
     },
     "hub": {
       "pool": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
@@ -76,13 +76,15 @@
       "expectedLanes": [
         "bitlayer",
         "zerog",
-        "ink",
-        "plasma",
         "monad",
         "megaeth",
-        "jovay",
-        "abstract",
         "robinhood"
+      ],
+      "disconnectedLanes": [
+        "ink",
+        "plasma",
+        "jovay",
+        "abstract"
       ],
       "siloRebalancerAfterCutover": "restore"
     }

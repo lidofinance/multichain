@@ -149,11 +149,11 @@ interface ILockBoxLike {
 
 /// @title RealBaseMigration — the one-vote Base migration runbook on forks of Ethereum and Base.
 /// @notice Starts where the pipeline left the forks (steps 01m–05, the hub steps 01h, 05h and 05c
-/// when the target declares the hub migration, step 07 and the vote of step 06 at T₀: lane deployed
+/// when the target declares the hub migration, step 07 and the vote of step 06 at T_vote_L1: lane deployed
 /// and handed to the Lido timelocks, the three proxies upgraded, both bridges on the new code in
 /// LEGACY with their two timers armed, the L1 bridge authorized on the lane lockbox).
-/// Then walks the time-gated, permissionless steps in order — `activate()` on L1 at T_L1,
-/// `activate()` on Base at T_Base, the operators' sweep, `close()` on both chains at T_close — with
+/// Then walks the time-gated, permissionless steps in order — `activate()` on L1 at T_activate_L1,
+/// `activate()` on Base at T_activate_L2, the operators' sweep, `close()` on both chains at T_close_L1L2 — with
 /// legacy transfers of every kind in flight across every switch, CCIP transport in both directions,
 /// the Emergency Brakes veto at each gate, the late-message hazard after the close with its
 /// rollback, the lockbox hygiene, and the timelock levers. Every conservation check also asserts
@@ -161,7 +161,7 @@ interface ILockBoxLike {
 ///
 /// Transfer kinds in flight (started in LEGACY, the only mode that can start one) and where each
 /// one finalizes:
-///   D1, W1   started on the OLD implementations (step 06), finalize on the new ones at T₀
+///   D1, W1   started on the OLD implementations (step 06), finalize on the new ones at T_vote_L1
 ///   d0, w0   round trip inside the checkpoint (both LEGACY)
 ///   d2       finalizes on Base (LEGACY) after L1 activated
 ///   d4       finalizes on Base (MIGRATING) after Base activated
@@ -800,7 +800,7 @@ contract RealBaseMigrationTest is Test {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // The runbook: T₀ → T_L1 → T_Base → sweep → T_close → late messages
+    // The runbook: T_vote_L1 → T_activate_L1 → T_activate_L2 → sweep → T_close_L1L2 → late messages
     // ─────────────────────────────────────────────────────────────────────────
 
     /// @dev A public Router caller must obey the same activation barrier as the bridge frontend.
@@ -859,7 +859,7 @@ contract RealBaseMigrationTest is Test {
 
     function test_runbook_one_vote() public {
         _setUpMigrationForks();
-        // ── Checkpoint, T₀ + minutes: both bridges on the new code in LEGACY ─────────────────
+        // ── Checkpoint, T_vote_L1 + minutes: both bridges on the new code in LEGACY ──────────
         // The pair started on the old implementations finalizes on the new ones.
         _finalizeOnL2(preUpgradeDeposit, preUpgradeDeposit_amount());
         _finalizeOnL1(preUpgradeWithdrawal, preUpgradeWithdrawal_amount());
@@ -886,7 +886,7 @@ contract RealBaseMigrationTest is Test {
         // d3's first delivery is gas-starved: the Base messenger records it as failed, replayable.
         assertFalse(_relayToL2WithGas(d3, STARVED_GAS), "starved relay executed");
 
-        // ── T_L1: activation of L1 ───────────────────────────────────────────────────────────
+        // ── T_activate_L1: activation of L1 ──────────────────────────────────────────────────
         _warpTo(l1.activateAt);
         // Vetoes: the Emergency Brakes flag, and a registry that does not bind the hub pool.
         _l1Veto(true);
@@ -925,7 +925,7 @@ contract RealBaseMigrationTest is Test {
         Sent memory w3 = _legacyWithdraw(1e18);
         assertFalse(_relayToL1WithGas(w3, STARVED_GAS), "starved relay executed");
 
-        // ── T_Base: activation of Base ───────────────────────────────────────────────────────
+        // ── T_activate_L2: activation of Base ────────────────────────────────────────────────
         _expectStepRevert(l2, abi.encodeWithSelector(TOO_EARLY, l2.activateAt), false);
         _warpTo(l2.activateAt);
         _l2Veto(true);
@@ -963,7 +963,7 @@ contract RealBaseMigrationTest is Test {
         _expectStepRevert(l1, abi.encodeWithSelector(UNEXPECTED_MODE, LEGACY, MIGRATING), true);
         _agent(l1.bridge, _switchMode(MIGRATING));
 
-        // ── T_close: close on both chains ────────────────────────────────────────────────────
+        // ── T_close_L1L2: close on both chains ───────────────────────────────────────────────
         _warpTo(l1.closeAt);
         _l2Veto(true);
         _expectStepRevert(l2, abi.encodeWithSelector(SENDS_DISABLED), true);

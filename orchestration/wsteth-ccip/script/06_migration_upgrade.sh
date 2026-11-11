@@ -48,7 +48,7 @@ NOW="$(cast block latest -f timestamp --rpc-url "${L1_RPC}")"
 export ACTIVATE_L1_AT=$((NOW + L1_ACTIVATION_DELAY))
 export ACTIVATE_L2_AT=$((ACTIVATE_L1_AT + L2_ACTIVATION_DELAY))
 export CLOSE_AT=$((ACTIVATE_L2_AT + CLOSE_DELAY))
-echo "▸ timers: T₀ ${NOW}, T_L1 ${ACTIVATE_L1_AT}, T_${L2_CHAIN} ${ACTIVATE_L2_AT}, T_close ${CLOSE_AT}"
+echo "▸ timers: T_vote_L1 ${NOW}, T_activate_L1 ${ACTIVATE_L1_AT}, T_activate_L2 (${L2_CHAIN}) ${ACTIVATE_L2_AT}, T_close_L1L2 ${CLOSE_AT}"
 
 # ── artifacts: each component builds with its own foundry.toml ────────────────────────────────
 BRIDGE_ROOT="$(cd "${ROOT}/../../components/l2-bridge-migration" && pwd -P)"
@@ -204,7 +204,7 @@ jq_inplace "${L2_STATE_FILE}" --arg t "${L2_TOKEN_IMPL}" --arg b "${L2_BRIDGE_IM
     '.wstETHImpl = $t | .migrationBridgeImplementation = $b'
 jq_inplace state/l1.json --arg b "${L1_BRIDGE_IMPL}" '.migrationBridgeImplementation = $b'
 echo ""
-echo "✓ step 06 done — the vote executed on both forks (T₀ ${NOW})."
+echo "✓ step 06 done — the vote executed on both forks (T_vote_L1 ${NOW})."
 echo "L1 bridge implementation:  ${L1_BRIDGE_IMPL}"
 echo "L2 token implementation:   ${L2_TOKEN_IMPL}"
 echo "L2 bridge implementation:  ${L2_BRIDGE_IMPL}"

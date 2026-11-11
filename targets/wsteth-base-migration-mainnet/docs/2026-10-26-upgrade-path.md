@@ -5,7 +5,7 @@
 Date: 2026-10-26, revised 2026-11-03 (separate hub and Base preparation). Scheme: one Aragon vote, then two permissionless time-gated calls
 per bridge (`activate()`, `close()`), the Base lane `ERC20LockBox` as the single backing for both
 withdrawal paths, no reserve and no drain period. Before the vote, Chainlink moves the token's
-Ethereum registry entry and the custody of its nine existing lanes to the Lido hub pool (section 1.2).
+Ethereum registry entry and the custody of the old pool's five connected lanes to the Lido hub pool (section 1.2).
 Interactive version: https://claude.ai/artifact/8oxJtiWkRQYxPvt1B2ekn9.
 Sources: `orchestration/wsteth-ccip/script/{01_hub_inventory,04_ccip_deploy,05_ccip_configure,05_hub_cutover,05c_hub_connect_lane,06_migration_upgrade,07_set_pool_gov}.sh`,
 `script/migration/MigrationBase.s.sol`, `components/ccip` `lido-hvmv/script/deployment/{1_Deploy,2_Configure,3_SetPoolAndTransferOwnership,4_ConnectLane}.s.sol`,
@@ -15,19 +15,30 @@ View calls omitted. Each group is one executor's consecutive actions; the vote i
 Base part (the action set queued at `OptimismBridgeExecutor`, relayed by OP, executed by anyone,
 delay 0) as its sub-item.
 
-Timers, all set by the vote as absolute timestamps: T₀ = vote execution, T_L1 ≥ T₀ + 48 h (the
-checkpoint, the action set's 24-hour grace period and the Emergency Brakes reaction), T_Base ≥ T_L1 +
-1 day, T_close ≥ T_Base + 10 days (recommended values; the rehearsal uses 1 day, 1 day and 10 days).
+Four moments. Each index names the event and the chain it happens on. `T_vote_L1` is the time the
+vote executes; the vote sets the other three as absolute timestamps.
+
+| Moment | Chain | Event | Recommended value | Rehearsal |
+| --- | --- | --- | --- | --- |
+| `T_vote_L1` | Ethereum (L1) | The Agent executes the vote | — | — |
+| `T_activate_L1` | Ethereum (L1) | `L1MigrationBridge.activate()` becomes callable | ≥ `T_vote_L1` + 48 h: the checkpoint, the action set's 24-hour grace period and the Emergency Brakes reaction | `T_vote_L1` + 1 day |
+| `T_activate_L2` | Base (L2) | `L2MigrationBridge.activate()` becomes callable | ≥ `T_activate_L1` + 1 day | `T_activate_L1` + 1 day |
+| `T_close_L1L2` | Ethereum and Base | `close()` becomes callable on both bridges; one value, set on each bridge | ≥ `T_activate_L2` + 10 days | `T_activate_L2` + 10 days |
+
+The Base action set executes on L2 minutes after `T_vote_L1` and has no index of its own.
+Revisions before 2026-11-11 called the four moments T0 (with a subscript zero), T_L1, T_Base and T_close.
 The bridges only require `activateAt` in the future and `closeAt` after it; contract minimums of 48 h
 and 10 days, so that a late vote reverts whole, are proposed and not implemented.
 
 ## 1. Upgrade path
 
-### 1.1. Chainlink deployer, Ethereum: prepare the nine existing lanes
+### 1.1. Chainlink deployer, Ethereum: prepare the five connected lanes
+
+The old pool lists nine chains (Ethereum block 26 391 413, 2026-11-11). Five have a remote pool and are taken over by the hub: Bitlayer, 0G, Monad, MegaETH, Robinhood. Four have none — Ink, Plasma, Jovay, Abstract — and stay in the old pool: it rejects every inbound transfer from them, their outbound limit is 2 wei, and their own pools do not list the Ethereum pool either. The test amounts still outstanding there (about 0.024 wstETH in total) stay backed by the unsiloed liquidity, which moves whole to the shared lockbox. Reconnecting one of them later is a LidoTimelock proposal on the hub. `target.json` declares both sets (`.migration.hub.expectedLanes`, `.migration.hub.disconnectedLanes`); step 01h stops if either differs from the pool.
 
 - Read the old pool at one pinned block: lanes, silo balances, rebalancers, remote pools/tokens and limits.
 - Deploy the hub, hooks, LidoTimelock, CallProxy and four lockboxes: shared, Bitlayer, 0G, Robinhood.
-- Configure exactly the nine imported lanes with their existing limits and verification policy; authorize the hub on their lockboxes. Base remains deferred. No Base lockbox, verifier/resolver or bridge/token implementation is deployed yet.
+- Configure exactly the five imported lanes with their existing limits and verification policy; authorize the hub on their lockboxes. Base remains deferred. No Base lockbox, verifier/resolver or bridge/token implementation is deployed yet.
 - Transfer ownership to LidoTimelock and accept via the deployer's temporary admin role; configure blocked selectors and MCMS proposer/canceller roles.
 - Grant Agent ADMIN_ROLE and revoke the deployer's role. Further Ethereum operations use governance.
 
@@ -36,8 +47,8 @@ and 10 days, so that a late vote reverts whole, are proposed and not implemented
 The cutover uses Chainlink's RBACTimelock `0x44835bBBA9D40DEDa9b64858095EcFB2693c9449`.
 Registry acceptance uses a Chainlink MCMS proposal through the new LidoTimelock.
 Procedure, checks and recovery: [hub migration plan](../CHAINLINK_HUB_MIGRATION_FORK_PLAN.md).
-- **2a. Spoke pool owners, nine chains**: `TokenPool.addRemotePool(5009297550715157269, abi.encode(SiloedLockReleaseTokenPool))`, the old pool kept; outbound pause on each spoke pool; the spoke → Ethereum queue drains
-- **2b. RBACTimelock, proposal 1, 3 h delay**: `SiloedLockReleaseTokenPool(0xA586a732394A1AFfCF15b972cd47C936033C9FA7).setChainRateLimiterConfigs([nine selectors], outbound {isEnabled: true, capacity: 2, rate: 1}, inbound unchanged)` — the smallest limiter the 1.6.0 pool accepts
+- **2a. Spoke pool owners, five chains**: `TokenPool.addRemotePool(5009297550715157269, abi.encode(SiloedLockReleaseTokenPool))`, the old pool kept; outbound pause on each spoke pool; the spoke → Ethereum queue drains
+- **2b. RBACTimelock, proposal 1, 3 h delay**: `SiloedLockReleaseTokenPool(0xA586a732394A1AFfCF15b972cd47C936033C9FA7).setChainRateLimiterConfigs([five selectors], outbound {isEnabled: true, capacity: 2, rate: 1}, inbound unchanged)` — the smallest limiter the 1.6.0 pool accepts
 - **2c. RBACTimelock, proposal 2, one batch, predecessor = proposal 1, 3 h delay**; amounts are the pool's accounting at the pinned block:
   1. `SiloedLockReleaseTokenPool(0xA586a732394A1AFfCF15b972cd47C936033C9FA7).withdrawLiquidity(unsiloed)`
   2. `withdrawSiloedLiquidity(4426351306075016396, silo 0G)`
@@ -49,14 +60,14 @@ Procedure, checks and recovery: [hub migration plan](../CHAINLINK_HUB_MIGRATION_
   8. `wstETH.transfer(Bitlayer lockbox, silo Bitlayer)`
   9. `wstETH.transfer(0G lockbox, silo 0G)`
   10. `wstETH.transfer(Robinhood lockbox, silo Robinhood)`
-  11. `TokenAdminRegistry.setPool(wstETH, SiloedLockReleaseTokenPool)` — displaces `0xA586a732394A1AFfCF15b972cd47C936033C9FA7`; the hub serves exactly its nine lanes at this moment
+  11. `TokenAdminRegistry.setPool(wstETH, SiloedLockReleaseTokenPool)` — displaces `0xA586a732394A1AFfCF15b972cd47C936033C9FA7`; the hub serves exactly its five lanes at this moment
   12. `TokenAdminRegistry.transferAdminRole(wstETH, LidoTimelock)`
 - **2d. Chainlink MCMS**: propose `TokenAdminRegistry.acceptAdminRole(wstETH)` in LidoTimelock; after its 3-day delay execute through CallProxy. Check administrator = LidoTimelock, pending administrator = zero, deployer ADMIN_ROLE absent. No DAO vote is needed for this acceptance.
-- Restore agreed spoke limits and verify each direction before starting Base preparation. The current fork target verifies only the Ethereum pool boundary; nine spoke forks, message queue drain and DON delivery are not included.
+- Restore agreed spoke limits and verify each direction before starting Base preparation. The current fork target verifies only the Ethereum pool boundary; five spoke forks, message queue drain and DON delivery are not included.
 
 ### 1.2. Prepare Base after the hub checkpoint passes
 
-- Run `test-hub`: verify nine lanes, custody, governance acceptance and the absence of Base contracts. Failure stops the next deployment.
+- Run `test-hub`: verify five lanes, custody, governance acceptance and the absence of Base contracts. Failure stops the next deployment.
 - Deploy Base's BurnMintTokenPool, hooks, verifier/resolver, LidoTimelock and CallProxy.
 - On Ethereum deploy only the Base lockbox and verifier/resolver. Authorize the existing hub on the new lockbox; initialize the resolver. Nominate the existing LidoTimelock as owner of all three contracts and accept ownership through an MCMS proposal with the 3-day delay.
 - Configure Base's lane to Ethereum and its CCV settings; accept Base ownership through the temporary deployer admin, grant ADMIN_ROLE to OptimismBridgeExecutor and revoke the deployer's role.
@@ -71,15 +82,15 @@ Procedure, checks and recovery: [hub migration plan](../CHAINLINK_HUB_MIGRATION_
   4. `PausableAdvancedPoolHooks.applyCCVConfigUpdates([Base])`
   5. `DummyMessageIdVerifier.applyRemoteChainConfigUpdates([Base])`
   6. `VersionedVerifierResolver.applyOutboundImplementationUpdates([Base → DummyMessageIdVerifier])`
-- The vote is created after 2c–2e and the nine-lane check. `activate()` on L1 still checks the registry (section 1.4); a registry that does not bind the hub by T_L1 is a deviation, not the working path. Between 2e and the Base action set (section 1.3) a hub → Base send locks wstETH in the Base lockbox and waits until Base can mint; the schedule keeps this window short, or the lane is connected with a paused outbound limiter and opened afterwards (open mainnet option)
+- The vote is created after 2c–2e and the five-lane check. `activate()` on L1 still checks the registry (section 1.4); a registry that does not bind the hub by T_activate_L1 is a deviation, not the working path. Between 2e and the Base action set (section 1.3) a hub → Base send locks wstETH in the Base lockbox and waits until Base can mint; the schedule keeps this window short, or the lane is connected with a paused outbound limiter and opened afterwards (open mainnet option)
 
-### 3. DAO vote, Aragon Agent, Ethereum, T₀
+### 3. DAO vote, Aragon Agent, Ethereum, T_vote_L1
 - `OssifiableProxy(L1 bridge).proxy__upgradeTo(L1MigrationBridge)` — new implementation starts in LEGACY, behaves as the old one
 - `LidoTimelock.bypasserExecuteBatch([ERC20LockBox.applyAuthorizedCallerUpdates(added: [L1 bridge])])`
-- `L1MigrationBridge.scheduleActivation(T_L1)` **new**
-- `L1MigrationBridge.scheduleClose(T_close)` **new**
+- `L1MigrationBridge.scheduleActivation(T_activate_L1)` **new**
+- `L1MigrationBridge.scheduleClose(T_close_L1L2)` **new**
 - `L1CrossDomainMessenger.sendMessage(OptimismBridgeExecutor, queue(action set A′))`
-  - **Base, `OptimismBridgeExecutor`, action set A′, atomic, T₀ + minutes (checkpoint)**:
+  - **Base, `OptimismBridgeExecutor`, action set A′, atomic, T_vote_L1 + minutes (checkpoint)**:
     1. `OssifiableProxy(wstETH).proxy__upgradeToAndCall(ERC20BridgedPermit, finalizeUpgrade_v3("2", OptimismBridgeExecutor))`
     2. `ERC20BridgedPermit.grantRole(MINTER_ROLE, L2 bridge)`
     3. `ERC20BridgedPermit.grantRole(BURNER_ROLE, L2 bridge)`
@@ -91,34 +102,35 @@ Procedure, checks and recovery: [hub migration plan](../CHAINLINK_HUB_MIGRATION_
     9. `TokenAdminRegistry.setPool(wstETH, BurnMintTokenPool)`
     10. `TokenAdminRegistry.transferAdminRole(wstETH, LidoTimelock)`
     11. `LidoTimelock.bypasserExecuteBatch([TokenAdminRegistry.acceptAdminRole(wstETH), hooks.setPolicyEngine(L2 bridge)])` — accepts administration and installs the outbound activation gate atomically
-    12. `L2MigrationBridge.scheduleActivation(T_Base)` **new**
-    13. `L2MigrationBridge.scheduleClose(T_close)` **new**
-- Checkpoint T₀ + minutes → T_L1: both bridges on new code in LEGACY, legacy transfers work both ways, CCIP deposits already land on Base (pool holds MINTER_ROLE, registry bound). Mainnet verification: proxy storage, legacy round trips, state-mate.
+    12. `L2MigrationBridge.scheduleActivation(T_activate_L2)` **new**
+    13. `L2MigrationBridge.scheduleClose(T_close_L1L2)` **new**
+- Checkpoint T_vote_L1 + minutes → T_activate_L1: both bridges on new code in LEGACY, legacy transfers work both ways, CCIP deposits already land on Base (pool holds MINTER_ROLE, registry bound). Mainnet verification: proxy storage, legacy round trips, state-mate.
 - **Emergency Brakes, if verification fails**: the Safe `0x73b047fe6337183A454c5217241D780a932777bD` calls `L1ERC20TokenBridge.disableDeposits()` on Ethereum, or the Safe `0x0F9A0e7071B7B21bc7a8514DA2cd251bc1FF0725` calls `L2ERC20TokenBridge.disableWithdrawals()` on Base. Blocks the activation below; re-enabling is Agent / OptimismBridgeExecutor only, i.e. a vote.
 - Not in the vote yet, open: Direct Staking's adapter calls `depositERC20To` on the L1 bridge with a zero fee and reverts after the L1 activation; replacing it is `LidoCustomReceiver.setAdapter(baseChainSelector, newAdapter)` by the Agent, with an adapter that pays the CCIP fee.
 
-### 4. Anyone, Ethereum, T_L1
-- `L1MigrationBridge.activate()` **new** — guards: `block.timestamp ≥ T_L1`; mode LEGACY; `TokenAdminRegistry.getPool(wstETH) == SiloedLockReleaseTokenPool`; `isDepositsEnabled()`. Effect: mode MIGRATING, `safeTransfer(ERC20LockBox, balanceOf(this))` (whole escrow), then canonical messenger `sendMessage(L2 bridge, confirmL1Activation(), 200000)`. Both actions are atomic
+### 4. Anyone, Ethereum, T_activate_L1
+- `L1MigrationBridge.activate()` **new** — guards: `block.timestamp ≥ T_activate_L1`; mode LEGACY; `TokenAdminRegistry.getPool(wstETH) == SiloedLockReleaseTokenPool`; `isDepositsEnabled()`. Effect: mode MIGRATING, `safeTransfer(ERC20LockBox, balanceOf(this))` (whole escrow), then canonical messenger `sendMessage(L2 bridge, confirmL1Activation(), 200000)`. Both actions are atomic
 - From here `depositERC20` / `depositERC20To` go through `Router.ccipSend` only; legacy deposits cannot be started. Legacy withdrawals from Base keep finalizing: `finalizeERC20Withdrawal` pulls the shortfall from `ERC20LockBox.withdraw(wstETH, baseChainSelector, shortfall, address(this))` (section 3)
 
-### 5. Anyone, Base, T_Base
-- `L2MigrationBridge.activate()` **new** — guards: `block.timestamp ≥ T_Base`; mode LEGACY; `TokenAdminRegistry.getPool(wstETH) == BurnMintTokenPool`; `isWithdrawalsEnabled()`; `isL1ActivationConfirmed()`. Effect: mode MIGRATING, opening the outbound pool policy gate
+### 5. Anyone, Base, T_activate_L2
+- `L2MigrationBridge.activate()` **new** — guards: `block.timestamp ≥ T_activate_L2`; mode LEGACY; `TokenAdminRegistry.getPool(wstETH) == BurnMintTokenPool`; `isWithdrawalsEnabled()`; `isL1ActivationConfirmed()`. Effect: mode MIGRATING, opening the outbound pool policy gate
 - From here `withdraw` / `withdrawTo` go through `Router.ccipSend` only (burn by `BurnMintTokenPool`, release by the hub pool from the lockbox filled in step 4). No new legacy transfer can be started in either direction. `finalizeDeposit` for legacy deposits stays open
 - Before Base activation, deliver the canonical L1 confirmation; if delivery fails, retry it through the messenger. Only that messenger with the immutable L1 bridge as cross-domain sender can confirm activation. Base rejects activation without confirmation, and its hooks policy rejects every outbound pool send (including direct Router calls) until Base activates. The interval does not matter for CCIP deposits: they are token-only messages to the user, minted by the pool, the L2 bridge is not on that path
 
-### 6. Lido operators, both chains, T_Base + ~6 days → T_close
+### 6. Lido operators, both chains, T_activate_L2 + ~6 days → T_close_L1L2
 Finalize every legacy transfer still in flight, for the whole history of the bridge; all calls are permissionless.
+- Tool: [`orchestration/legacy-bridge/inflight.py`](../../../orchestration/legacy-bridge/inflight.py) (`just legacy-inflight`, [statuses and limits](../../../orchestration/legacy-bridge/README.md)) builds the lists below for both directions, names the step each transfer waits for, gives the replay calldata (`--json`) and computes the check; `--expect-empty` exits 2 while a transfer is in flight. It also marks withdrawals whose earlier proof rests on a retired dispute game (`PROOF_INVALIDATED`): they must be proven again before they can be finalized. Mainnet run of 2026-11-11: [28 withdrawals in flight, 389.785863645693893969 wstETH](../../../orchestration/legacy-bridge/reports/2026-11-11-ethereum-base-mainnet.md)
 - Off-chain: list of unfinished legacy withdrawals = `L2CrossDomainMessenger.SentMessage` from the L2 bridge, minus those with `OptimismPortal.finalizedWithdrawals(hash) == true` and `L1CrossDomainMessenger.successfulMessages(hash) == true`
 - `OptimismPortal.proveWithdrawalTransaction(tx, disputeGameIndex, outputRootProof, withdrawalProof)` for each unproven withdrawal, once its game is resolved (~5 days)
 - `OptimismPortal.finalizeWithdrawalTransaction(tx)` after `proofMaturityDelaySeconds` (1 day) → `L1CrossDomainMessenger.relayMessage` → `L1MigrationBridge.finalizeERC20Withdrawal` (lockbox-backed)
 - `L1CrossDomainMessenger.relayMessage(…)` for every entry of `failedMessages` (withdrawals whose relay on L1 failed)
 - `L2CrossDomainMessenger.relayMessage(…)` for every entry of `failedMessages` on Base (deposits whose relay failed) → `L2MigrationBridge.finalizeDeposit`
 - Check: both lists empty; `escrow + lockbox − Base supply = 0`
-- **Emergency Brakes, if the sweep is not finished by T_close**: `disableDeposits()` on the L1 bridge and `disableWithdrawals()` on the Base bridge. Blocks `close()`; cost is a pause of CCIP deposits and withdrawals until a vote re-enables them
+- **Emergency Brakes, if the sweep is not finished by T_close_L1L2**: `disableDeposits()` on the L1 bridge and `disableWithdrawals()` on the Base bridge. Blocks `close()`; cost is a pause of CCIP deposits and withdrawals until a vote re-enables them
 
-### 7. Anyone, both chains, T_close
-- `L1MigrationBridge.close()` **new** — guards: `block.timestamp ≥ T_close`; mode MIGRATING; `isDepositsEnabled()`. Effect: mode CCIP_ONLY, `finalizeERC20Withdrawal` reverts
-- `L2MigrationBridge.close()` **new** — guards: `block.timestamp ≥ T_close`; mode MIGRATING; `isWithdrawalsEnabled()`. Effect: mode CCIP_ONLY, `finalizeDeposit` reverts, then `ERC20BridgedPermit.renounceRole(MINTER_ROLE, address(this))`, `ERC20BridgedPermit.renounceRole(BURNER_ROLE, address(this))`
+### 7. Anyone, both chains, T_close_L1L2
+- `L1MigrationBridge.close()` **new** — guards: `block.timestamp ≥ T_close_L1L2`; mode MIGRATING; `isDepositsEnabled()`. Effect: mode CCIP_ONLY, `finalizeERC20Withdrawal` reverts
+- `L2MigrationBridge.close()` **new** — guards: `block.timestamp ≥ T_close_L1L2`; mode MIGRATING; `isWithdrawalsEnabled()`. Effect: mode CCIP_ONLY, `finalizeDeposit` reverts, then `ERC20BridgedPermit.renounceRole(MINTER_ROLE, address(this))`, `ERC20BridgedPermit.renounceRole(BURNER_ROLE, address(this))`
 - End state: both bridges send and receive through CCIP only, the OP messenger is no longer trusted, wstETH on Base is minted and burned by `BurnMintTokenPool` only, the whole backing is in `ERC20LockBox`
 
 ### 8. DAO, any later vote, hygiene
@@ -126,7 +138,7 @@ Finalize every legacy transfer still in flight, for the whole history of the bri
 
 ## 2. Rollback
 
-### A. Activation blocked (Emergency Brakes flag off, or, against section 1.2, the registry entry not bound to the hub by T_L1)
+### A. Activation blocked (Emergency Brakes flag off, or, against section 1.2, the registry entry not bound to the hub by T_activate_L1)
 - No on-chain action is needed to stay safe: `activate()` reverts, both bridges remain on new code in LEGACY, legacy transfers keep working, the escrow stays in the bridge
 - To resume after a flag was switched off: **DAO vote** `L1ERC20TokenBridge.enableDeposits()` (Agent) or, via `sendMessage` + `OptimismBridgeExecutor`, `L2ERC20TokenBridge.enableWithdrawals()`; then anyone calls `activate()` again
 - To abandon: **DAO vote** `OssifiableProxy(L1 bridge).proxy__upgradeTo(old L1ERC20TokenBridge)` and action set with `OssifiableProxy(L2 bridge).proxy__upgradeTo(old L2ERC20TokenBridge)`; token upgrade and pool roles may stay
@@ -163,11 +175,11 @@ For this hub target the order is `migration-inputs` → `hub-inventory` → `hub
 → `hub-connect-lane` → `migration-upgrade` → `test-scenarios` → `verify-state`.
 The [target README](../README.md) maps every recipe to the Explainer. Non-hub in-place targets
 retain their existing pipeline. Governance proposers and the OP messenger are impersonated;
-delays are advanced on isolated Anvil forks. MCMS signatures, nine remote spoke pools, their
+delays are advanced on isolated Anvil forks. MCMS signatures, five remote spoke pools, their
 queues and DON transport are outside this rehearsal.
 
 `RealHubMigration.t.sol` has 12 tests. At the hub-only checkpoint, three Base-dependent tests
-are skipped because those contracts do not exist yet. It checks custody, nine lane mappings,
+are skipped because those contracts do not exist yet. It checks custody, five lane mappings,
 pool-boundary locking/releasing and isolation, paused old-pool limiters, unchanged imported
 CCV policy, completed cutover and registry-acceptance proposals, replay rejection and revoked
 deployer administration. After Base connection all 12 tests run, including Base isolation and
@@ -177,7 +189,7 @@ its proposal. The two Base scenario tests then exercise the lifecycle and govern
 
 | Kind | Started | Finalized | Mode at finalization |
 | --- | --- | --- | --- |
-| D1, W1 | old implementations (step 06) | T₀ checkpoint | LEGACY / LEGACY |
+| D1, W1 | old implementations (step 06) | T_vote_L1 checkpoint | LEGACY / LEGACY |
 | d0, w0 | checkpoint | checkpoint | LEGACY / LEGACY |
 | d2 | checkpoint | after L1 `activate()` | Base LEGACY |
 | w2 | checkpoint | after L1 `activate()` | L1 MIGRATING, paid from the lockbox |

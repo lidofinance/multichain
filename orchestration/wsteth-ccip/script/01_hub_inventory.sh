@@ -9,16 +9,24 @@
 #     rebalancer, remote token, remote pools, outbound and inbound rate limits, the Router's on-ramp;
 #     the registry entry; the Chainlink timelock's minimum delay and role holders;
 #   • names each lane from the Chainlink registry API row of its selector (slug from the internalId)
-#     and requires the lane set to equal `.migration.hub.expectedLanes`: a lane that appeared or
-#     disappeared changes the manifest and the batch, so the run stops instead of guessing;
+#     and sorts the old pool's chains in two: a chain with at least one remote pool is a lane the hub
+#     takes over; a chain with no remote pool is disconnected — the old pool rejects every inbound
+#     message from it — and is left in the old pool: the hub does not serve it, and connecting it
+#     later is a proposal of the hub's owner. The first set must equal `.migration.hub.expectedLanes`
+#     and the second `.migration.hub.disconnectedLanes` (absent = none): a lane that appeared,
+#     disappeared, lost its remote pool or got one back changes the manifest and the batch, so the
+#     run stops instead of guessing;
 #   • writes state/hub-migration/inventory.json (what was read, at which block) and manifest.json
 #     (what the cutover will do: lockbox group per lane — one shared lockbox for the unsiloed lanes,
 #     one per siloed lane — the amount each lockbox receives, the silo rebalancer after the batch);
+#     both list the disconnected chains under `disconnectedLanes` as read, nothing is derived from
+#     them. The unsiloed bucket moves whole to the shared lockbox, so the tokens still outstanding on
+#     a disconnected unsiloed chain stay backed there;
 #   • writes a record per imported spoke (config/chains/<slug>.json with only what 2_Configure reads),
 #     appends the lanes to the hub record's remote_lanes (is_siloed = the old pool's silo flag, so
 #     DeployHubForMigration builds exactly that lockbox topology), writes the hub record's imported_lanes (remote
 #     pools, limits, no required CCVs) and deferred_lanes (the target's own spokes: 2_Configure leaves
-#     them to the hub's owner, so the cutover binds a hub that mirrors the old pool and step 05c
+#     them to the hub's owner, so the cutover binds a hub that serves exactly the lanes it takes over and step 05c
 #     connects each spoke lane by a LidoTimelock proposal), and extends the run's
 #     config/ccv-policy.json with the imported lanes (no required CCVs, no local outbound implementation).
 #
@@ -56,6 +64,9 @@ case "${SILO_POLICY}" in
 esac
 EXPECTED_LANES="$(jq -c '[.expectedLanes[]] | sort' <<<"${HUB}")"
 [ "$(jq 'length' <<<"${EXPECTED_LANES}")" -gt 0 ] || { echo "✗ .migration.hub.expectedLanes is empty"; exit 1; }
+EXPECTED_DISCONNECTED="$(jq -c '[(.disconnectedLanes // [])[]] | sort' <<<"${HUB}")"
+[ "$(jq -n --argjson a "${EXPECTED_LANES}" --argjson b "${EXPECTED_DISCONNECTED}" '$a - ($a - $b) | length')" = 0 ] \
+    || { echo "✗ a lane is listed in both .migration.hub.expectedLanes and .migration.hub.disconnectedLanes"; exit 1; }
 OUT_DIR="${ROOT}/state/hub-migration"; mkdir -p "${OUT_DIR}"
 
 # One pinned block for every read: the amounts become the batch arguments of the cutover.
@@ -126,7 +137,7 @@ slug_of() {
 }
 
 echo "▸ lanes of the old pool"
-LANES='[]'; SILOED_TOTAL=0
+LANES='[]'; DISCONNECTED='[]'; SILOED_TOTAL=0
 while read -r sel; do
     [ -n "${sel}" ] || continue
     row="$(jq -c --arg s "${sel}" '.data.evm[$s] // empty' "${API_JSON}")"
@@ -138,9 +149,23 @@ while read -r sel; do
     avail="$(call "${OLD_POOL}" 'getAvailableTokens(uint64)(uint256)' "${sel}" | num)"
     remote_token="$(decode_address_words "$(call "${OLD_POOL}" 'getRemoteToken(uint64)(bytes)' "${sel}")")"
     remote_pools="$(decode_address_words "$(call "${OLD_POOL}" 'getRemotePools(uint64)(bytes[])' "${sel}")" | jq -R . | jq -sc .)"
-    [ "$(jq 'length' <<<"${remote_pools}")" -gt 0 ] || { echo "✗ lane ${slug} (${sel}) has no remote pool"; exit 1; }
     read -r out_en out_cap out_rate <<<"$(limiter "$(call "${OLD_POOL}" 'getCurrentOutboundRateLimiterState(uint64)((uint128,uint32,bool,uint128,uint128))' "${sel}")")"
     read -r in_en in_cap in_rate <<<"$(limiter "$(call "${OLD_POOL}" 'getCurrentInboundRateLimiterState(uint64)((uint128,uint32,bool,uint128,uint128))' "${sel}")")"
+    if [ "$(jq 'length' <<<"${remote_pools}")" = 0 ]; then
+        # No remote pool: the old pool releases to nobody on this lane. The chain stays in the old pool,
+        # the hub does not take it over. A silo that still holds tokens would be left behind with it.
+        if [ "${siloed}" = "true" ] && [ "${avail}" != 0 ]; then
+            echo "✗ disconnected lane ${slug} (${sel}) is siloed and its silo still holds ${avail} wei: the cutover would leave that custody in the old pool"; exit 1
+        fi
+        DISCONNECTED="$(jq -c --arg slug "${slug}" --arg sel "${sel}" --argjson row "${row}" --argjson siloed "${siloed}" --arg token "${remote_token}" \
+            --argjson out_en "${out_en}" --arg out_cap "${out_cap}" --arg out_rate "${out_rate}" --argjson in_en "${in_en}" --arg in_cap "${in_cap}" --arg in_rate "${in_rate}" \
+            '. + [{slug: $slug, selector: $sel, chainId: $row.chainId, internalId: $row.internalId, displayName: $row.displayName,
+                   siloed: $siloed, remoteToken: $token, remotePools: [],
+                   outbound: {enabled: $out_en, capacity: $out_cap, rate: $out_rate}, inbound: {enabled: $in_en, capacity: $in_cap, rate: $in_rate}}]' <<<"${DISCONNECTED}")"
+        printf '  %-10s %-20s siloed=%-5s no remote pool: disconnected, stays in the old pool; out=(%s,%s,%s) in=(%s,%s,%s)\n' \
+            "${slug}" "${sel}" "${siloed}" "${out_en}" "${out_cap}" "${out_rate}" "${in_en}" "${in_cap}" "${in_rate}"
+        continue
+    fi
     onramp="$(call "${ROUTER}" 'getOnRamp(uint64)(address)' "${sel}")"
     group="shared"; [ "${siloed}" = "true" ] && group="${slug}"
     if [ "${siloed}" = "true" ]; then SILOED_TOTAL="$(echo "${SILOED_TOTAL} + ${avail}" | bc)"; fi
@@ -158,11 +183,20 @@ while read -r sel; do
         "$(jq -r '.[0]' <<<"${remote_pools}")" "${out_en}" "${out_cap}" "${out_rate}" "${in_en}" "${in_cap}" "${in_rate}"
 done < <(call "${OLD_POOL}" 'getSupportedChains()(uint64[])' | grep -oE '[0-9]{15,}')
 LANES="$(jq -c 'sort_by(.slug)' <<<"${LANES}")"
+DISCONNECTED="$(jq -c 'sort_by(.slug)' <<<"${DISCONNECTED}")"
 FOUND_LANES="$(jq -c '[.[].slug] | sort' <<<"${LANES}")"
+FOUND_DISCONNECTED="$(jq -c '[.[].slug] | sort' <<<"${DISCONNECTED}")"
 [ "${FOUND_LANES}" = "${EXPECTED_LANES}" ] || {
-    echo "✗ the old pool serves ${FOUND_LANES}, target.json expects ${EXPECTED_LANES} (.migration.hub.expectedLanes)."
+    echo "✗ the old pool serves ${FOUND_LANES} through a remote pool, target.json expects ${EXPECTED_LANES} (.migration.hub.expectedLanes)."
     echo "  Update the target (and the plan) if the lane set changed; the manifest is not guessed from a changed set."
     exit 1; }
+[ "${FOUND_DISCONNECTED}" = "${EXPECTED_DISCONNECTED}" ] || {
+    echo "✗ the old pool lists ${FOUND_DISCONNECTED} with no remote pool, target.json expects ${EXPECTED_DISCONNECTED} (.migration.hub.disconnectedLanes)."
+    echo "  Update the target (and the plan) if a lane was disconnected or reconnected; the hub takes over only the lanes with a remote pool."
+    exit 1; }
+if [ "${UNSILOED}" != 0 ] && [ "$(jq '[.[] | select(.siloed | not)] | length' <<<"${LANES}")" = 0 ]; then
+    echo "✗ the old pool holds ${UNSILOED} wei of unsiloed liquidity and no connected unsiloed lane: no lockbox would receive it"; exit 1
+fi
 for s in $(jq -r '.[].slug' <<<"${LANES}"); do
     [ "${s}" != "${L1_CHAIN}" ] && [ "${s}" != "${L2_CHAIN}" ] || { echo "✗ imported lane slug '${s}' collides with a chain of the pair"; exit 1; }
     if [ -f "${CFG_DIR}/${s}.json" ] && ! jq -e '.imported' "${CFG_DIR}/${s}.json" >/dev/null; then
@@ -183,7 +217,7 @@ INVENTORY="$(jq -n --argjson hub "${HUB}" --argjson cid "${L1_CHAIN_ID}" --argjs
     --arg rpc "${L1_RPC}" --arg env "${API_ENV}" --arg token "${TOKEN}" --arg tar "${TAR}" --arg admin "${TAR_ADMIN}" --arg pending "${TAR_PENDING}" \
     --arg pool "${OLD_POOL}" --arg tv "${TYPE_VERSION}" --arg owner "${OWNER}" --arg rebal "${REBALANCER}" --arg rla "${RATE_LIMIT_ADMIN}" \
     --arg bal "${BALANCE}" --arg uns "${UNSILOED}" --arg st "${SILOED_TOTAL}" --arg un "${UNACCOUNTED}" --arg tl "${HUB_TIMELOCK}" \
-    --arg delay "${MIN_DELAY}" --arg blocked "${BLOCKED_COUNT}" --argjson roles "${ROLES_JSON}" --argjson lanes "${LANES}" --arg router "${ROUTER}" '
+    --arg delay "${MIN_DELAY}" --arg blocked "${BLOCKED_COUNT}" --argjson roles "${ROLES_JSON}" --argjson lanes "${LANES}" --argjson disconnected "${DISCONNECTED}" --arg router "${ROUTER}" '
     {schemaVersion: 1,
      target: $hub,
      readAt: {chainId: $cid, block: $blk, blockHash: $bh, timestamp: $ts, rpc: $rpc, registryApiEnvironment: $env},
@@ -192,7 +226,7 @@ INVENTORY="$(jq -n --argjson hub "${HUB}" --argjson cid "${L1_CHAIN_ID}" --argjs
      oldPool: {address: $pool, typeAndVersion: $tv, owner: $owner, rebalancer: $rebal, rateLimitAdmin: $rla,
                balance: $bal, unsiloedLiquidity: $uns, siloedTotal: $st, unaccounted: $un},
      chainlinkTimelock: {address: $tl, minDelay: ($delay | tonumber), blockedSelectorCount: ($blocked | tonumber), roles: $roles},
-     lanes: $lanes}')"
+     lanes: $lanes, disconnectedLanes: $disconnected}')"
 MANIFEST="$(jq --argjson groups "${LB_GROUPS}" --arg policy "${SILO_POLICY}" '. + {lockBoxGroups: $groups, siloRebalancerAfterCutover: $policy}' <<<"${INVENTORY}")"
 printf '%s\n' "${INVENTORY}" | jq . > "${OUT_DIR}/inventory.json"
 printf '%s\n' "${MANIFEST}" | jq . > "${OUT_DIR}/manifest.json"
@@ -202,8 +236,8 @@ echo "▸ wrote ${OUT_DIR#${ROOT}/}/inventory.json and manifest.json; lockbox gr
 # Remote lanes of the hub: the target's own spokes first, then the imported lanes (is_siloed = the
 # old pool's silo flag: DeployHubForMigration gives every siloed lane its own lockbox and the others one shared).
 # The target's own spokes are deferred lanes: their lockbox is prepared after the cutover;
-# our ConfigureHubForMigration leaves their configuration to the hub's owner, so the hub the cutover binds (05h) mirrors the old
-# pool exactly, and Chainlink connects each spoke lane afterwards by a LidoTimelock proposal (05c).
+# our ConfigureHubForMigration leaves their configuration to the hub's owner, so the hub the cutover binds (05h) serves exactly the
+# old pool's connected lanes, and Chainlink connects each spoke lane afterwards by a LidoTimelock proposal (05c).
 NEW_LANES="$(jq -c 'map({is_siloed: .siloed, remote_chain_name: .slug})' <<<"${LANES}")"
 IMPORTED="$(jq -c 'map({(.slug): {remote_pools: .remotePools, rate_limits: {outbound: .outbound, inbound: .inbound}, required_ccvs: "none"}}) | add' <<<"${LANES}")"
 SLUGS="$(jq -c 'map(.slug)' <<<"${LANES}")"
@@ -251,4 +285,4 @@ else
     echo "  ⚠ no ${POLICY#${ROOT}/} in the run; verify-state will need one that covers the imported lanes"
 fi
 echo ""
-echo "✓ step 01h done — inventory at ${L1_CHAIN} block ${BLK}; $(jq 'length' <<<"${LANES}") lanes, $(jq 'length' <<<"${LB_GROUPS}") lockbox groups for the imported lanes."
+echo "✓ step 01h done — inventory at ${L1_CHAIN} block ${BLK}; $(jq 'length' <<<"${LANES}") lanes, $(jq 'length' <<<"${LB_GROUPS}") lockbox groups for the imported lanes; $(jq 'length' <<<"${DISCONNECTED}") disconnected chain(s) left in the old pool$(jq -r 'if length > 0 then ": " + (map(.slug) | join(", ")) else "" end' <<<"${DISCONNECTED}")."

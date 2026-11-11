@@ -136,7 +136,7 @@ accept_pending_tar_admin() {
 # A target that declares the hub migration (.migration.hub in target.json) gets this hand-over from
 # step 05h instead: Chainlink's cutover batch binds the new hub and leaves the administration pending
 # for the timelock, so D finds it pending and skips. Running D without that step would replay the
-# old Base-only shortcut (administration first, pool bound by E) and leave the nine lanes unfunded.
+# old Base-only shortcut (administration first, pool bound by E) and leave the imported lanes unfunded.
 if [ "${WSTETH_OPERATION:-scratch-deployment}" = "in-place-upgrade" ] && [ "${WSTETH_SKIP_L1:-0}" != 1 ]; then
     echo ""
     echo "▸ D) ${L1_CHAIN}: registry administrator hands the token administration to the timelock"

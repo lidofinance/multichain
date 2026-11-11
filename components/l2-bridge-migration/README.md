@@ -113,8 +113,8 @@ bridge mints in `finalizeDeposit` and burns through `burnFrom` in legacy withdra
   transfer can start. `CCIP_ONLY` closes the receive side; the OP messengers record failed relays and
   allow replay, so a legacy transfer that is still in flight at `close()` is delayed, not lost, and
   needs a rollback vote (`switchBridgeMode(MIGRATING)`, on Base plus the roles) to finalize. Hence
-  the order the timers must encode: `T_L1 < T_Base`, plus actual delivery of the L1 activation confirmation (the
-  contract enforces funded L1 activation before Base can start CCIP withdrawals) and `T_close` far enough after `T_Base` for the operators to prove, finalize
+  the order the timers must encode: `T_activate_L1 < T_activate_L2`, plus actual delivery of the L1 activation confirmation (the
+  contract enforces funded L1 activation before Base can start CCIP withdrawals) and `T_close_L1L2` far enough after `T_activate_L2` for the operators to prove, finalize
   and replay every legacy transfer that users left behind (L2→L1 on Base: the dispute game's
   resolution plus the 1-day proof maturity delay, about 5 days in practice, not verified).
 - The L1 bridge must be on the lane lockbox's authorized-caller list before `activate()`; otherwise

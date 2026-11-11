@@ -36,6 +36,11 @@ wsteth-rehearse line="both" *args:
 wsteth-use run:
     python3 orchestration/wsteth-ccip/workspace.py use "$1"
 
+# List legacy Ethereum <-> Base bridge transfers in flight and what each one waits for (read-only)
+[positional-arguments]
+legacy-inflight *args:
+    @uv run --locked python orchestration/legacy-bridge/inflight.py "$@"
+
 # Build using this checkout's ledger, catalogues and dated testnet snapshot
 [positional-arguments]
 dashboard-build *args:

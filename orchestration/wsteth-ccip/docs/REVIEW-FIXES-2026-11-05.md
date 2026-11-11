@@ -16,7 +16,7 @@ gitlink `07ae438b0028f14d1ccce9072e3f53b8b14e8a09`.
    отделяет очищенные записи от первоначального доказательства сборки.
 2. Атомарный Base action set назначает L2MigrationBridge policy engine для
    hooks пула. Все исходящие вызовы пула, включая прямой Router, отклоняются до
-   успешного `activate()` на Base. Выдача BURNER_ROLE и регистрация пула на T₀
+   успешного `activate()` на Base. Выдача BURNER_ROLE и регистрация пула на T_vote_L1
    больше не позволяют обойти условие активации.
 3. L1 `activate()` атомарно переносит обеспечение в lockbox и отправляет
    `confirmL1Activation()` через канонический messenger. Base принимает

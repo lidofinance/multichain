@@ -21,11 +21,12 @@
 #      holds exactly them. All calls are one batch: any revert leaves pool, registry and lockboxes as
 #      they were.
 #
-# Before A the new hub must mirror the old pool: it serves every lane the manifest lists (lockbox
+# Before A the new hub must mirror the old pool's connected lanes: it serves every lane the manifest lists (lockbox
 # map, imported remote pools and limits, lockboxes authorize the hub, LidoTimelock owns the stack)
 # and no other — the pair lane (Base) is a deferred lane of the hub record, connected after the
-# cutover by the owner's proposal (step 05c, hub-connect-lane), so this batch migrates what exists
-# and nothing more. After B, outside the transaction: old pool empty; the Chainlink timelock's wstETH
+# cutover by the owner's proposal (step 05c, hub-connect-lane), and a chain the old pool lists with no
+# remote pool (the manifest's `disconnectedLanes`) stays in the old pool, so this batch migrates the
+# lanes in service and nothing more. After B, outside the transaction: old pool empty; the Chainlink timelock's wstETH
 # balance unchanged; each lockbox grew by its amount; Base contracts absent; legacy escrow
 # untouched; registry pool = new hub with the administration pending for the LidoTimelock. Everything
 # is recorded in state/hub-migration.json (calldata, hashes, tx hashes, snapshots, what stayed
@@ -112,12 +113,13 @@ jq -e --arg b "$(lc "${BASE_LOCKBOX}")" '[.[] | ascii_downcase] | index($b) | no
 ok "lockboxes: $(jq -r 'to_entries | map("\(.key)=\(.value)") | join(", ")' <<<"${BOXES}"); ${L2_CHAIN}=${BASE_LOCKBOX}"
 eq "$(callv "${NEW_HUB}" 'owner()(address)')" "${LIDO_TIMELOCK}" && ok "new hub ${NEW_HUB} owned by LidoTimelock ${LIDO_TIMELOCK}" || bad "new hub owner is not the LidoTimelock"
 SUPPORTED="$(callv "${NEW_HUB}" 'getSupportedChains()(uint64[])' | grep -oE '[0-9]{15,}' | sort)"
-# The hub the registry is about to bind mirrors the old pool: it serves the manifest's lanes and no other.
+# The hub the registry is about to bind mirrors the old pool's connected lanes: it serves the manifest's lanes and no other
+# (a chain of the manifest's disconnectedLanes included: the old pool lists it with no remote pool).
 # The pair lane (${L2_CHAIN}) is connected afterwards by the owner's proposal (step 05c), not by the cutover.
 PAIR_SELECTOR="$(jq -er '.ccip.chain_selector' "${CFG_DIR}/${L2_CHAIN}.json")"
 [ "$(printf '%s\n' "${SUPPORTED}" | grep -c .)" = "$(jq 'length' <<<"${LANES}")" ] \
     && ok "new hub serves exactly $(jq 'length' <<<"${LANES}") lanes" \
-    || bad "new hub serves $(printf '%s\n' "${SUPPORTED}" | grep -c .) lanes, the manifest $(jq 'length' <<<"${LANES}"): the cutover must bind a hub that mirrors the old pool"
+    || bad "new hub serves $(printf '%s\n' "${SUPPORTED}" | grep -c .) lanes, the manifest $(jq 'length' <<<"${LANES}"): the cutover must bind a hub that mirrors the old pool's connected lanes"
 grep -qx "${PAIR_SELECTOR}" <<<"${SUPPORTED}" && bad "${L2_CHAIN} (selector ${PAIR_SELECTOR}) is already a lane of the new hub; it is connected by step 05c after the cutover (deferred_lanes in the hub record)" \
     || ok "${L2_CHAIN} lane not yet on the hub (connected by step 05c)"
 callv "${NEW_HUB}" 'getLockBox(uint64)(address)' "${PAIR_SELECTOR}" >/dev/null 2>&1 \
@@ -298,7 +300,7 @@ jq -n --arg run "${RUN_ID}" --arg l1 "${L1_CHAIN}" --arg token "${TOKEN}" --arg 
      lockBoxes: $boxes, baseLockBox: $base, baseLockBoxDeployed: false, legacyEscrow: $escrow,
      lockBoxGroups: $groups, siloRebalancersAfter: $rebal,
      hubAtCutover: {supportedChains: $supported, deferredLane: $pair, deferredLaneSelector: $pairsel,
-                    note: "the hub the batch bound served exactly the old pool lanes; the pair lane is connected by step 05c (hub-connect-lane)"},
+                    note: "the hub the batch bound served exactly the old pool lanes that had a remote pool (manifest.lanes); the chains of manifest.disconnectedLanes stay in the old pool; the pair lane is connected by step 05c (hub-connect-lane)"},
      proposals: [$a, $b],
      snapshots: {before: $before, after: $after},
      pauseCheck: $pause, pauseCheckSender: $sender,
@@ -312,7 +314,7 @@ jq -n --arg run "${RUN_ID}" --arg l1 "${L1_CHAIN}" --arg token "${TOKEN}" --arg 
 jq_inplace state/l1.json --arg p "${OLD_POOL}" --arg a "${CL_TIMELOCK}" --arg ida "$(jq -r '.id' <<<"${PROPOSAL_A}")" --arg idb "$(jq -r '.id' <<<"${PROPOSAL_B}")" \
     '.registryPoolBefore = $p | .registryAdministratorBefore = $a | .hubCutover = {pauseProposal: $ida, cutoverProposal: $idb}'
 echo ""
-echo "✓ step 05h done — the registry binds ${TOKEN} to the new hub ${NEW_HUB} (the old pool's $(jq 'length' <<<"${LANES}") lanes); administration pending for the LidoTimelock ${LIDO_TIMELOCK} (hub-accept-admin accepts by MCMS proposal); the ${L2_CHAIN} lane is connected by step 05c."
+echo "✓ step 05h done — the registry binds ${TOKEN} to the new hub ${NEW_HUB} (the old pool's $(jq 'length' <<<"${LANES}") connected lanes); administration pending for the LidoTimelock ${LIDO_TIMELOCK} (hub-accept-admin accepts by MCMS proposal); the ${L2_CHAIN} lane is connected by step 05c."
 echo "  pause proposal   $(jq -r '.id' <<<"${PROPOSAL_A}") (executed tx $(jq -r '.executedTx' <<<"${PROPOSAL_A}"))"
 echo "  cutover proposal $(jq -r '.id' <<<"${PROPOSAL_B}") (executed tx $(jq -r '.executedTx' <<<"${PROPOSAL_B}"))"
 echo "  record: ${OUT#${ROOT}/}"

@@ -14,7 +14,7 @@ Emergency Brakes were read on 2026-10-26; the hub block on 2026-10-30. `migratio
 `placeholders` identifies the lane-role inputs that remain rehearsal-only.
 
 The current pipeline separates preparation at the same boundaries as the HTML Explainer.
-The first phase prepares and migrates the nine existing Ethereum lanes. Only after registry
+The first phase prepares and migrates the five connected lanes of the old Ethereum pool (four chains it lists with no remote pool stay behind; see "Status, 2026-11-11"). Only after registry
 administration has been accepted by a Chainlink MCMS proposal and the hub checkpoint passes
 does the second phase deploy contracts for Base. Historical runs below used the earlier order.
 
@@ -34,20 +34,20 @@ stops its own forks after the run.
 
 | Explainer | Recipe | What it does on the forks |
 | --- | --- | --- |
-| Before 1.1 | `patch-submodules`, `preflight`, `build`, `build-ccip`, `forks-check`, `migration-inputs`, `hub-inventory` | Check dependencies and forks; record live proxies and the old Ethereum pool at a pinned block; import its nine lanes, limits and custody into the run configuration. |
+| Before 1.1 | `patch-submodules`, `preflight`, `build`, `build-ccip`, `forks-check`, `migration-inputs`, `hub-inventory` | Check dependencies and forks; record live proxies and the old Ethereum pool at a pinned block; import its five connected lanes, limits and custody into the run configuration; the four chains with no remote pool are recorded and left in the old pool. |
 | 1.1 | `hub-prepare` | Deploy the Ethereum hub, hooks, timelock, CallProxy and four lockboxes (shared, Bitlayer, 0G, Robinhood). Configure only the imported lanes. No Base lockbox or CCV pair yet. Accept ownership, grant Agent ADMIN_ROLE and revoke the deployer's ADMIN_ROLE. |
-| 1a | `hub-cutover` | Through the existing Chainlink RBACTimelock: restrict outbound transfers; after its delay, move all custody to the four lockboxes, bind the new hub and nominate LidoTimelock as registry administrator. The hub must serve exactly the nine imported lanes. |
+| 1a | `hub-cutover` | Through the existing Chainlink RBACTimelock: restrict outbound transfers; after its delay, move all custody to the four lockboxes, bind the new hub and nominate LidoTimelock as registry administrator. The hub must serve exactly the five imported lanes. |
 | 1a | `hub-accept-admin` | Chainlink MCMS proposes `acceptAdminRole(wstETH)` in LidoTimelock; after its delay anyone executes through CallProxy. Verify the final administrator and empty pending administrator. No DAO transaction or deployer bypass. |
-| Gate before 1.2 | `base-prepare` starts with `test-hub` | Run `RealHubMigrationTest` in checkpoint mode. Verify the nine lanes, custody, isolation, completed governance operations, absence of deployer admin, and absence of Base deployments. A failure stops Base preparation. Record the checked Ethereum block. |
+| Gate before 1.2 | `base-prepare` starts with `test-hub` | Run `RealHubMigrationTest` in checkpoint mode. Verify the five lanes, custody, isolation, completed governance operations, absence of deployer admin, and absence of Base deployments. A failure stops Base preparation. Record the checked Ethereum block. |
 | 1.2 | remainder of `base-prepare` | Deploy Base's pool stack. Add the Base lockbox, verifier and resolver on Ethereum; MCMS proposes their ownership acceptance through LidoTimelock. Configure Base and transfer its admin role to the executor. Deploy all three token/bridge implementations, without upgrading proxies. |
-| 1b | `hub-connect-lane` | MCMS proposes the six-call Base connection batch through LidoTimelock. After the delay, execute through CallProxy; verify that the nine imported lanes and their balances are unchanged. |
+| 1b | `hub-connect-lane` | MCMS proposes the six-call Base connection batch through LidoTimelock. After the delay, execute through CallProxy; verify that the five imported lanes and their balances are unchanged. |
 | 2 | `migration-upgrade` | Start legacy transfers left in flight, then execute the one DAO vote using the prepared implementations: upgrade the L1 bridge, authorize it on the Base lockbox, arm timers, send and relay the 13-action Base set through the real messenger. |
 | 3–7 and recovery branches | `test-scenarios` | Final hub tests and Base lifecycle scenarios: activation, legacy transfers in flight, CCIP pool-boundary transport, sweep, close, vetoes and rollback. The Base pool policy blocks direct Router withdrawals until authenticated L1 confirmation and Base activation; failed confirmations can be retried. Base conservation assertions also protect the four existing lockbox balances. |
 | Verification | `verify-state` | Verify the post-vote state with state-mate; archive configuration, migration and proposal records, the hub checkpoint and test logs. Scenario mutations occur on test forks, so this matrix checks the post-vote checkpoint. |
 
-The checkpoint proves the Ethereum side of the nine existing lanes, including simulated calls
+The checkpoint proves the Ethereum side of the five imported lanes, including simulated calls
 from registered ramps. This target has only Ethereum and Base forks: remote pool changes,
-round trips through all nine spoke networks, queue drain, DON delivery and MCMS signatures remain
+round trips through all five spoke networks, queue drain, DON delivery and MCMS signatures remain
 outside its coverage. The configured MCMS and CCV identities are rehearsal placeholders.
 
 Environment for a run: `RPC_ETHEREUM`, `RPC_BASE` (anvil endpoints), `DEPLOYER_PRIVATE_KEY` (a funded
@@ -69,8 +69,8 @@ the deployed legacy bridges are in `target.json` `.migration` (`emergencyBrakes`
 
 ## Status, 2026-10-28: the one-vote scheme
 
-The migration is one Aragon vote at T₀ and three permissionless, time-gated steps per bridge
-(`activate()` on L1 at T_L1, `activate()` on Base at T_Base, `close()` on both at T_close), with the
+The migration is one Aragon vote at T_vote_L1 and three permissionless, time-gated steps per bridge
+(`activate()` on L1 at T_activate_L1, `activate()` on Base at T_activate_L2, `close()` on both at T_close_L1L2), with the
 lane `ERC20LockBox` as the single backing for CCIP and legacy withdrawals from the L1 activation on
 (design: [one-vote design](docs/2026-10-26-upgrade-path.md); contracts: `components/l2-bridge-migration`). Run end to end on anvil
 forks of Ethereum and Base (pinned at the heads of 2026-10-28):
@@ -87,17 +87,17 @@ What the runbook drives, in order, with conservation (escrow + lockbox − Base 
 amounts in flight) asserted after every step: the pair started on the old implementations
 finalizes; neither step runs before its timer; a legacy round trip inside the checkpoint; legacy
 deposits and withdrawals started in LEGACY for every later stage (one deposit relayed gas-starved so
-it lands in `failedMessages`); at T_L1 the Emergency Brakes veto (`disableDeposits`) and a registry
+it lands in `failedMessages`); at T_activate_L1 the Emergency Brakes veto (`disableDeposits`) and a registry
 that does not bind the hub pool both block `activate()`, then anyone activates L1: the whole escrow
 moves to the lockbox, legacy deposits cannot be started, a CCIP deposit goes through the real
 Router and OnRamp and is minted on Base while Base is still LEGACY, an in-flight legacy withdrawal
 is paid from the lockbox, an in-flight legacy deposit finalizes on the LEGACY Base bridge; a
-withdrawal started while Base is still LEGACY is relayed gas-starved on L1; at T_Base the veto
+withdrawal started while Base is still LEGACY is relayed gas-starved on L1; at T_activate_L2 the veto
 (`disableWithdrawals`, lifted by an executor action set) blocks `activate()`, then anyone activates
 Base: legacy withdrawals cannot be started, a CCIP withdrawal burns through the pool and is released
 from the lockbox, an in-flight legacy deposit finalizes on the MIGRATING Base bridge; the operators'
 sweep replays both failed relays; `close()` is too early, and after the timer refuses a bridge
-rolled back to LEGACY; at T_close the veto blocks `close()` on each chain, then anyone closes Base
+rolled back to LEGACY; at T_close_L1L2 the veto blocks `close()` on each chain, then anyone closes Base
 (the bridge renounces MINTER_ROLE and BURNER_ROLE, the pool keeps them) and L1; CCIP works both ways;
 a late legacy deposit and a late legacy withdrawal fail at the messengers and stay replayable; Base
 rolls back (MIGRATING + roles, one action set), replays, goes forward again; L1 rolls back to
@@ -191,7 +191,7 @@ not through a new pipeline run:
 The new check is not vacuous: with the shared lockbox's recorded balance raised by 1 wei, the
 runbook fails at its first conservation point (`another lane's lockbox moved: after the pre-upgrade
 pair`). Still not covered: a round trip on the nine lanes after the Base activations, the close and
-the rollbacks (the hub test runs at T₀), and the LidoTimelock accepting the registry
+the rollbacks (the hub test runs at T_vote_L1), and the LidoTimelock accepting the registry
 administration by a proposal instead of the bypass.
 
 Reproduce:
@@ -214,3 +214,30 @@ forks is needed for every full run: step 06 cannot upgrade a token proxy twice.
 
 Chain records share the orchestration's [chain schema](../../orchestration/wsteth-ccip/script/chain.schema.json).
 `lint-config` validates that format and the operation-specific rules for pristine templates.
+
+## Status, 2026-11-11: five connected lanes, four left in the old pool
+
+Since 2026-11-10 the old pool lists Ink, Plasma, Jovay and Abstract with no remote pool (Ethereum
+block 26 380 937, transaction `0x873b0eb6c23e3979f55f0eba0db8fd2828898d37046ff7ba255ec8e9226da6a3`,
+four `RemotePoolRemoved`). Step 01h used to stop on such a lane. It now sorts the old pool's chains
+in two and checks both sets against `target.json`: `.migration.hub.expectedLanes` (Bitlayer, 0G,
+Monad, MegaETH, Robinhood) is taken over by the hub, `.migration.hub.disconnectedLanes` (Ink, Plasma,
+Jovay, Abstract) stays in the old pool. The status sections above describe runs made while all nine
+chains had a remote pool.
+
+Run `disconnected-lanes-20261111-03` (`just wsteth-rehearse mainnet`) on fresh anvil forks pinned at
+Ethereum block 26391724 and Base block 56051276, the complete pipeline:
+
+| Layer | Result |
+| --- | --- |
+| Step 01h (`hub-inventory`) | five lanes with a remote pool and four without, both equal to the target's lists; accounting closed exactly: balance 18 306,365980370653147629 wstETH = unsiloed 18 261,754298306840706982 + silos 44,611682063812440647 (Bitlayer 0,105063567385275758, 0G 0,013044622506851971, Robinhood 44,493573873920312918), unaccounted 0; lockbox groups: shared (Monad, MegaETH), Bitlayer, 0G, Robinhood |
+| Step 05h (`hub-cutover`) | preflight held: the hub served exactly the five lanes; pause proposal `0x1b5b4acc720b71bcdea606ec7d23667869283264ca067169acd6376961f92a0f` (1 call) and cutover proposal `0x343c121a8aa329e5e622f399be038be3ef8a2786664e2246b9646b901a19904f` (12 calls, predecessor = the pause) through the Chainlink timelock; every invariant held |
+| Hub checkpoint (`test-hub`) | 9 scenarios passed, the 3 Base-lane scenarios skipped as designed |
+| `RealHubMigration.t.sol`, `RealBaseMigration.t.sol` | 15 scenarios passed; the cutover scenario now also asserts that the hub does not serve the four disconnected chains |
+| Step 08 (`verify-state`) | 299 state-mate checks passed, 9 delegated table checks passed |
+
+Not rehearsed, as before: the spoke chains are not forked, so the five spokes' remote-pool additions
+and outbound pauses, the queue drain, DON delivery and MCMS signatures stay outside the run. The
+Sepolia line was not rerun: `just wsteth-rehearse sepolia` stopped before its first pipeline step on a
+certificate error of the public Monad testnet endpoint; its target declares no disconnected lanes and
+the unit tests of the orchestration (180) pass.

@@ -82,7 +82,7 @@ interface IRbacTimelockLike {
     function hasRole(bytes32 role, address account) external view returns (bool);
 }
 
-/// @title RealHubMigration — the nine existing CCIP lanes on the new Ethereum hub after Chainlink's cutover,
+/// @title RealHubMigration — the existing CCIP lanes the new Ethereum hub took over at Chainlink's cutover,
 /// and the Base lane Chainlink connected afterwards.
 /// @notice Starts where steps 01h, 04, 05, 05h, 05c and 07 left the Ethereum fork: the registry binds wstETH to
 /// the new SiloedLockReleaseTokenPool 2.0.0 (administered by the LidoTimelock), the old pool is empty, and
@@ -92,7 +92,8 @@ interface IRbacTimelockLike {
 /// a siloed lane cannot draw on the shared lockbox and the Base lane cannot draw on either; the cutover
 /// batch cannot run twice; the old pool's outbound limiters are the pause; the hooks require no CCVs on
 /// the imported lanes while the Base lane keeps its resolver. Two Chainlink actions are told apart: the
-/// cutover batch (Chainlink's own RBACTimelock) bound a hub that served exactly the old pool's lanes, and
+/// cutover batch (Chainlink's own RBACTimelock) bound a hub that served exactly the old pool's connected
+/// lanes — a chain the old pool listed with no remote pool stayed in the old pool and is not served — and
 /// the Base lane came by a separate LidoTimelock proposal that cannot run twice either.
 ///
 /// Transport is simulated at the pool boundary: the registered OffRamp of each source and the OnRamp of
@@ -138,6 +139,7 @@ contract RealHubMigrationTest is Test {
     bytes32 internal cutoverSalt;
     IRbacTimelockLike.Call[] internal cutoverCalls;
     uint64[] internal supportedAtCutover; // the hub's lanes when the cutover batch bound it (step 05h)
+    uint64[] internal disconnected; // chains the old pool listed with no remote pool (step 01h): not taken over
     // The Base lane, connected after the cutover by a LidoTimelock proposal (step 05c)
     address internal baseSpokePool;
     address internal connectExecutor; // the LidoTimelock's CallProxy
@@ -244,6 +246,17 @@ contract RealHubMigrationTest is Test {
             supportedAtCutover.length > 0,
             "state/hub-migration.json records no hubAtCutover.supportedChains (re-run step 05h)"
         );
+        for (uint256 i; vm.keyExistsJson(hm, string.concat(".manifest.disconnectedLanes[", vm.toString(i), "]")); ++i) {
+            disconnected.push(
+                uint64(
+                    vm.parseUint(
+                        vm.parseJsonString(
+                            hm, string.concat(".manifest.disconnectedLanes[", vm.toString(i), "].selector")
+                        )
+                    )
+                )
+            );
+        }
         if (hubOnly) {
             assertFalse(vm.keyExistsJson(c2, ".deployed"), "Base contracts deployed before hub checkpoint");
             assertEq(resolver, address(0), "Base resolver deployed before hub checkpoint");
@@ -252,7 +265,7 @@ contract RealHubMigrationTest is Test {
             assertFalse(IHubPoolLike(hub).isSupportedChain(baseSelector), "Base already connected at checkpoint");
             return;
         }
-        // The Base lane's connection (step 05c): the LidoTimelock proposal that gave the hub its tenth lane.
+        // The Base lane's connection (step 05c): the LidoTimelock proposal that gave the hub its next lane.
         string memory hlc = vm.readFile("state/hub-lane-connect.json");
         require(vm.parseJsonAddress(hlc, ".hub") == hub, "state/hub-lane-connect.json describes another hub");
         require(
@@ -578,8 +591,9 @@ contract RealHubMigrationTest is Test {
     // Two Chainlink actions, two instruments: the cutover moved what existed; the Base lane came after
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// @dev The hub the registry was switched to served exactly the old pool's lanes: the Base lane was not among
-    ///      them, so the cutover batch migrated the existing service and nothing else.
+    /// @dev The hub the registry was switched to served exactly the old pool's connected lanes: the Base lane was
+    ///      not among them, and neither was a chain the old pool listed with no remote pool, so the cutover batch
+    ///      migrated the existing service and nothing else.
     function test_the_cutover_bound_a_hub_that_mirrored_the_old_pool() public view {
         assertEq(supportedAtCutover.length, lanes.length, "the hub served another number of lanes at the cutover");
         for (uint256 i; i < lanes.length; ++i) {
@@ -591,6 +605,14 @@ contract RealHubMigrationTest is Test {
         }
         for (uint256 j; j < supportedAtCutover.length; ++j) {
             assertTrue(supportedAtCutover[j] != baseSelector, "the Base lane was already on the hub at the cutover");
+            for (uint256 d; d < disconnected.length; ++d) {
+                assertTrue(
+                    supportedAtCutover[j] != disconnected[d], "a disconnected chain was on the hub at the cutover"
+                );
+            }
+        }
+        for (uint256 d; d < disconnected.length; ++d) {
+            assertFalse(IHubPoolLike(hub).isSupportedChain(disconnected[d]), "the hub serves a disconnected chain");
         }
         // Today the hub serves the old lanes and Base: one lane more than at the cutover.
         assertEq(
