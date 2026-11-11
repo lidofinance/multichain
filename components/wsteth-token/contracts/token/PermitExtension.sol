@@ -1,15 +1,20 @@
 // SPDX-FileCopyrightText: 2024 OpenZeppelin, Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.26;
 
-import {IERC2612} from "@openzeppelin/contracts/interfaces/draft-IERC2612.sol";
-import {EIP712} from "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import {IERC2612} from "@openzeppelin/contracts/interfaces/IERC2612.sol";
+import {IERC5267} from "@openzeppelin/contracts/interfaces/IERC5267.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {UnstructuredRefStorage} from "../lib//UnstructuredRefStorage.sol";
 
 /// @author arwer13, kovalgek
-abstract contract PermitExtension is IERC2612, EIP712 {
+/// @dev The EIP-712 domain is derived from constructor immutables, as in the OpenZeppelin 4.x
+///      `EIP712` base this contract previously inherited. OpenZeppelin 5.x `EIP712` adds two
+///      storage strings; they are deliberately not inherited so the token keeps no linear
+///      storage beyond ERC20Core's slots 0-2 (see README, storage layout).
+abstract contract PermitExtension is IERC2612, IERC5267 {
     using UnstructuredRefStorage for bytes32;
 
     /// @dev Stores the dynamic metadata of the PermitExtension. Allows safely use of this
@@ -30,9 +35,27 @@ abstract contract PermitExtension is IERC2612, EIP712 {
     /// @dev Location of the slot with EIP5267Metadata
     bytes32 private constant EIP5267_METADATA_SLOT = keccak256("PermitExtension.eip5267MetadataSlot");
 
+    /// @dev keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+    bytes32 private constant EIP712_DOMAIN_TYPEHASH =
+        0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
+
+    // Cache the domain separator as an immutable value, but also store the chain id and the
+    // address that it corresponds to, in order to invalidate the cached domain separator if
+    // the chain id changes or the code runs behind a proxy (address(this) != _CACHED_THIS).
+    bytes32 private immutable _CACHED_DOMAIN_SEPARATOR;
+    uint256 private immutable _CACHED_CHAIN_ID;
+    address private immutable _CACHED_THIS;
+    bytes32 private immutable _HASHED_NAME;
+    bytes32 private immutable _HASHED_VERSION;
+
     /// @param name_ The name of the token
     /// @param version_ The current major version of the signing domain (aka token version)
-    constructor(string memory name_, string memory version_) EIP712(name_, version_) {
+    constructor(string memory name_, string memory version_) {
+        _HASHED_NAME = keccak256(bytes(name_));
+        _HASHED_VERSION = keccak256(bytes(version_));
+        _CACHED_CHAIN_ID = block.chainid;
+        _CACHED_THIS = address(this);
+        _CACHED_DOMAIN_SEPARATOR = _buildDomainSeparator(_HASHED_NAME, _HASHED_VERSION);
         _initializeEIP5267Metadata(name_, version_);
     }
 
@@ -143,20 +166,33 @@ abstract contract PermitExtension is IERC2612, EIP712 {
     /// @param name_ The name of the token
     /// @param version_ The version of the token
     function _initializeEIP5267Metadata(string memory name_, string memory version_) internal {
-        bytes32 domainSeparator = keccak256(
-            abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes(name_)),
-                keccak256(bytes(version_)),
-                block.chainid,
-                address(this)
-            )
-        );
+        bytes32 domainSeparator = _buildDomainSeparator(keccak256(bytes(name_)), keccak256(bytes(version_)));
         if (domainSeparator != _domainSeparatorV4()) {
             revert ErrorEIP712DomainMismatch();
         }
         _setEIP5267MetadataName(name_);
         _setEIP5267MetadataVersion(version_);
+        // ERC-5267: implementers MUST emit this whenever the advertised domain may have changed.
+        emit EIP712DomainChanged();
+    }
+
+    /// @dev Returns the domain separator for the current chain and verifying contract.
+    function _domainSeparatorV4() internal view returns (bytes32) {
+        if (address(this) == _CACHED_THIS && block.chainid == _CACHED_CHAIN_ID) {
+            return _CACHED_DOMAIN_SEPARATOR;
+        } else {
+            return _buildDomainSeparator(_HASHED_NAME, _HASHED_VERSION);
+        }
+    }
+
+    function _buildDomainSeparator(bytes32 hashedName_, bytes32 hashedVersion_) private view returns (bytes32) {
+        return keccak256(abi.encode(EIP712_DOMAIN_TYPEHASH, hashedName_, hashedVersion_, block.chainid, address(this)));
+    }
+
+    /// @dev Given an already https://eips.ethereum.org/EIPS/eip-712#definition-of-hashstruct[hashed struct],
+    /// this function returns the hash of the fully encoded EIP712 message for this domain.
+    function _hashTypedDataV4(bytes32 structHash_) internal view returns (bytes32) {
+        return MessageHashUtils.toTypedDataHash(_domainSeparatorV4(), structHash_);
     }
 
     /// @dev "Consume a nonce": return the current value and increment.

@@ -1,0 +1,100 @@
+{
+  "chain": {
+    "chain_id": 1,
+    "chain_name": "ethereum",
+    "pool_type": "SiloedLockRelease"
+  },
+  "addresses": {
+    "token": "0x000000000000000000000000000000000000000e"
+  },
+  "governance_addresses": {
+    "lido_dao_agent": "0x000000000000000000000000000000000000000f",
+    "chainlink_mcms": "0x0000000000000000000000000000000000000010",
+    "emergency_brakes": "0x0000000000000000000000000000000000000011"
+  },
+  "ccip": {
+    "chain_selector": "101",
+    "router": "0x000000000000000000000000000000000000000a",
+    "rmn_proxy": "0x000000000000000000000000000000000000000b",
+    "token_admin_registry": "0x000000000000000000000000000000000000000c",
+    "registry_module_owner": "0x000000000000000000000000000000000000000d"
+  },
+  "remote_lanes": [
+    {
+      "remote_chain_name": "shared_a",
+      "is_siloed": false
+    },
+    {
+      "remote_chain_name": "shared_b",
+      "is_siloed": false
+    },
+    {
+      "remote_chain_name": "isolated",
+      "is_siloed": true
+    },
+    {
+      "remote_chain_name": "base",
+      "is_siloed": true
+    }
+  ],
+  "deferred_lanes": [
+    "base"
+  ],
+  "imported_lanes": {
+    "shared_a": {
+      "remote_pools": [
+        "0x000000000000000000000000000000000000001e"
+      ],
+      "required_ccvs": "none",
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "1000",
+          "rate": "10"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "2000",
+          "rate": "20"
+        }
+      }
+    },
+    "shared_b": {
+      "remote_pools": [
+        "0x000000000000000000000000000000000000001f"
+      ],
+      "required_ccvs": "none",
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "1100",
+          "rate": "11"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "2100",
+          "rate": "21"
+        }
+      }
+    },
+    "isolated": {
+      "remote_pools": [
+        "0x0000000000000000000000000000000000000020",
+        "0x0000000000000000000000000000000000000084"
+      ],
+      "required_ccvs": "none",
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "1200",
+          "rate": "12"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "2200",
+          "rate": "22"
+        }
+      }
+    }
+  }
+}

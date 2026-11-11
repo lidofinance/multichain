@@ -1,0 +1,28 @@
+[profile.default]
+src = "vendor/lido-l2/contracts"
+test = "empty"
+script = "empty"
+out = "out"
+cache_path = "cache"
+solc = "0.8.10"
+evm_version = "london"
+optimizer = true
+optimizer_runs = 200
+auto_detect_remappings = false
+allow_paths = ["../../../components"]
+remappings = [
+  "@openzeppelin/contracts/=../../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-4.8.3/",
+]
+
+[profile.pools]
+src = "pools"
+out = "out-pools"
+cache_path = "cache-pools"
+solc = "0.8.26"
+evm_version = "paris"
+remappings = [
+  "@chainlink/contracts/=../../../components/ccip/chains/evm/node_modules/@chainlink/contracts/",
+  "@openzeppelin/contracts@5.0.2/=../../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.0.2/",
+  "@openzeppelin/contracts@4.8.3/=../../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-4.8.3/",
+  "@openzeppelin/contracts/=../../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.3.0/",
+]

@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "id": "wsteth-base-migration-mainnet",
+  "description": "In-place migration of the Base wstETH legacy bridge to a CCIP lane governed by the Lido timelock, rehearsed on anvil forks of Ethereum and Base mainnet.",
+  "operation": "in-place-upgrade",
+  "environments": [
+    "fork"
+  ],
+  "endorsement": "not-asserted",
+  "configDirectory": "config",
+  "verification": {
+    "state": "verify-state",
+    "scenarios": "test-scenarios"
+  },
+  "orchestration": "wsteth-ccip",
+  "status": "ready",
+  "components": [
+    "ccip",
+    "governance-crosschain-bridges",
+    "wsteth-token",
+    "l2-bridge-migration",
+    "openzeppelin-contracts-5.0.2",
+    "openzeppelin-contracts-upgradeable-5.0.2"
+  ],
+  "networks": {
+    "l1": {
+      "slug": "ethereum",
+      "chainId": 1
+    },
+    "l2s": [
+      {
+        "slug": "base",
+        "chainId": 8453
+      }
+    ]
+  },
+  "libraries": [
+    "forge-std",
+    "state-mate"
+  ],
+  "migration": {
+    "plan": "targets/wsteth-base-migration-mainnet/docs/2026-10-26-upgrade-path.md",
+    "tokenVersion": "2",
+    "timers": {
+      "l1ActivationDelay": 86400,
+      "l2ActivationDelay": 86400,
+      "closeDelay": 864000
+    },
+    "l1": {
+      "agent": "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c",
+      "token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+      "bridgeProxy": "0x9de443AdC5A411E83F1878Ef24C3F52C61571e72",
+      "messenger": "0x866E82a600A1414e583f7F13623F1aC5d58b0Afa",
+      "registryAdministrator": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+      "emergencyBrakes": "0x73b047fe6337183A454c5217241D780a932777bD"
+    },
+    "l2s": [
+      {
+        "slug": "base",
+        "executor": "0x0E37599436974a25dDeEdF795C848d30Af46eaCF",
+        "token": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
+        "bridgeProxy": "0xac9D11cD4D7eF6e54F14643a393F68Ca014287AB",
+        "messenger": "0x4200000000000000000000000000000000000007",
+        "emergencyBrakes": "0x0F9A0e7071B7B21bc7a8514DA2cd251bc1FF0725"
+      }
+    ],
+    "factDates": {
+      "default": "2026-10-21",
+      "l1.emergencyBrakes": "2026-10-26",
+      "l2s.base.emergencyBrakes": "2026-10-26",
+      "l1.hub": "2026-11-11"
+    },
+    "hub": {
+      "pool": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+      "timelock": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+      "expectedLanes": [
+        "bitlayer",
+        "zerog",
+        "monad",
+        "megaeth",
+        "robinhood"
+      ],
+      "disconnectedLanes": [
+        "ink",
+        "plasma",
+        "jovay",
+        "abstract"
+      ],
+      "siloRebalancerAfterCutover": "restore"
+    }
+  },
+  "placeholders": [
+    {
+      "record": "config/chains/ethereum.json",
+      "fields": [
+        "governance_addresses.emergency_brakes",
+        "governance_addresses.chainlink_mcms"
+      ],
+      "scope": "fork rehearsal lane timelock/hooks roles only; not the observed legacy bridge disabler multisigs",
+      "recordedOn": "2026-10-30",
+      "replaceBefore": "any use beyond the fork rehearsal"
+    },
+    {
+      "record": "config/chains/base.json",
+      "fields": [
+        "governance_addresses.emergency_brakes",
+        "governance_addresses.chainlink_mcms"
+      ],
+      "scope": "fork rehearsal lane timelock/hooks roles only; not the observed legacy bridge disabler multisigs",
+      "recordedOn": "2026-10-30",
+      "replaceBefore": "any use beyond the fork rehearsal"
+    }
+  ]
+}

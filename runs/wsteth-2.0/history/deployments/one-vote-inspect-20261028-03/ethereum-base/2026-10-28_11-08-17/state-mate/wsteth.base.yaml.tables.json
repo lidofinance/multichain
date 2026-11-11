@@ -1,0 +1,118 @@
+[
+  {
+    "side": "l1",
+    "chain": "ethereum",
+    "target": "0x394244C5608Ff98454e65f97e5DcA390c89E2b5b",
+    "getter": "getAllLockBoxConfigs",
+    "result": [
+      [
+        "15971525489660198786",
+        "0x9b89f8Be1a5dAB7EfB6Fc0841610a66d0e58bc82"
+      ]
+    ]
+  },
+  {
+    "side": "l1",
+    "chain": "ethereum",
+    "target": "0x394244C5608Ff98454e65f97e5DcA390c89E2b5b",
+    "getter": "getSupportedChains",
+    "result": [
+      "15971525489660198786"
+    ]
+  },
+  {
+    "side": "l1",
+    "chain": "ethereum",
+    "target": "0xd74bD7d0377A3ac24FEcD699E1a9362981fBF6c8",
+    "getter": "getAllCCVConfigs",
+    "result": [
+      [
+        "15971525489660198786",
+        [
+          "0x3f724844973A8e5F669499D366943A676F6EF7CE"
+        ],
+        [],
+        [
+          "0x3f724844973A8e5F669499D366943A676F6EF7CE"
+        ],
+        []
+      ]
+    ]
+  },
+  {
+    "side": "l1",
+    "chain": "ethereum",
+    "target": "0x3f724844973A8e5F669499D366943A676F6EF7CE",
+    "getter": "getAllOutboundImplementations",
+    "result": [
+      [
+        "15971525489660198786",
+        "0xB4F62b1AC2Eda340E2F53A1969eE04eeC403a77A"
+      ]
+    ]
+  },
+  {
+    "side": "l1",
+    "chain": "ethereum",
+    "target": "0x3f724844973A8e5F669499D366943A676F6EF7CE",
+    "getter": "getAllInboundImplementations",
+    "result": [
+      [
+        "0xdecafbad",
+        "0xB4F62b1AC2Eda340E2F53A1969eE04eeC403a77A"
+      ]
+    ]
+  },
+  {
+    "side": "l2",
+    "chain": "base",
+    "target": "0xad430041ecaaFc73dA0c7074E8d47759E3C4447B",
+    "getter": "getSupportedChains",
+    "result": [
+      "5009297550715157269"
+    ]
+  },
+  {
+    "side": "l2",
+    "chain": "base",
+    "target": "0xe1c5884afDc29302d9C23bfD902321Db63B72DCd",
+    "getter": "getAllCCVConfigs",
+    "result": [
+      [
+        "5009297550715157269",
+        [
+          "0xA3BDef36A68a854C408a781787EE80cC98D086E4"
+        ],
+        [],
+        [
+          "0xA3BDef36A68a854C408a781787EE80cC98D086E4"
+        ],
+        []
+      ]
+    ]
+  },
+  {
+    "side": "l2",
+    "chain": "base",
+    "target": "0xA3BDef36A68a854C408a781787EE80cC98D086E4",
+    "getter": "getAllOutboundImplementations",
+    "result": [
+      [
+        "5009297550715157269",
+        "0xaF49b5193Cfb5f800575e9b271992B26AA8d9f8A"
+      ]
+    ]
+  },
+  {
+    "side": "l2",
+    "chain": "base",
+    "target": "0xA3BDef36A68a854C408a781787EE80cC98D086E4",
+    "getter": "getAllInboundImplementations",
+    "result": [
+      [
+        "0xdecafbad",
+        "0xaF49b5193Cfb5f800575e9b271992B26AA8d9f8A"
+      ]
+    ]
+  }
+]

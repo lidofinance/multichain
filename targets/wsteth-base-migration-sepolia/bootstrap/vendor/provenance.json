@@ -1,0 +1,72 @@
+[
+  {
+    "directory": "ccip-1.6.0",
+    "source": "https://registry.npmjs.org/@chainlink/contracts-ccip/-/contracts-ccip-1.6.0.tgz",
+    "archiveSha256": "4f67627c9a721df8caa91e6d7c0ddcf9a3a2a8d59ad958bacd3373641d4f3677",
+    "files": {
+      "contracts/pools/BurnMintTokenPool.sol": {
+        "upstreamSha256": "aa17828c05dfbf99d4495501ad779c136de03dd03d401a09b7648ac0e8852307",
+        "sha256": "aa17828c05dfbf99d4495501ad779c136de03dd03d401a09b7648ac0e8852307"
+      },
+      "contracts/pools/TokenPool.sol": {
+        "upstreamSha256": "6346c3ebbfc64b4b7323b284e392d62ee4d86907c5c218868aee43aee822dc22",
+        "sha256": "ef7baf04c88911a2fad259ca8bacdaef6a29d647e8818f1a67dfb6bcb4d5810a"
+      },
+      "contracts/libraries/RateLimiter.sol": {
+        "upstreamSha256": "e9e9d0f8e5a50bd21937289c923a122c50c52eb856c2849713b48926a9db169c",
+        "sha256": "e9e9d0f8e5a50bd21937289c923a122c50c52eb856c2849713b48926a9db169c"
+      },
+      "contracts/libraries/Pool.sol": {
+        "upstreamSha256": "93b7f9686980190a82e5236dd2d1c26ac3d21fc5db4af4ee1410e69960a418b7",
+        "sha256": "93b7f9686980190a82e5236dd2d1c26ac3d21fc5db4af4ee1410e69960a418b7"
+      },
+      "contracts/interfaces/IRouter.sol": {
+        "upstreamSha256": "fe3ffa885581f265a7763b9dca9b9f1bd252dc09c9f7892c1de76b0b57fa1bc8",
+        "sha256": "fe3ffa885581f265a7763b9dca9b9f1bd252dc09c9f7892c1de76b0b57fa1bc8"
+      },
+      "contracts/libraries/Client.sol": {
+        "upstreamSha256": "b88be1c1dfd4996c6690fdd10bfffe8282f24e05d55d82e65d62d8c7fe49829b",
+        "sha256": "b88be1c1dfd4996c6690fdd10bfffe8282f24e05d55d82e65d62d8c7fe49829b"
+      },
+      "contracts/interfaces/IRMN.sol": {
+        "upstreamSha256": "d3bcab425c8a91f8f044d80a73dcb35318aad2adc5b3c0cfe64a7033ac423aae",
+        "sha256": "d3bcab425c8a91f8f044d80a73dcb35318aad2adc5b3c0cfe64a7033ac423aae"
+      },
+      "contracts/interfaces/IPool.sol": {
+        "upstreamSha256": "08135d96a11103a1004898c9a0de1cff370c6808ab2b16beba3665667c59c2ed",
+        "sha256": "30f438c66ed247edf8de7dcbc014d6709cc5f30408c102368a2c8c34ea3ec10e"
+      },
+      "contracts/pools/BurnMintTokenPoolAbstract.sol": {
+        "upstreamSha256": "ea1d6a247af6161eac3e5a1213a2ee71c4f370cc7d07a708c45fba2c7d6e6a2d",
+        "sha256": "ea1d6a247af6161eac3e5a1213a2ee71c4f370cc7d07a708c45fba2c7d6e6a2d"
+      },
+      "contracts/pools/SiloedLockReleaseTokenPool.sol": {
+        "upstreamSha256": "920756a1b00a7e9f5f05cb3c1924c5335a2f51e9faa9fca609ff6ed495c479bb",
+        "sha256": "a0ae25fc174ce06b79e9e358737cc4d794f1dc37cb57ce6264b35d3d3bb39fa1"
+      }
+    },
+    "adaptation": "Import paths only: OpenZeppelin vendor paths resolve to the installed versioned packages."
+  },
+  {
+    "directory": "lido-l2",
+    "source": "https://github.com/lidofinance/lido-l2/tree/082e7eb59de63bd376b30886568813408d04f00b",
+    "archiveSha256": "dd91fabf0f153b1937ae4864415505930467b762ff846bc54ffd029de39ef62a",
+    "files": {
+      "contracts/proxy/OssifiableProxy.sol": "a614df351d1dfa219cbb4e0e77f462d636028fe2deddd2c9ab45fbac5da5854d",
+      "contracts/token/ERC20Bridged.sol": "ff1eb920ebc20daa08478b8b01531ef4fa6fbba406f8065b42ff34c6079dc9de",
+      "contracts/token/ERC20Metadata.sol": "a2cdb40669cc6c1c767995827f91e9795373b1c373c17cf0f7ec177b13fb8ad6",
+      "contracts/token/interfaces/IERC20Metadata.sol": "91ce1b0a82d32fab7c2de68109725ee60fd82afe071d67b6ee76e5e2e48aef05",
+      "contracts/token/ERC20Core.sol": "4613a4c801b28da51b75d6c74ebabb765b14002f95306eca0aa9df20e3049001",
+      "contracts/token/interfaces/IERC20Bridged.sol": "d85783e57824d428cacfa09e75d5720201673221b40f87de32c98b45bfb8aa16",
+      "contracts/optimism/L2ERC20TokenBridge.sol": "5411c98406c47d02015eb2c460a5af4d8cd8aa807c06e82faae0468d7fec466b",
+      "contracts/optimism/CrossDomainEnabled.sol": "ef103077e31b49aa30e47c0393e83ce1d95a5b8f9720f1b63c7acc300cd56ac4",
+      "contracts/optimism/interfaces/ICrossDomainMessenger.sol": "bbf0b97d1a93e9dbd720572dcd6917ba878faa243b34802776e2214b414b61f9",
+      "contracts/BridgeableTokens.sol": "9080e2869ab35327318a1b5b897779a46a7fae498a1a601269fc65cef1edddbb",
+      "contracts/BridgingManager.sol": "132addab90064480e2cb7733ff07322c9513665f6e6275db460450d579bf3686",
+      "contracts/optimism/interfaces/IL2ERC20Bridge.sol": "38557adfbdbaab789aa51753656e6849b08daf7feb8432eeb049f06e78c545d3",
+      "contracts/optimism/interfaces/IL1ERC20Bridge.sol": "4d90686306e9ca5f7096e6aa15023bdd1d11c76090a8cbd2197a4886da3392cb",
+      "contracts/optimism/L1ERC20TokenBridge.sol": "fb11cb52f638ac49b9b003208fac7ec70d8df911712192fd0bdbd6d14020de7a",
+      "LICENSE": "8b1ba204bb69a0ade2bfcf65ef294a920f6bb361b317dba43c7ef29d96332b9b"
+    }
+  }
+]

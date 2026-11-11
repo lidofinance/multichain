@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "kind": "controlled-sepolia-rehearsal",
+  "chainIds": [11155111, 84532, 5003],
+  "timing": {
+    "voting": 300,
+    "objection": 60,
+    "dgAfterSubmit": 120,
+    "dgAfterSchedule": 120,
+    "l2Executor": 0,
+    "ccip": 300,
+    "maximumConfigurableDelay": 600,
+    "proposalExpiry": 86400,
+    "executionGrace": 86400
+  },
+  "oracleQuorum": 2,
+  "dsmQuorum": 2,
+  "initialTldoSupply": "1000000000000000000000000",
+  "coreOperations": "configured-signers-no-oracle-daemon-or-validator-keys",
+  "hooksAllowlist": "disabled-immutable; replace-hooks operation enables it",
+  "providerTransport": "external; not included in the local delay budget"
+}

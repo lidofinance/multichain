@@ -1,0 +1,48 @@
+{
+  "addresses": {
+    "token": "0x141d7a8322cA8e8Fa8d47089CF0878Dd78A36470"
+  },
+  "chain": {
+    "chain_id": 11155111,
+    "chain_name": "sepolia",
+    "pool_type": "SiloedLockRelease"
+  },
+  "governance_addresses": {
+    "chainlink_mcms": "0x0000000000000000000000000000000000000001",
+    "emergency_brakes": "0x0000000000000000000000000000000000000002",
+    "lido_dao_agent": "0x0000000000000000000000000000000000000DA0"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "base_sepolia"
+    },
+    {
+      "is_siloed": true,
+      "remote_chain_name": "avalanche_fuji"
+    }
+  ],
+  "deferred_lanes": [
+    "base_sepolia"
+  ],
+  "imported_lanes": {
+    "base_sepolia": {
+      "remote_pools": [
+        "0x0000000000000000000000000000000000000505"
+      ],
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "2",
+          "rate": "1"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "2",
+          "rate": "1"
+        }
+      },
+      "required_ccvs": "none"
+    }
+  }
+}

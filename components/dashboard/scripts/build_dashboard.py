@@ -1,33 +1,28 @@
 #!/usr/bin/env python3
-"""Build static dashboard data from the local ledger and one wsteth-ccip revision.
+"""Build the dashboard from this checkout's ledger, catalogues and dated testnet snapshot.
 
-By default, upstream inputs are fetched directly from GitHub at the current main
-commit. --upstream PATH explicitly selects a local source directory instead.
---reuse-build PATH reuses only a saved testnet projection and rebuilds the index
-and manifest, leaving companion evidence pages under their original provenance.
-No cloning or upstream code execution is performed.
+The build performs no network requests and requires no submodules or read token.
+Registry and RPC observations are fetched separately by the visitor's browser.
 """
 from __future__ import annotations
 
 import argparse
-import base64
 import hashlib
 import html
+from datetime import date
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from html.parser import HTMLParser
 import json
 import re
-import os
 import subprocess
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 from pathlib import Path
-from urllib.parse import quote, urljoin, urlsplit
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[3]  # repository root
-UPSTREAM = "https://github.com/lidofinance/wsteth-ccip"
-ACTIVE = "docs/CURRENT-DEPLOYMENT.md"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]{40}\Z")
+REQUIRED_TESTNET_ROLES = ('ours:POM', 'ours:pool', 'ours:hooks', 'ours:token', 'ours:verifier', 'ours:resolver')
+DEPLOYMENT_REPORT = 'orchestration/wsteth-ccip/docs/deployment-2026-09-15.md'
 
 
 def digest(data):
@@ -38,6 +33,17 @@ def address(value):
     if not isinstance(value, str) or not ADDRESS.fullmatch(value) or int(value, 16) == 0:
         raise ValueError(f"Missing or invalid deployed address: {value!r}")
     return value
+
+
+def iso_day(value):
+    """A real calendar date written YYYY-MM-DD; the pattern alone admits 2026-02-31."""
+    if not isinstance(value, str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', value):
+        return False
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
 
 
 def https_source(value, label):
@@ -94,7 +100,7 @@ def steth_metadata(ledger, metadata):
     source = partial(https_source, label='stETH')
     source(metadata['docsUrl'])
     source(metadata['rateSource'])
-    if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', metadata['takenAt']):
+    if not iso_day(metadata['takenAt']):
         raise ValueError('Invalid stETH metadata date')
     feed = metadata['priceFeed']
     address(feed['address'])
@@ -149,7 +155,7 @@ def ldo_metadata(metadata):
     address(metadata['l1Token'])
     source = partial(https_source, label='LDO')
     source(metadata['l1Source'])
-    if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', metadata['takenAt']):
+    if not iso_day(metadata['takenAt']):
         raise ValueError('Invalid LDO metadata date')
     seen = set()
     for row in metadata['networks']:
@@ -177,226 +183,186 @@ def ldo_metadata(metadata):
     return metadata
 
 
-class GitHubSource:
-    """Resolve main once; retrieve all source contents at that immutable commit."""
-    API = 'https://api.github.com/repos/lidofinance/wsteth-ccip'
-
-    def __init__(self):
-        self.token = (os.environ.get('WSTETH_CCIP_READ_TOKEN') or
-                      os.environ.get('GH_TOKEN') or os.environ.get('GITHUB_TOKEN'))
-        self.sha = self.request('commits/main')['sha']
-        if not isinstance(self.sha, str) or not re.fullmatch(r'[0-9a-f]{40}', self.sha):
-            raise ValueError('GitHub returned an invalid main commit SHA')
-
-    def request(self, endpoint):
-        headers = {'Accept': 'application/vnd.github+json',
-                   'User-Agent': 'multichain-dashboard-builder',
-                   'X-GitHub-Api-Version': '2026-03-10',
-                   'Cache-Control': 'no-cache'}
-        if self.token:
-            headers['Authorization'] = 'Bearer ' + self.token
-        request = Request(self.API + '/' + endpoint, headers=headers)
-        try:
-            with urlopen(request, timeout=30) as response:
-                return json.load(response)
-        except HTTPError as exc:
-            raise ValueError(f'GitHub HTTP {exc.code} for {endpoint}. Check repository read access '
-                             '(WSTETH_CCIP_READ_TOKEN) and that the required inputs are published on main.') from None
-        except URLError:
-            raise ValueError(f'Could not reach GitHub for {endpoint}; no local fallback is used.') from None
-
-    def contents(self, path):
-        if not path or any(p in ('', '.', '..') for p in path.split('/')):
-            raise ValueError(f'Invalid upstream path: {path}')
-        return self.request('contents/' + quote(path, safe='/') + '?ref=' + self.sha)
-
-    def read(self, path):
-        data = self.contents(path)
-        if not isinstance(data, dict) or data.get('type') != 'file' or data.get('encoding') != 'base64':
-            raise ValueError(f'Expected a base64-encoded GitHub file: {path}')
-        return base64.b64decode(''.join(data['content'].split()), validate=True)
-
-    def json_paths(self, directory):
-        entries = self.contents(directory)
-        if not isinstance(entries, list):
-            raise ValueError(f'Expected a GitHub directory: {directory}')
-        paths = []
-        for entry in entries:
-            name = entry.get('name', '')
-            if name.endswith('.json'):
-                path = directory + '/' + name
-                if '/' in name or entry.get('type') != 'file' or entry.get('path') != path:
-                    raise ValueError(f'Invalid chain file entry in GitHub directory: {directory}')
-                paths.append(path)
-        return sorted(paths)
+NETWORK_TYPE_FIELDS = {'chainId', 'name', 'type', 'source', 'category', 'archived', 'qualifier', 'note'}
+L2BEAT_CATEGORIES = {'Optimistic Rollup', 'ZK Rollup', 'Optimium', 'Validium', 'Other'}
+L2BEAT_PROJECT_PATH = re.compile(r'/(?:layer2s|scaling)/projects/[a-z0-9-]+/?')
 
 
-class LocalSource:
-    """Read explicitly selected local inputs, including unpublished changes."""
-    sha = None
-
-    def __init__(self, root):
-        self.root = Path(root).expanduser().resolve()
-        if not self.root.is_dir():
-            raise ValueError(f'Upstream directory does not exist: {self.root}')
-        self.files = {}
-
-    def path(self, relative):
-        path = (self.root / relative).resolve()
-        if not path.is_relative_to(self.root):
-            raise ValueError(f'Upstream path escapes source directory: {relative}')
-        return path
-
-    def read(self, relative):
-        if relative not in self.files:
-            path = self.path(relative)
-            if not path.is_file():
-                raise ValueError(f'Missing local upstream input: {relative}')
-            self.files[relative] = path.read_bytes()
-        return self.files[relative]
-
-    def json_paths(self, directory):
-        path = self.path(directory)
-        if not path.is_dir():
-            raise ValueError(f'Missing local upstream directory: {directory}')
-        return sorted(directory + '/' + p.name for p in path.glob('*.json'))
-
-
-def read_upstream(source):
-    """Use the active pointer, never directory sort order or old fallback records."""
-    inputs = {}
-
-    def read(relative):
-        raw = source.read(relative)
-        inputs[relative] = digest(raw)
-        return raw.decode()
-
-    current = read(ACTIVE)
-    records = set(re.findall(r'config/chains\.live[-\w]*\d{4}-\d{2}-\d{2}', current))
-    if len(records) != 1:
-        raise ValueError(f"{ACTIVE} must identify exactly one dated config/chains.live record")
-    record = records.pop()
-    date = record[-10:]
-    report_path = f'docs/deployment-{date}.md'
-    report = read(report_path)
-    paths = source.json_paths(record)
-    if len(paths) != 2:
-        raise ValueError(f"Expected two chain JSON files in {record}; publish the complete active lane")
-    configs = [json.loads(read(p)) for p in paths]
-    kinds = {'SiloedLockRelease': 'lockRelease', 'BurnMint': 'burnMint'}
-    configs.sort(key=lambda c: c['chain']['pool_type'] != 'SiloedLockRelease')
-    if [c['chain']['pool_type'] for c in configs] != ['SiloedLockRelease', 'BurnMint']:
-        raise ValueError('Expected one SiloedLockRelease hub and one BurnMint spoke')
-    tokens, seeds = {}, {}
-    for c in configs:
-        chain_id = c['chain']['chain_id']
-        if not isinstance(chain_id, int) or chain_id <= 0 or str(chain_id) in tokens:
-            raise ValueError('Chain IDs must be distinct positive integers')
-        chain = str(chain_id)
-        dep = c['deployed']
-        token = address(c['addresses']['token'])
-        pool = address(dep['token_pool'])
-        tokens[chain] = dict(chainId=chain, chainName=c['chain']['chain_name'].replace('_', ' ').title(),
-                             tokenAddress=token, poolAddress=pool,
-                             poolType=kinds[c['chain']['pool_type']], decimals=18)
-        seeds[chain] = [[address(dep['pool_operation_manager']), 'ours:POM'], [pool, 'ours:pool'],
-                        [address(dep['advanced_pool_hooks']), 'ours:hooks'], [token, 'ours:token'],
-                        [address(c['ccv']['message_id_verifier']), 'ours:verifier'],
-                        [address(c['ccv']['verifier_resolver']), 'ours:resolver']]
-        seeds[chain] += [[address(b['lock_box']), 'ours:lockbox'] for b in dep.get('lock_boxes', [])]
-        address(c['governance_addresses']['lido_dao_agent'])
-    for c, peer in ((configs[0], configs[1]), (configs[1], configs[0])):
-        if peer['chain']['chain_name'] not in [r['remote_chain_name'] for r in c['remote_lanes']]:
-            raise ValueError('Active chain records do not describe a reciprocal lane')
-    live = dict(record=record, deployedAt=date, env='testnet',
-                lane=[c['chain']['chain_id'] for c in configs], tokens=tokens, seeds=seeds)
-    return live, configs, current, report_path, report, inputs
+def network_types_metadata(metadata):
+    """Validate the sourced L2 / alt-L1 labels; a missing chain stays unclassified."""
+    text = lambda value: isinstance(value, str) and value.strip() == value and bool(value)
+    if not isinstance(metadata, dict) or set(metadata) != {'takenAt', 'types', 'networks'}:
+        raise ValueError('Network type metadata must have takenAt, types and networks')
+    if not iso_day(metadata['takenAt']):
+        raise ValueError('Invalid network type metadata date')
+    types = metadata['types']
+    if (not isinstance(types, dict) or set(types) != {'L2', 'alt-L1'} or
+            not all(text(v) for v in types.values())):
+        raise ValueError('Network types must define exactly L2 and alt-L1')
+    if not isinstance(metadata['networks'], list):
+        raise ValueError('Network types must list networks')
+    seen = set()
+    for row in metadata['networks']:
+        chain = row.get('chainId') if isinstance(row, dict) else None
+        if type(chain) is not int or chain <= 1:
+            raise ValueError('Network types must have positive non-Ethereum chain IDs')
+        if chain in seen:
+            raise ValueError(f'Duplicate network type for chain {chain}')
+        seen.add(chain)
+        invalid = lambda: ValueError(f'Invalid network type for chain {chain}')
+        if not {'name', 'type', 'source'} <= set(row) <= NETWORK_TYPE_FIELDS:
+            raise invalid()
+        if not text(row['name']) or not isinstance(row['type'], str) or row['type'] not in types:
+            raise invalid()
+        if not all(text(row[k]) for k in ('qualifier', 'note') if k in row):
+            raise invalid()
+        # The page ends the tooltip's note sentence itself.
+        if row.get('note', '').endswith('.'):
+            raise invalid()
+        if not isinstance(row['source'], str):
+            raise invalid()
+        https_source(row['source'], label='Network type')
+        # An L2 claim is L2BEAT's, so it cites an L2BEAT project page and carries L2BEAT's category
+        # and archive date. The path check cannot tie the page to this chain; review does that.
+        # A qualifier marks where a non-L2BEAT source's own term differs from the label; on an L2 row
+        # it would only be a free-text route for the stage or maturity claims the label does not make.
+        if row['type'] == 'L2':
+            url = urlsplit(row['source'])
+            if (url.netloc != 'l2beat.com' or url.query or url.fragment or
+                    not L2BEAT_PROJECT_PATH.fullmatch(url.path) or 'qualifier' in row or
+                    not isinstance(row.get('category'), str) or row['category'] not in L2BEAT_CATEGORIES or
+                    ('archived' in row and not iso_day(row['archived']))):
+                raise invalid()
+        elif 'category' in row or 'archived' in row:
+            raise invalid()
+    return metadata
 
 
-def section(markdown, title):
-    match = re.search(r'^## ' + re.escape(title) + r'\n(.*?)(?=^## |\Z)', markdown, re.M | re.S)
-    if not match:
-        raise ValueError(f"Missing upstream documentation section: {title}")
-    return match[1].strip()
+def testnet_metadata(data):
+    """Validate JSON structure before it supplies browser crawl seeds or HTML."""
+    if not isinstance(data, dict) or not isinstance(data.get('live'), dict):
+        raise ValueError('Testnet snapshot and live record must be objects')
+    live = data['live']
+    lane = live.get('lane')
+    if (live.get('env') != 'testnet' or not iso_day(live.get('deployedAt')) or
+            not isinstance(live.get('record'), str) or not live['record'].strip() or
+            not isinstance(lane, list) or len(lane) != 2 or
+            any(type(chain) is not int or chain <= 0 for chain in lane) or len(set(lane)) != 2):
+        raise ValueError('Invalid testnet deployment record')
+    chains = set(map(str, lane))
+    if any(not isinstance(mapping, dict) or set(mapping) != chains
+           for mapping in (live.get('tokens'), live.get('seeds'), data.get('governanceHolders'))):
+        raise ValueError('Testnet chains must match the recorded lane')
+    for chain in map(str, lane):
+        token = live['tokens'][chain]
+        if (not isinstance(token, dict) or token.get('chainId') != chain or
+                not isinstance(token.get('chainName'), str) or not token['chainName'].strip() or
+                type(token.get('decimals')) is not int or token['decimals'] != 18):
+            raise ValueError('Invalid testnet token metadata')
+        address(token.get('tokenAddress'))
+        address(token.get('poolAddress'))
+        address(data['governanceHolders'][chain])
+        seeds = live['seeds'][chain]
+        if (not isinstance(seeds, list) or
+                any(not isinstance(seed, list) or len(seed) != 2 or not isinstance(seed[1], str)
+                    for seed in seeds)):
+            raise ValueError('Testnet seeds must be [address, role] pairs')
+        tags = [tag for _, tag in seeds]
+        for tag in REQUIRED_TESTNET_ROLES:
+            if tags.count(tag) != 1:
+                raise ValueError(f'Expected exactly one testnet seed: {tag}')
+        seen_addresses = set()
+        for value, tag in seeds:
+            address(value)
+            if tag not in (*REQUIRED_TESTNET_ROLES, 'ours:lockbox'):
+                raise ValueError('Unknown testnet seed role')
+            if value.lower() in seen_addresses:
+                raise ValueError(f'Duplicate testnet seed address on chain {chain}: {value}')
+            seen_addresses.add(value.lower())
+        by_role = {tag: value for value, tag in seeds}
+        if (by_role['ours:token'].lower() != token['tokenAddress'].lower() or
+                by_role['ours:pool'].lower() != token['poolAddress'].lower()):
+            raise ValueError('Testnet seeds disagree with token or pool addresses')
+    if [live['tokens'][str(chain)].get('poolType') for chain in lane] != ['lockRelease', 'burnMint']:
+        raise ValueError('Expected one lockRelease hub and one burnMint spoke')
+    origin = data.get('origin')
+    if (not isinstance(origin, dict) or not isinstance(origin.get('archiveCommit'), str) or
+            not re.fullmatch(r'[0-9a-f]{40}', origin['archiveCommit']) or
+            origin.get('sourceMode') != 'local' or 'sourceCommit' not in origin or origin['sourceCommit'] is not None):
+        raise ValueError('Testnet origin must retain its archive commit and unpinned local source mode')
+    for field in ('archivedFilesSha256', 'sourceFilesSha256'):
+        hashes = origin.get(field)
+        if (not isinstance(hashes, dict) or not hashes or
+                any(not isinstance(value, str) or not re.fullmatch(r'[0-9a-f]{64}', value)
+                    for value in hashes.values())):
+            raise ValueError(f'Invalid testnet origin {field}')
+    return data
 
 
-def source_text(text, source_url=""):
-    """Render the small Markdown subset used by deployment docs; escape all HTML.
-
-    Relative source links resolve against the pinned source document. Never
-    load scripts, images, or raw HTML from upstream.
-    """
-    def inline(value):
-        tokens = re.split(r'(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))', value)
-        rendered = []
-        for token in tokens:
-            link = re.fullmatch(r'\[([^\]]+)\]\(([^)]+)\)', token)
-            if token.startswith('`'):
-                rendered.append('<code>' + html.escape(token[1:-1]) + '</code>')
-            elif token.startswith('**'):
-                rendered.append('<strong>' + html.escape(token[2:-2]) + '</strong>')
-            elif link and urlsplit(urljoin(source_url, link[2])).scheme == 'https':
-                rendered.append('<a href="' + html.escape(urljoin(source_url, link[2]), quote=True) + '">' + html.escape(link[1]) + '</a>')
-            else:
-                rendered.append(html.escape(token))
-        return ''.join(rendered)
-
-    blocks, paragraph, table_rows = [], [], []
-    code = None
-
-    def flush():
-        if paragraph:
-            blocks.append('<p>' + inline(' '.join(paragraph)) + '</p>')
-            paragraph.clear()
-        if table_rows:
-            rendered = []
-            for i, row in enumerate(table_rows):
-                tag = 'th' if i == 0 else 'td'
-                rendered.append('<tr>' + ''.join(f'<{tag}>' + inline(cell) + f'</{tag}>' for cell in row) + '</tr>')
-            blocks.append('<div class="table"><table>' + ''.join(rendered) + '</table></div>')
-            table_rows.clear()
-
-    for line in text.splitlines():
-        if line.startswith('```'):
-            flush()
-            if code is None:
-                code = []
-            else:
-                blocks.append('<pre>' + html.escape('\n'.join(code)) + '</pre>')
-                code = None
-        elif code is not None:
-            code.append(line)
-        elif line.startswith('|'):
-            if paragraph:
-                flush()
-            cells = [c.strip() for c in line.strip('|').split('|')]
-            if not all(re.fullmatch(r':?-+:?', c) for c in cells):
-                table_rows.append(cells)
-        elif line.startswith('#'):
-            flush()
-            blocks.append('<h3>' + inline(line.lstrip('#').strip()) + '</h3>')
-        elif line.startswith('- '):
-            flush()
-            blocks.append('<p>• ' + inline(line[2:]) + '</p>')
-        elif not line.strip():
-            flush()
-        else:
-            if table_rows:
-                flush()
-            paragraph.append(line.strip())
-    flush()
-    if code is not None:
-        raise ValueError('Unterminated code block in upstream documentation')
-    return ''.join(blocks)
-
-
-def table(configs, fields):
-    headings = ''.join('<th>' + html.escape(c['chain']['chain_name'].replace('_', ' ').title()) + '</th>' for c in configs)
+def testnet_table(snapshot, fields):
+    live = snapshot['live']
+    chains = list(map(str, live['lane']))
+    headings = ''.join('<th>' + html.escape(live['tokens'][chain]['chainName']) + '</th>' for chain in chains)
+    seeds = {chain: {tag: value for value, tag in live['seeds'][chain]} for chain in chains}
     rows = []
-    for label, getter in fields:
-        cells = ''.join('<td><code>' + html.escape(address(getter(c))) + '</code></td>' for c in configs)
-        rows.append('<tr><th>' + label + '</th>' + cells + '</tr>')
+    for label, role in fields:
+        values = []
+        for chain in chains:
+            value = snapshot['governanceHolders'][chain] if role == 'governance' else seeds[chain][role]
+            values.append('<td><code>' + html.escape(value) + '</code></td>')
+        rows.append('<tr><th>' + label + '</th>' + ''.join(values) + '</tr>')
     return '<div class="table"><table><tr><th>Contract</th>' + headings + '</tr>' + ''.join(rows) + '</table></div>'
+
+
+class EvidenceHTML(HTMLParser):
+    """A small, inert HTML subset for maintained evidence, not a general sanitizer."""
+    TAGS = {'p', 'strong', 'em', 'code', 'pre', 'h3', 'div', 'table', 'thead', 'tbody',
+            'tr', 'th', 'td', 'ul', 'ol', 'li'}
+    # Deliberately narrower than HTML: evidence only needs plain tags and the
+    # table wrapper's class. Check completeness independently of HTMLParser's
+    # version-dependent EOF recovery and incremental buffering.
+    MARKUP = re.compile(r'''</?[a-zA-Z][a-zA-Z0-9]*(?:\s+class\s*=\s*(?:"table"|'table'))?\s*>''')
+
+    def __init__(self, name):
+        super().__init__(convert_charrefs=False)
+        self.name, self.stack = name, []
+        self.fragments = []
+
+    def feed(self, data):
+        self.fragments.append(data)
+
+    def invalid(self):
+        raise ValueError(f'Invalid evidence HTML in {self.name}: use balanced inert markup only')
+
+    def handle_starttag(self, tag, attrs):
+        if tag not in self.TAGS or any((key, value) != ('class', 'table') or tag != 'div' for key, value in attrs):
+            self.invalid()
+        self.stack.append(tag)
+
+    def handle_endtag(self, tag):
+        if not self.stack or self.stack.pop() != tag:
+            self.invalid()
+
+    def handle_decl(self, decl):
+        self.invalid()
+
+    def handle_pi(self, data):
+        self.invalid()
+
+    def handle_data(self, data):
+        # Require literal '<' in prose to be entity-escaped.
+        if '<' in data:
+            self.invalid()
+
+    def close(self):
+        source = ''.join(self.fragments)
+        for match in re.finditer('<', source):
+            if not self.MARKUP.match(source, match.start()):
+                self.invalid()
+        super().feed(source)
+        super().close()
+        if self.stack:
+            self.invalid()
 
 
 def ledger_source(root, ledger_bytes):
@@ -415,45 +381,24 @@ def ledger_source(root, ledger_bytes):
     return commit, f'https://github.com/lidofinance/multichain/blob/{commit}/ledger.json'
 
 
-def saved_build(path):
-    """Explicit reuse: verify the saved carrier's identity, never infer freshness."""
-    raw = Path(path).read_bytes()
-    data = json.loads(raw)
-    identity = data.pop('identity', None)
-    if identity != digest(json.dumps(data, sort_keys=True).encode()):
-        raise ValueError('Saved build identity does not match its payload')
-    sources, live = data['sources'], data['live']
-    if sources['upstreamRepository'] != UPSTREAM or sources['upstreamMode'] not in ('local', 'github'):
-        raise ValueError('Saved build must be an original upstream projection')
-    if not sources['upstreamFiles'] or any(not re.fullmatch(r'[0-9a-f]{64}', h)
-                                         for h in sources['upstreamFiles'].values()):
-        raise ValueError('Saved build has invalid upstream source hashes')
-    sha = sources['upstreamCommit']
-    if sha is not None and not re.fullmatch(r'[0-9a-f]{40}', sha):
-        raise ValueError('Saved build has invalid upstream revision')
-    if live['env'] != 'testnet' or len(live['lane']) != 2 or not live['record'] or not live['deployedAt']:
-        raise ValueError('Saved build has invalid deployment record')
-    for chain in live['lane']:
-        token = live['tokens'][str(chain)]
-        address(token['tokenAddress'])
-        address(token['poolAddress'])
-        for seed in live['seeds'][str(chain)]:
-            address(seed[0])
-    return raw, live, sources
-
-
-def build(root, output, upstream_path=None, reuse_build=None):
+def build(root, output):
     root, output = Path(root), Path(output).resolve()
-    if upstream_path is not None and reuse_build is not None:
-        raise ValueError('--upstream and --reuse-build are mutually exclusive')
-    upstream = None
-    if reuse_build is not None:
-        reused_raw, live, saved_sources = saved_build(reuse_build)
-        sha, inputs = saved_sources['upstreamCommit'], saved_sources['upstreamFiles']
-    else:
-        upstream = GitHubSource() if upstream_path is None else LocalSource(upstream_path)
-        sha = upstream.sha
-        live, configs, current, report_path, report, inputs = read_upstream(upstream)
+    legacy = output / 'upstream'
+    if legacy.is_symlink() or (legacy.exists() and
+            (not legacy.is_dir() or any(p.is_file() or p.is_symlink() for p in legacy.rglob('*')))):
+        raise ValueError(f'Legacy generated inputs remain in {legacy}; move them outside the publication directory or use a fresh --output')
+    dashboard = root / 'components/dashboard'
+    testnet_bytes = (dashboard / 'config/testnet-deployment.json').read_bytes()
+    snapshot = testnet_metadata(json.loads(testnet_bytes))
+    live = snapshot['live']
+    content = {name: (dashboard / f'content/{name}.html').read_bytes()
+               for name in ('evidence', 'permissions', 'ccv')}
+    for name, raw in content.items():
+        parser = EvidenceHTML(name)
+        parser.feed(raw.decode())
+        parser.close()
+    templates = {name: (dashboard / f'templates/{name}.html').read_bytes()
+                 for name in ('index', 'roles', 'ccv')}
     ledger_bytes = (root / 'ledger.json').read_bytes()
     ledger_commit, ledger_url = ledger_source(root, ledger_bytes)
     ledger = json.loads(ledger_bytes)
@@ -461,48 +406,41 @@ def build(root, output, upstream_path=None, reuse_build=None):
     metadata = json.loads(metadata_bytes)
     ldo_bytes = (root / 'components/dashboard/config/ldo-networks.json').read_bytes()
     steth_bytes = (root / 'components/dashboard/config/steth-networks.json').read_bytes()
+    types_bytes = (root / 'components/dashboard/config/network-types.json').read_bytes()
     data = dict(live=live, networks=ledger_networks(ledger, metadata),
                 ldo=ldo_metadata(json.loads(ldo_bytes)),
                 steth=steth_metadata(ledger, json.loads(steth_bytes)),
+                networkTypes=network_types_metadata(json.loads(types_bytes)),
                 l1Token=deployed(ledger, 'eip155:1', 'ethereum-ethereum-wsteth-token'),
                 provenance=dict(takenAt=metadata['takenAt'], docsUrl=metadata['docsUrl'],
                                 ledgerUpdatedAt=ledger['updatedAt'], ledgerUrl=ledger_url),
-                sources=dict(upstreamRepository=UPSTREAM, upstreamCommit=sha,
-                             upstreamMode="github" if sha else "local",
-                             upstreamFiles=inputs,
+                sources=dict(testnetSnapshotSha256=digest(testnet_bytes),
+                             testnetContentSha256={name: digest(raw) for name, raw in content.items()},
+                             templateSha256={name: digest(raw) for name, raw in templates.items()},
                              ledgerCommit=ledger_commit, ledgerSha256=digest(ledger_bytes),
                              ledgerContentSha256=digest(json.dumps(ledger, sort_keys=True, separators=(',', ':')).encode()),
                              metadataSha256=digest(metadata_bytes), ldoMetadataSha256=digest(ldo_bytes),
-                             stethMetadataSha256=digest(steth_bytes)))
-    if reuse_build is not None:
-        data['sources'].update(upstreamMode='reused-build', upstreamBuildSha256=digest(reused_raw),
-                               upstreamBuildFile='upstream/dashboard-build.json')
-    # The manifest pins both source bytes and the canonical JSON content embedded in HTML.
+                             stethMetadataSha256=digest(steth_bytes),
+                             networkTypesSha256=digest(types_bytes)))
+    # Include every published source in the build identity used by browser caches.
     data['identity'] = digest(json.dumps(data, sort_keys=True).encode())
-    base = f'{UPSTREAM}/blob/{sha}/' if sha else 'upstream/'
-    source_label = sha[:12] if sha else 'LOCAL DIRECTORY · unpublished changes may be included'
+    archive_url = 'https://github.com/lidofinance/multichain/blob/' + snapshot['origin']['archiveCommit'] + '/'
+    report_url = archive_url + DEPLOYMENT_REPORT
+    source_caveat = 'Original source: LOCAL DIRECTORY · unpublished changes may be included; no source commit was recorded.'
     provenance = ('Ledger: <a href="' + ledger_url + '">build input</a> · updated ' + html.escape(ledger['updatedAt']) +
-                  ' · SHA-256 ' + data['sources']['ledgerSha256'][:12] + '<br>Testnet source: <a href="' + base + ACTIVE + '">wsteth-ccip</a> · ' + source_label +
-                  ' · record ' + html.escape(live['record']) +
+                  ' · SHA-256 ' + data['sources']['ledgerSha256'][:12] +
+                  '<br>Testnet: <a href="testnet-deployment.json">archived deployment snapshot</a> · ' + html.escape(live['deployedAt']) +
+                  '<br>' + source_caveat +
                   '<br><a href="dashboard-build.json">Build provenance</a> · observations are read separately via RPC.')
-    if reuse_build is None:
-        evidence = '<section><h2>Dated deployment evidence</h2>' + source_text(section(current, 'Evidence and limits'), base + ACTIVE) + '</section>'
-        roles = table(configs, [('POM', lambda c: c['deployed']['pool_operation_manager']),
-                                ('Governance holder', lambda c: c['governance_addresses']['lido_dao_agent'])])
-        roles += evidence + '<section><h2>Current POM permissions</h2>' + source_text(section(current, 'Current POM permissions'), base + ACTIVE) + '</section>'
-        ccv = table(configs, [('Token', lambda c: c['addresses']['token']), ('Pool', lambda c: c['deployed']['token_pool']),
-                              ('Hooks', lambda c: c['deployed']['advanced_pool_hooks']),
-                              ('Resolver', lambda c: c['ccv']['verifier_resolver']),
-                              ('Message ID verifier', lambda c: c['ccv']['message_id_verifier'])])
-        ccv += evidence + '<section><h2>CCV configuration</h2>' + source_text(section(current, 'CCV configuration'), base + ACTIVE) + '</section>'
-    else:
-        provenance = ('Ledger: <a href="' + ledger_url + '">build input</a> · updated ' + html.escape(ledger['updatedAt']) +
-                      ' · SHA-256 ' + data['sources']['ledgerSha256'][:12] +
-                      '<br>Testnet source: <a href="upstream/dashboard-build.json">saved dashboard build data</a> · REUSED BUILD DATA · record ' + html.escape(live['record']) +
-                      '<br>Upstream deployment inputs were not refreshed. <a href="dashboard-build.json">Build provenance</a> · observations are read separately via RPC.')
+    evidence = '<section><h2>Dated deployment evidence</h2>' + content['evidence'].decode() + '</section>'
+    roles = testnet_table(snapshot, [('POM', 'ours:POM'), ('Governance holder', 'governance')])
+    roles += evidence + '<section><h2>Recorded POM permissions</h2>' + content['permissions'].decode() + '</section>'
+    ccv = testnet_table(snapshot, [('Token', 'ours:token'), ('Pool', 'ours:pool'), ('Hooks', 'ours:hooks'),
+                                   ('Resolver', 'ours:resolver'), ('Message ID verifier', 'ours:verifier')])
+    ccv += evidence + '<section><h2>Recorded CCV configuration</h2>' + content['ccv'].decode() + '</section>'
     pages = {}
-    for name in (('index',) if reuse_build is not None else ('index', 'roles', 'ccv')):
-        text = (root / f'components/dashboard/templates/{name}.html').read_text()
+    for name in ('index', 'roles', 'ccv'):
+        text = templates[name].decode()
         text = text.replace('<!-- BUILD_PROVENANCE -->', provenance)
         if name == 'index':
             for element_id, value in (("dashboard-data", data), ("ledger-data", ledger)):
@@ -512,39 +450,32 @@ def build(root, output, upstream_path=None, reuse_build=None):
                     raise ValueError(f'{element_id} placeholder missing or duplicated')
                 text = text.replace(marker, f'<script type="application/json" id="{element_id}">' + payload + '</script>')
         else:
-            content = roles if name == 'roles' else ccv
-            content = ('<p class="stamp">Public testnet · record ' + html.escape(live['deployedAt']) +
-                       '</p><p><a href="' + base + report_path + '">Deployment report</a> · <a href="' + base + ACTIVE + '">Current source documentation</a></p>' + content)
-            text = text.replace('<!-- BUILD_CONTENT -->', content).replace('</style>', 'pre{white-space:pre-wrap;overflow-wrap:anywhere}code{overflow-wrap:anywhere}</style>')
+            page_content = roles if name == 'roles' else ccv
+            page_content = ('<p class="stamp">Archived testnet snapshot · record ' + html.escape(live['deployedAt']) +
+                            '</p><p>These statements describe the dated deployment; they are not refreshed by rebuilding this site. '
+                            '<a href="testnet-deployment.json">Recorded addresses and original source hashes</a> · '
+                            '<a href="' + report_url + '">Deployment report</a>. '
+                            'Some raw records referenced by the report are unavailable; the hashes alone do not verify its claims.</p>' + page_content)
+            text = text.replace('</style>', 'pre{white-space:pre-wrap;overflow-wrap:anywhere}code{overflow-wrap:anywhere}</style>', 1)
+            text = text.replace('<!-- BUILD_CONTENT -->', page_content)
         pages[name + '.html'] = text
     # Only write after all inputs pass validation; no stale fallback artifact.
     output.mkdir(parents=True, exist_ok=True)
     for name, text in pages.items():
         (output / name).write_text(text)
-    if isinstance(upstream, LocalSource):
-        for relative, raw in upstream.files.items():
-            target = output / 'upstream' / relative
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(raw)
-    if reuse_build is not None:
-        target = output / 'upstream/dashboard-build.json'
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(reused_raw)
+    (output / 'testnet-deployment.json').write_bytes(testnet_bytes)
     (output / 'dashboard-build.json').write_text(json.dumps(data, indent=2) + '\n')
     return data
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    source = parser.add_mutually_exclusive_group()
-    source.add_argument('--upstream', type=Path, help='Use this local source directory instead of GitHub')
-    source.add_argument('--reuse-build', type=Path, help='Explicitly reuse a saved upstream projection; rebuild index and manifest only')
     parser.add_argument('--output', type=Path, default=ROOT / 'docs')
     parser.add_argument('--serve', action='store_true', help='Preview the built output on localhost:8000')
     args = parser.parse_args()
     try:
-        data = build(ROOT, args.output, args.upstream, reuse_build=args.reuse_build) if args.reuse_build else build(ROOT, args.output, args.upstream)
-        print(f"Built {args.output}: {len(data['networks'])} ledger networks, upstream {data['sources']['upstreamMode']} {data['sources']['upstreamCommit'] or ''}, identity {data['identity'][:12]}")
+        data = build(ROOT, args.output)
+        print(f"Built {args.output}: {len(data['networks'])} ledger networks, testnet snapshot {data['live']['deployedAt']}, identity {data['identity'][:12]}")
         if args.serve:
             handler = partial(SimpleHTTPRequestHandler, directory=str(args.output.resolve()))
             with ThreadingHTTPServer(('127.0.0.1', 8000), handler) as server:

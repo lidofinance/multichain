@@ -1,0 +1,18 @@
+{
+  "l2Chain": "base",
+  "chainId": 8453,
+  "wstETH": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
+  "wstETHImpl": "0x52faD155dF3eFe753ed54D8bA36ffD32816cA590",
+  "opExec": "0x0E37599436974a25dDeEdF795C848d30Af46eaCF",
+  "ethereumGovernanceExecutor": "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c",
+  "legacyBridge": "0xac9D11cD4D7eF6e54F14643a393F68Ca014287AB",
+  "legacyBridgeImplementation": "0x7063Ef4f2887586E96096D3E94C9b6961c50a9a2",
+  "messenger": "0x4200000000000000000000000000000000000007",
+  "tokenName": "Wrapped liquid staked Ether 2.0",
+  "tokenSymbol": "wstETH",
+  "totalSupplyAtInput": "24314976065882631992623",
+  "emergencyBrakes": "0x0F9A0e7071B7B21bc7a8514DA2cd251bc1FF0725",
+  "timelock": "0x9baFbdAe9d4FbF709dD2a126D5Cb5dDE7F004659",
+  "callProxy": "0x66d1d5b5104691F92c2181d031c4c4C453067ea0",
+  "migrationBridgeImplementation": "0x01cf086Be1D7cd36d8927E683Dc90757AD339a3A"
+}

@@ -16,9 +16,10 @@ const source = script.slice(0, refreshStart);
 const address = n => '0x' + n.toString(16).padStart(40, '0');
 const ldoMetadata = JSON.parse(readFileSync(new URL('../config/ldo-networks.json', import.meta.url), 'utf8'));
 const stethMetadata = JSON.parse(readFileSync(new URL('../config/steth-networks.json', import.meta.url), 'utf8'));
+const networkTypes = JSON.parse(readFileSync(new URL('../config/network-types.json', import.meta.url), 'utf8'));
 const build = { identity: 'test', networks: [], provenance: {}, l1Token: address(1),
   ledger: JSON.parse(readFileSync(new URL('../../../ledger.json', import.meta.url), 'utf8')),
-  ldo: ldoMetadata,
+  ldo: ldoMetadata, networkTypes,
   steth: { l1Token: address(4), priceFeed: stethMetadata.priceFeed, networks: [{ chainId: 10, name: 'Optimism',
     token: address(10), oracle: address(11), decimals: 18, rateDecimals: 27 }] },
   live: { lane: [2, 3], env: 'testnet', tokens: {}, seeds: {} } };
@@ -370,7 +371,7 @@ test('same-chain escrow rows retain distinct balances through cache and renderin
   const p = page();
   p.ctx.rows = [10, 20].map(n => ({ chainId: '5000', token: address(n),
     escrow: address(n + 1), group: 'supported', key: `5000:${address(n)}` }));
-  p.ctx.response = [abi(1), abi(2), abi(10), abi(20), '0x1', abi(18), abi(100)];
+  p.ctx.response = [abi(1), abi(2), abi(10), abi(20)];
   p.run('rpcRead = async () => response');
   await p.run('overviewL1(rows, true).then(result => { ov.l1 = result; })');
   assert.equal(p.run('ovBacking(rows[0]).v'), 10n);
@@ -392,22 +393,40 @@ test('summary keeps token units separate and counts unique networks within overl
     {chainId: '10', token: address(11), key: 'b', group: 'ccip'},
     {chainId: '20', token: address(20), key: 'c', group: 'legacy'},
   ];
-  p.run(`ov.rows = rows; registry.mainnet = {}; ov.l1 = {supply: 1000n * 10n ** 18n, stethSupply: 2000n * 10n ** 18n, rate: null, escrow: {}};
+  p.run(`ov.rows = rows; registry.mainnet = {}; ov.l1 = {supply: 1000n * 10n ** 18n, rate: null,
+      escrow: {}, silo: {}, pool: {addr: null}};
+    ov.totals.set('stETH', {v: 2000n * 10n ** 18n}); ov.totals.set('LDO', {v: 700n * 10n ** 18n});
     for (const r of rows) ov.supply.set(r.key, {v: 10n * 10n ** 18n});
     steth.rows = [rows[0]]; steth.supply.set('a', {v: 5n * 10n ** 18n});
     ldo.rows = [rows[2]]; ldo.supply.set('c', {v: 7n * 10n ** 18n}); ovPaintSummary();`);
   assert.match(total.innerHTML, /wstETH <b>30<\/b> · 3.00%/);
   assert.match(total.innerHTML, /stETH <b>5<\/b> · 0.25%/);
-  assert.match(total.innerHTML, /LDO <b>7<\/b>/);
+  assert.match(total.innerHTML, /LDO <b>7<\/b> · 1.00%/);
   assert.match(counts.innerHTML, /<b>2<\/b> networks/);
   assert.match(counts.innerHTML, /Total stETH <b>2,000<\/b>/);
+  assert.match(counts.innerHTML, /Total LDO <b>700<\/b>/);
   for (const label of ['endorsed', 'deendorsed', 'CCIP']) assert.ok(counts.innerHTML.includes(`<b>1</b> ${label}`));
   p.run('ov.rows.push(rows[0]); ovPaintSummary();');
   assert.match(total.innerHTML, /wstETH <b>30<\/b> · 3.00%/);
   p.run("steth.supply.set('a', {v: 8n * 10n ** 18n}); stethPaintNumbers();");
   assert.match(total.innerHTML, /stETH <b>8<\/b> · 0.40%/);
   p.run("ldo.supply.set('c', {v: 9n * 10n ** 18n}); ldoPaintNumbers();");
-  assert.match(total.innerHTML, /LDO <b>9<\/b>/);
+  assert.match(total.innerHTML, /LDO <b>9<\/b> · 1.28%/);
+  p.run('ov.totals.set("LDO", {v: null, err: "Ethereum LDO totalSupply: supply unavailable"}); ovPaintSummary();');
+  assert.match(counts.innerHTML, /Total LDO <b>unavailable<\/b>/);
+  assert.match(total.innerHTML, /LDO <b>9<\/b> · % unavailable/);
+  assert.match(total.innerHTML, /title="[^"]*Ethereum LDO totalSupply: supply unavailable\./);
+  assert.match(counts.innerHTML, /title="[^"]*Ethereum LDO totalSupply: supply unavailable">Total LDO <b>unavailable/);
+  p.run('ov.totals.set("stETH", {v: null, err: \'Ethereum stETH totalSupply: <unavailable> "offline"\'}); ovPaintSummary();');
+  assert.match(counts.innerHTML, /title="[^"]*Ethereum stETH totalSupply: &lt;unavailable&gt; &quot;offline&quot;">Total stETH <b>unavailable/);
+  p.run('ov.totals.delete("LDO"); ovPaintSummary();');
+  assert.match(counts.innerHTML, /Total LDO <b>loading…<\/b>/, 'a total not yet read is pending, not unavailable');
+  assert.match(total.innerHTML, /LDO <b>9<\/b> · % loading…/);
+  p.run('dataAt = Date.UTC(2026, 9, 7, 10); ov.totals.set("LDO", {v: 700n * 10n ** 18n, at: Date.UTC(2026, 9, 7, 14)}); ovPaintSummary();');
+  assert.match(counts.innerHTML, /Total LDO <b>700<\/b> <span class="muted"[^>]*>read <time[^>]*>2026-10-07 14:00 UTC<\/time><\/span>/,
+    'a total read apart from the board shows its own read time');
+  p.run('ov.totals.set("LDO", {v: 700n * 10n ** 18n, at: dataAt}); ovPaintSummary();');
+  assert.match(counts.innerHTML, /Total LDO <b>700<\/b><\/span>/);
 });
 
 test('summary USD rounds upward with k and kk suffixes, including unit boundaries', () => {
@@ -428,27 +447,30 @@ test('summary shows USD for wstETH and LDO and retains supply when prices expire
   p.ctx.row = {chainId: 10, token: address(10), key: 'a'};
   p.run(`ov.rows = [row]; ldo.rows = [row];
     ov.supply.set('a', {v: 1000n * 10n ** 18n}); ldo.supply.set('a', {v: 1000n * 10n ** 18n});
-    ov.l1 = {supply: 10000n * 10n ** 18n, rate: 12n * 10n ** 17n};
+    ov.l1 = {supply: 10000n * 10n ** 18n, rate: 12n * 10n ** 17n}; ov.totals.set('LDO', {v: 10000n * 10n ** 18n});
     steth.quote = {rounds: [{answer: String(2500n * 10n ** 8n), updatedAt: Date.now()}]};
     ldo.quote = {rounds: [{answer: String(2n * 10n ** 14n), updatedAt: Date.now()},
       {answer: String(2500n * 10n ** 8n), updatedAt: Date.now()}]}; ovPaintSummary();`);
   assert.match(total.innerHTML, /wstETH <b>1,000<\/b> · 10.00% · ≈ \$3kk/);
-  assert.match(total.innerHTML, /LDO <b>1,000<\/b> · ≈ \$500/);
+  assert.match(total.innerHTML, /LDO <b>1,000<\/b> · 10.00% · ≈ \$500/);
   p.run('steth.quote.rounds[0].updatedAt -= 3601000; ldo.quote.rounds[1].updatedAt -= 3601000; ovPaintSummary();');
   assert.match(total.innerHTML, /wstETH <b>1,000<\/b> · 10.00% · USD unavailable/);
-  assert.match(total.innerHTML, /LDO <b>1,000<\/b> · USD unavailable/);
+  assert.match(total.innerHTML, /LDO <b>1,000<\/b> · 10.00% · USD unavailable/);
 });
 
 test('summary distinguishes pending, failed, partial, zero and missing denominators', () => {
   const p = page();
   p.ctx.rows = [1, 2].map(n => ({chainId: n, token: address(n), key: String(n)}));
   p.run('steth.rows = rows;');
-  const chip = () => p.run("summaryToken('stETH', steth, ov.l1?.stethSupply ?? null)");
+  const chip = () => p.run("summaryToken('stETH', steth, ov.totals.get('stETH'))");
   assert.match(chip(), /loading/);
   assert.ok(!chip().includes('<b>0</b>'));
   p.run("steth.supply.set('1', {v: 1n});");
+  assert.match(chip(), /&lt;0.01.*% loading….*partial 1\/2/);
+  p.run("ov.totals.set('stETH', {v: null, err: 'offline'});");
   assert.match(chip(), /&lt;0.01.*% unavailable.*partial 1\/2/);
-  p.run('ov.l1 = {stethSupply: 10n ** 18n}');
+  assert.match(chip(), /title="[^"]*offline\./);
+  p.run("ov.totals.set('stETH', {v: 10n ** 18n, err: null});");
   assert.match(chip(), /&lt;0.01%/);
   p.run("steth.supply.set('1', {v: 0n}); steth.supply.set('2', {v: 0n});");
   assert.match(chip(), /<b>0<\/b> · 0.00%/);
@@ -460,46 +482,233 @@ test('summary distinguishes pending, failed, partial, zero and missing denominat
   assert.match(chip(), /unavailable/);
 });
 
-test('stETH denominator rejects wrong chain, decimals and malformed supply without hiding wstETH', async () => {
+// Answer the overview batch and each Ethereum totalSupply read by the token the read addresses.
+function ethereumReads(p, answers) {
+  const tokens = { steth: build.steth.l1Token, ldo: ldoMetadata.l1Token };
+  p.ctx.rpcRead = async (_url, calls) => {
+    const total = Object.keys(tokens).find(t => calls[0].method === 'eth_chainId'
+      && calls[1]?.params[0].to.toLowerCase() === tokens[t].toLowerCase());
+    if (total) { answers.reads?.push(total); return answers[total](); }
+    return calls[0].method === 'eth_call' ? answers.overview(calls) : [];
+  };
+}
+
+test('Ethereum totals reject wrong chain, decimals and malformed supply without hiding wstETH or each other', async () => {
+  const symbols = { steth: 'stETH', ldo: 'LDO' };
+  for (const [failing, kept] of [['steth', 'ldo'], ['ldo', 'steth']]) {
+    for (const bad of [['0xa', abi(18), abi(100)], ['0x1', abi(8), abi(100)], ['0x1', abi(18), '0x1'],
+      [null, abi(18), abi(100)], ['0x1', null, abi(100)], ['0x1', abi(18), null]]) {
+      const p = page();
+      ethereumReads(p, { overview: () => [abi(20), abi(1)], [failing]: () => bad, [kept]: () => ['0x1', abi(18), abi(300)] });
+      const [out, failed, ok] = await p.run(`Promise.all([overviewL1([], false),
+        l1TotalSupply('${symbols[failing]}', false), l1TotalSupply('${symbols[kept]}', false)])`);
+      assert.equal(out.supply, 20n);
+      assert.equal(failed.v, null);
+      assert.match(failed.err, new RegExp(`^Ethereum ${symbols[failing]} totalSupply: (RPC chain|token decimals|supply)`));
+      assert.equal(ok.v, 300n, 'one failed total keeps the other');
+      assert.equal(ok.err, null);
+      assert.equal(p.run('metaCache.has(OV_KEY)'), true, 'a failed total does not block the overview cache');
+    }
+  }
   const p = page();
-  for (const tail of [['0xa', abi(18), abi(100)], ['0x1', abi(8), abi(100)], ['0x1', abi(18), '0x1'],
-    [null, abi(18), abi(100)], ['0x1', null, abi(100)], ['0x1', abi(18), null]]) {
-    p.ctx.response = [abi(20), abi(1), ...tail];
-    p.run('rpcRead = async () => response');
-    const result = await p.run('overviewL1([], true)');
-    assert.equal(result.supply, 20n);
-    assert.equal(result.stethSupply, null);
-    assert.match(result.stethSupplyError, /Ethereum|decimals|supply/);
-    assert.equal(p.run('metaCache.has(OV_KEY)'), false);
+  ethereumReads(p, { overview: () => [abi(20), abi(1)], steth: () => ['0x1', abi(18), abi(300)], ldo: () => ['0x1', abi(18), abi(0)] });
+  const zero = await p.run("l1TotalSupply('LDO', true)");
+  assert.equal(zero.v, 0n, 'zero is an observation, not a failure');
+  assert.equal(zero.err, null);
+  await p.run("l1TotalSupply('stETH', true)");
+  p.run('rpcRead = async () => { throw Error("Cache should answer"); }');
+  assert.equal((await p.run("l1TotalSupply('LDO', false)")).v, 0n);
+  assert.equal((await p.run("l1TotalSupply('stETH', false)")).v, 300n);
+});
+
+test('an incomplete overview batch is kept, read again on the next load, and still shown offline', async () => {
+  for (const missing of ['rate', 'escrow']) {
+    const p = page();
+    let overviews = 0, state = 'partial';
+    ethereumReads(p, { overview: () => { overviews++;
+      if (state === 'offline') throw Error('offline');
+      const gap = (field, v) => missing === field && state === 'partial' ? null : v;
+      return [abi(20), gap('rate', abi(1)), gap('escrow', abi(5))]; } });
+    p.ctx.rows = [{key: 'a', escrow: address(9), group: 'supported'}];
+    const partial = await p.run('overviewL1(rows, false)');
+    assert.equal(partial.supply, 20n, 'valid observations stay visible');
+    assert.equal(missing === 'rate' ? partial.rate : partial.escrow.a, null);
+    assert.equal(p.run('metaCache.get(OV_KEY).supply'), '20', `a batch with a null ${missing} keeps its valid values`);
+    state = 'offline';
+    const offline = await p.run('overviewL1(rows, false)');
+    assert.equal(overviews, 2, 'an incomplete cached batch is read again');
+    assert.equal(offline.supply, 20n, 'with no answer the cached values stay shown');
+    assert.equal(offline.err, 'offline');
+    assert.equal(offline.at, partial.at);
+    state = 'complete';
+    const full = await p.run('overviewL1(rows, false)');
+    assert.equal(full.escrow.a, 5n);
+    assert.equal(full.rate, 1n);
+    assert.equal(overviews, 3);
+    await p.run('overviewL1(rows, false)');
+    assert.equal(overviews, 3, 'a complete batch is served from the cache');
   }
 });
 
-test('failed stETH denominator retries on ordinary loads and bypasses old incomplete caches', async () => {
+test('partial overview retries merge observations, retain their age, and persist the retry warning', async () => {
   const p = page();
-  let reads = 0;
-  p.ctx.rpcRead = async (_url, calls) => {
-    if (!calls.some(c => c.params[0]?.data === '0x18160ddd')) return [];
-    reads++;
-    return [abi(20), abi(1), '0x1', abi(18), reads === 1 ? null : abi(100)];
-  };
-  p.ctx.failed = await p.run('overviewL1([], false)');
-  assert.equal(p.ctx.failed.stethSupply, null);
-  assert.equal(p.run('metaCache.has(OV_KEY)'), false);
-  const recovered = await p.run('overviewL1([], false)');
-  assert.equal(reads, 2);
-  assert.equal(recovered.stethSupply, 100n);
-  assert.equal(recovered.stethSupplyError, null);
-  await p.run('overviewL1([], false)');
-  assert.equal(reads, 2, 'successful reads stay cached');
-  p.run('metaCache.get(OV_KEY).stethSupply = null; saveCache();');
-  await p.run('overviewL1([], false)');
-  assert.equal(reads, 3, 'old incomplete entries must not freeze the missing denominator');
+  p.run(`registry.mainnet = {tokens: {wstETH: {'1': {poolAddress: L1_WSTETH}}}};`);
+  p.ctx.rows = [{key: 'a', escrow: address(9), group: 'ccip', selector: '10'}];
+  let answer = [abi(20), null, abi(5), abi(8), abi(0), abi(0), abi(3)];
+  ethereumReads(p, {overview: () => answer});
+  await p.run('overviewL1(rows, false)');
+  p.run('metaCache.get(OV_KEY).at = 1000');
+  answer = [null, abi(2), null, null, null, null, null];
+  const merged = await p.run('overviewL1(rows, false)');
+  assert.equal(merged.supply, 20n);
+  assert.equal(merged.rate, 2n);
+  assert.equal(merged.escrow.a, 5n);
+  assert.equal(merged.pool.held, 8n);
+  assert.equal(merged.pool.unsiloed, 0n, 'zero is a valid cached observation');
+  assert.equal(merged.silo.a.siloed, false, 'false is a valid cached observation');
+  assert.equal(merged.silo.a.available, 3n);
+  assert.equal(merged.at, 1000, 'retained values are not relabelled as fresh');
+  assert.match(merged.err, /no answer/);
+  const saved = JSON.parse(p.store.get('ccip-lane-watch/cache/test')).meta[p.run('OV_KEY')];
+  const cached = p.run('metaCache.get(OV_KEY)');
+  assert.equal(cached.supply, '20');
+  assert.equal(cached.rate, '2');
+  assert.equal(cached.at, 1000);
+  assert.equal(cached.err, merged.err);
+  assert.deepEqual(saved, JSON.parse(JSON.stringify(cached)), 'reloads receive the merged values, age and warning');
+  answer = [abi(21), abi(3), abi(6), abi(9), abi(1), abi(1), abi(4)];
+  const fresh = await p.run('overviewL1(rows, false)');
+  assert.equal(fresh.supply, 21n, 'a merged but partially failed batch still retries');
+  assert.equal(fresh.err, null);
+  assert.ok(fresh.at > 1000);
+});
+
+test('an incomplete cached overview and Refresh share a fresh batch in either order', async () => {
+  for (const refreshFirst of [false, true]) {
+    const p = page(), gate = deferred();
+    let reads = 0;
+    ethereumReads(p, {overview: () => { reads++; return [abi(20), null]; }});
+    await p.run('overviewL1([], false)');
+    ethereumReads(p, {overview: async () => { reads++; await gate.promise; return [null, abi(2)]; }});
+    const first = p.run(`overviewL1([], ${refreshFirst})`);
+    const second = p.run(`overviewL1([], ${!refreshFirst})`);
+    await new Promise(setImmediate);
+    assert.equal(reads, 2, 'one initial batch and one shared retry');
+    gate.resolve();
+    for (const result of await Promise.all([first, second])) {
+      assert.equal(result.supply, 20n);
+      assert.equal(result.rate, 2n);
+    }
+  }
+});
+
+test('each Ethereum total reads its catalogued token as its own subcall group', async () => {
+  const p = page(), batches = [];
+  p.ctx.rpcRead = async (_url, calls) => { batches.push(calls); return calls.map(() => null); };
+  await p.run("Promise.all([overviewL1([], true), ...Object.keys(L1_TOTALS).map(s => l1TotalSupply(s, true))])");
+  const shape = b => Array.from(b, c => c.method === 'eth_chainId' ? 'chain' : `${c.params[0].to}:${c.params[0].data}`);
+  const shapes = batches.map(shape);
+  for (const token of [build.steth.l1Token, ldoMetadata.l1Token])
+    assert.ok(shapes.some(s => JSON.stringify(s) === JSON.stringify(['chain', `${token}:0x313ce567`, `${token}:0x18160ddd`])), token);
+  const overview = shapes.find(s => s[0] !== 'chain');
+  assert.ok(!overview.some(c => c.endsWith(':0x313ce567')), 'the overview batch carries no denominator subcalls');
+});
+
+test('network names carry chain ID and a sourced L2 or alt-L1 type, or say unclassified', () => {
+  const p = page();
+  const arbitrum = p.run('networkIdLine("42161")');
+  assert.match(arbitrum, /42161 · <a href="https:\/\/l2beat\.com\/layer2s\/projects\/arbitrum"[^>]*>L2<\/a>/);
+  assert.match(arbitrum, /title="Listed by L2BEAT[^"]*L2BEAT category: Optimistic Rollup\. Classified 20\d\d-\d\d-\d\d\./);
+  assert.match(p.run('networkIdLine(137)'), /L2BEAT category: Other\. Note: Ethereum checkpoints[^"]*"[^>]*>L2<\/a>/);
+  assert.match(p.run('networkIdLine(5734951)'), /Archived by L2BEAT on 2026-05-27\./);
+  const bnb = p.run('networkIdLine(56)');
+  assert.match(bnb, /56 · <a href="https:\/\/docs\.bnbchain\.org[^"]*"[^>]*>alt-L1<\/a>/);
+  assert.match(bnb, /Note: Proof of Staked Authority/);
+  assert.ok(!bnb.includes('L2BEAT category'));
+  assert.match(p.run('networkIdLine(200901)'), />alt-L1 \(Bitcoin L2\)<\/a>/, 'a source self-description differing from the label is visible');
+  assert.match(p.run('networkIdLine("999999")'), /999999 · <span[^>]*>type unclassified<\/span>/);
+});
+
+test('a failed Ethereum total retries alone on ordinary loads while the overview stays cached', async () => {
+  const p = page(), answers = { reads: [] };
+  let overviews = 0, stethFails = true;
+  ethereumReads(p, Object.assign(answers, {
+    overview: () => { overviews++; return [abi(20), abi(1)]; },
+    steth: () => ['0x1', abi(18), stethFails ? null : abi(100)],
+    ldo: () => ['0x1', abi(18), abi(200)] }));
+  const load = () => p.run("Promise.all([overviewL1([], false), l1TotalSupply('stETH', false), l1TotalSupply('LDO', false)])");
+  const [, failed, ldoTotal] = await load();
+  p.ctx.failed = failed;
+  assert.equal(failed.v, null);
+  assert.equal(ldoTotal.v, 200n);
+  stethFails = false;
+  const [, recovered] = await load();
+  assert.equal(recovered.v, 100n);
+  assert.equal(recovered.err, null);
+  assert.equal(overviews, 1, 'the overview batch is not re-read for a missing denominator');
+  assert.deepEqual(answers.reads, ['steth', 'ldo', 'steth']);
+  await load();
+  assert.deepEqual(answers.reads, ['steth', 'ldo', 'steth'], 'successful totals stay cached');
 
   const total = {innerHTML: ''};
   p.ctx.document.querySelector = s => s === '[data-ov-total]' ? total : null;
-  p.run('ov.l1 = failed; steth.rows = [{chainId: 10, token: STETH.l1Token, key: "a"}]; steth.supply.set("a", {v: 1n}); ovPaintSummary();');
-  assert.match(total.innerHTML, /title="[^"]*stETH supply unavailable/);
+  p.run('ov.totals.set("stETH", failed); steth.rows = [{chainId: 10, token: STETH.l1Token, key: "a"}]; steth.supply.set("a", {v: 1n}); ovPaintSummary();');
+  assert.match(total.innerHTML, /title="[^"]*Ethereum stETH totalSupply: supply unavailable/);
   assert.match(total.innerHTML, /% unavailable/);
+});
+
+test('the overview paints before a slow Ethereum total and fills it in on arrival', async () => {
+  const p = routedPage(), slow = deferred();
+  p.ctx.slow = slow;
+  p.run(`registry.mainnet = {chains: {}, tokens: {}}; overviewRows = () => [];
+    renderOverview = () => { views.innerHTML = "Live"; ov.totals = new Map(); };
+    overviewL1 = async () => ({err: null, escrow: {}, silo: {}, pool: {}});
+    l1TotalSupply = (symbol) => symbol === "LDO" ? slow.promise : Promise.resolve({v: 7n, at: Date.now(), err: null});`);
+  await p.navigate('overview');
+  assert.match(p.views.innerHTML, /Live/, 'the overview is published while a total is still being read');
+  await new Promise(setImmediate);
+  assert.equal(p.run('ov.totals.get("stETH").v'), 7n);
+  assert.equal(p.run('ov.totals.has("LDO")'), false);
+  slow.resolve({v: 9n, at: Date.now(), err: null});
+  await new Promise(setImmediate);
+  assert.equal(p.run('ov.totals.get("LDO").v'), 9n);
+});
+
+test('the overview sends one batch per endpoint: Ethereum totals join the L1 batch, supplies join their chain', async () => {
+  const p = routedPage(), batches = [];
+  p.run(`registry.mainnet = {chains: {}, tokens: {}}; overviewRows = () => [];
+    renderOverview = (rows, l1) => { views.innerHTML = "Live"; ov.l1 = l1; ov.rows = []; ov.totals = new Map();
+      steth.rows = stethRows(); steth.supply = new Map(); steth.rates = new Map(); ldo.rows = ldoRows([]); ldo.supply = new Map(); };`);
+  p.ctx.rpc = async (url, calls) => { batches.push(url); return calls.map(() => null); };
+  await p.navigate('overview');
+  await new Promise(setImmediate);
+  const perUrl = batches.reduce((m, u) => m.set(u, (m.get(u) || 0) + 1), new Map());
+  assert.equal(perUrl.get(p.run('rpcFor(1)')), 1, 'overview, quotes and both totals share one Ethereum batch');
+  const shared = p.run('ldo.rows.filter(r => r.token && steth.rows.some(s => s.chainId === r.chainId)).map(r => rpcFor(r.chainId))');
+  assert.ok(shared.length > 0);
+  for (const url of shared) assert.equal(perUrl.get(url), 1, `${url}: stETH and LDO reads share one batch`);
+});
+
+test('concurrent destination supply reads share one fresh read and never reject across a cache clear', async () => {
+  const p = page(), oldRead = deferred(), newRead = deferred();
+  let reads = 0;
+  p.ctx.row = { chainId: '10', token: address(10), decimals: 18, key: `10:${address(10)}` };
+  p.ctx.rpc = async () => { await (++reads === 1 ? oldRead.promise : newRead.promise); return ['0xa', abi(18), abi(5)]; };
+  const first = p.run('ldoSupply(row, true)'), revisit = p.run('ldoSupply(row, false)');
+  await new Promise(setImmediate);
+  assert.equal(reads, 1, 'a revisit joins the pending fresh read');
+  p.run('clearCache()');
+  const afterClear = p.run('ldoSupply(row, false)');
+  await new Promise(setImmediate);
+  assert.equal(reads, 2, 'a read started before the clear is not joined');
+  oldRead.resolve();
+  for (const s of await Promise.all([first, revisit])) assert.equal(s.v, 5n);
+  assert.equal(p.run('supplyReads.size'), 1, 'old completion cannot remove the new pending read');
+  assert.equal(p.run('metaCache.size'), 0, 'old completion cannot repopulate the cleared cache');
+  newRead.resolve();
+  assert.equal((await afterClear).v, 5n);
+  assert.equal(p.run('supplyReads.size'), 0);
+  assert.equal(p.run('metaCache.size'), 1, 'only the read started after the clear is cached');
 });
 
 test('LDO rows deduplicate wstETH deployments and include LDO-only networks', () => {
@@ -738,14 +947,28 @@ test('missing stETH denominator or registry prevents a green overview', () => {
   const p = page(), now = Math.floor(Date.now() / 1000);
   p.ctx.now = now;
   p.run(`registry.mainnet = {chains: {}, tokens: {}};
-    ov.rows = []; ov.l1 = {err: null, stethSupply: 100n}; ldo.rows = []; steth.rows = [];
+    ov.rows = []; ov.l1 = {err: null, supply: 100n, rate: 1n, escrow: {}, silo: {}, pool: {addr: null}};
+    ldo.rows = []; steth.rows = [];
+    ov.totals.set('stETH', {v: 100n}); ov.totals.set('LDO', {v: 100n});
     ldo.quote = {rounds: LDO.priceFeeds.map(() => ({updatedAt: now * 1000}))};
     steth.quote = {rounds: [{updatedAt: now * 1000}]};
     ovUpdateStatus();`);
   assert.equal(p.run('tabStatus.get("overview")'), 'ok');
-  p.run('ov.l1.stethSupply = null; ovUpdateStatus();');
+  p.run('ov.l1.rate = null; ovUpdateStatus();');
+  assert.equal(p.run('tabStatus.get("overview")'), 'warn', 'a missing batch value cannot be green');
+  p.run('ov.l1.rate = 1n; ov.l1.pool = {addr: L1_WSTETH, held: 1n, unsiloed: null}; ovUpdateStatus();');
+  assert.equal(p.run('tabStatus.get("overview")'), 'warn', 'missing shared-pool liquidity cannot be green');
+  p.run('ov.l1.pool.unsiloed = 0n; ovUpdateStatus();');
+  assert.equal(p.run('tabStatus.get("overview")'), 'ok');
+  p.run('ov.totals.set("stETH", {v: null}); ovUpdateStatus();');
   assert.equal(p.run('tabStatus.get("overview")'), 'warn');
-  p.run('ov.l1.stethSupply = 100n; ovUpdateStatus();');
+  p.run('ov.totals.set("stETH", {v: 100n}); ovUpdateStatus();');
+  assert.equal(p.run('tabStatus.get("overview")'), 'ok');
+  p.run('ov.totals.delete("LDO"); ovUpdateStatus();');
+  assert.equal(p.run('tabStatus.get("overview")'), 'warn', 'a pending total is not yet green');
+  p.run('ov.totals.set("LDO", {v: null}); ovUpdateStatus();');
+  assert.equal(p.run('tabStatus.get("overview")'), 'warn');
+  p.run('ov.totals.set("LDO", {v: 100n}); ovUpdateStatus();');
   assert.equal(p.run('tabStatus.get("overview")'), 'ok');
   p.run('ov.registryError = "HTTP 503"; ovUpdateStatus();');
   assert.equal(p.run('tabStatus.get("overview")'), 'warn');
@@ -794,14 +1017,17 @@ test('Ethereum reads share one batch and one checked stETH quote across tables',
     return calls.map(c => {
       if (c.method === 'eth_chainId') return '0x1';
       const {to, data} = c.params[0];
-      if (data === '0x313ce567') return abi(to === build.steth.l1Token || to.toLowerCase() === ldoMetadata.priceFeeds[0].address.toLowerCase() ? 18 : 8);
+      if (data === '0x313ce567') return abi([build.steth.l1Token, ldoMetadata.l1Token, ldoMetadata.priceFeeds[0].address]
+        .some(a => a.toLowerCase() === to.toLowerCase()) ? 18 : 8);
       if (data === '0xfeaf968c') return round(to.toLowerCase() === ldoMetadata.priceFeeds[0].address.toLowerCase() ? 2n * 10n ** 14n : 2500n * 10n ** 8n);
       if (data === '0x035faf82') return abi(12n * 10n ** 17n);
       return abi(10n ** 18n);
     });
   };
-  p.ctx.result = await p.run('overviewL1([], true)');
-  assert.equal(p.ctx.result.stethSupply, 10n ** 18n);
+  const [result, stethTotal, ldoTotal] = await p.run("Promise.all([overviewL1([], true), l1TotalSupply('stETH', true), l1TotalSupply('LDO', true)])");
+  p.ctx.result = result;
+  assert.equal(stethTotal.v, 10n ** 18n);
+  assert.equal(ldoTotal.v, 10n ** 18n);
   assert.equal(batches.length, 1);
   assert.equal(batches[0].filter(c => c.method === 'eth_chainId').length, 1);
   assert.equal(batches[0].filter(c => c.params[0]?.to.toLowerCase() === stethMetadata.priceFeed.address.toLowerCase()
@@ -813,7 +1039,7 @@ test('Ethereum reads share one batch and one checked stETH quote across tables',
   p.run('rpc = async () => { throw Error("structural cache must remain usable"); }; result.stethQuote.rounds[0].updatedAt = Date.now() - 3601000;');
   p.ctx.cached = await p.run('overviewL1([], false)');
   assert.equal(p.ctx.cached.supply, 10n ** 18n);
-  assert.equal(p.ctx.cached.stethSupply, 10n ** 18n);
+  assert.equal((await p.run("l1TotalSupply('stETH', false)")).v, 10n ** 18n);
   assert.match(p.ctx.cached.stethQuote.err, /structural cache/);
 });
 
@@ -956,17 +1182,21 @@ test('Live revisit shares phase-one reads; changed endpoint and row inputs remai
   const second = p.navigate('overview');
   const refresh = p.run('forceNext = true; run()');
   await new Promise(setImmediate);
-  assert.equal(batches, 3, 'one L1 batch and two feed quote reads');
+  assert.equal(batches, 5, 'one L1 batch, two feed quote reads and two Ethereum totals');
   p.run('state.rpc[1] = "https://other.example"');
   const changed = p.run('overviewL1([], true)');
   await new Promise(setImmediate);
-  assert.equal(batches, 6);
+  assert.equal(batches, 8, 'a changed endpoint needs its own L1 batch and quotes');
+  const totalsChanged = p.run("Promise.all(Object.keys(L1_TOTALS).map(s => l1TotalSupply(s, true)))");
+  await new Promise(setImmediate);
+  assert.equal(batches, 10, 'and its own Ethereum totals');
   const rowsChanged = p.run('overviewL1([{key: "new", escrow: L1_WSTETH}], true)');
   await new Promise(setImmediate);
-  assert.equal(batches, 7, 'new row inputs need their own L1 read, while matching quotes remain shared');
+  assert.equal(batches, 11, 'new row inputs need their own L1 read, while matching quotes and totals remain shared');
   pending.resolve();
-  await Promise.all([first, second, refresh, changed, rowsChanged]);
+  await Promise.all([first, second, refresh, changed, totalsChanged, rowsChanged]);
   assert.equal(p.run('overviewReads.size'), 0);
+  assert.equal(p.run('supplyReads.size'), 0);
 });
 
 test('ledger delegated interactions preserve filters on relationship navigation and clear explicitly', async () => {
@@ -1068,7 +1298,7 @@ test('overview cache follows hub and row inputs even when the RPC stays the same
   p.ctx.rpcRead = async (_url, calls) => {
     if (calls[0].method !== 'eth_call') return [];
     reads++;
-    return [...calls.slice(0, -3).map(() => abi(reads)), '0x1', abi(18), abi(100)];
+    return calls.map(() => abi(reads));
   };
   assert.equal((await p.run('overviewL1(rows, false)')).pool.held, 1n);
   await p.run('overviewL1(rows, false)');
@@ -1093,7 +1323,7 @@ test('Refresh bypasses cached overview balances while an expired quote is pendin
       return [];
     }
     batches++;
-    return [...calls.slice(0, -3).map(() => abi(batches)), '0x1', abi(18), abi(100)];
+    return calls.map(() => abi(batches));
   };
   await p.run('overviewL1([], false)');
   holdQuote = true;

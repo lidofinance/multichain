@@ -1,0 +1,34 @@
+{
+  "calls": [
+    {
+      "target": "0x6A3861C13816d7585143d8746e71d92D2aB37d03",
+      "value": "0",
+      "data": "0x79ba5097"
+    },
+    {
+      "target": "0x62f0Fca9a5d2EF9d714dd95cd10410955498Eaf2",
+      "value": "0",
+      "data": "0x79ba5097"
+    },
+    {
+      "target": "0xDAe04B31181a0Dd419BBa5C2E7cA54feB6B1ab8a",
+      "value": "0",
+      "data": "0x79ba5097"
+    }
+  ],
+  "proposal": {
+    "name": "accept-base-contracts",
+    "id": "0x916997e8e6c3e0dc45521ff9e59558f4d9f3a57b16a98cc3e92599a1d961429f",
+    "timelock": "0x9D2A6fd46410a4Ae45bDD6dF9F8a9055C4656489",
+    "predecessor": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "salt": "0xdab2c697a55796a3545fcec0c7d900ebe1ed20da7cb3e7223d813a2a8216608b",
+    "delay": 259200,
+    "proposer": "0x3C3C000000000000000000000000000000000001",
+    "scheduledTx": "0x61f411b778e6f285570e4f972043414780dec574365b3a842b32ce2a64381c52",
+    "scheduledAtBlock": 12062665,
+    "executor": "0x942817af47F79AAa758BE480c4546361D4d56723",
+    "executedBy": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+    "executedTx": "0xf69e6a4d874211869eb82971b04bd1602f0e94b8a47d465194f9ebdd942dad98",
+    "executedAtBlock": 12062667
+  }
+}

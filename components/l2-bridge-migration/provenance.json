@@ -1,0 +1,62 @@
+{
+  "repository": "https://github.com/lidofinance/lido-l2",
+  "commit": "082e7eb59de63bd376b30886568813408d04f00b",
+  "importedOn": "2026-10-21",
+  "files": [
+    {
+      "source": "contracts/BridgeableTokens.sol",
+      "destination": "contracts/BridgeableTokens.sol",
+      "sha256": "9080e2869ab35327318a1b5b897779a46a7fae498a1a601269fc65cef1edddbb",
+      "modifications": "pragma 0.8.10 → 0.8.26"
+    },
+    {
+      "source": "contracts/BridgingManager.sol",
+      "destination": "contracts/BridgingManager.sol",
+      "sha256": "132addab90064480e2cb7733ff07322c9513665f6e6275db460450d579bf3686",
+      "modifications": "pragma 0.8.10 → 0.8.26; _setupRole → _grantRole (OpenZeppelin 5.0.2); added internal _lockInitialization()"
+    },
+    {
+      "source": "contracts/optimism/CrossDomainEnabled.sol",
+      "destination": "contracts/optimism/CrossDomainEnabled.sol",
+      "sha256": "ef103077e31b49aa30e47c0393e83ce1d95a5b8f9720f1b63c7acc300cd56ac4",
+      "modifications": "pragma 0.8.10 → 0.8.26"
+    },
+    {
+      "source": "contracts/optimism/interfaces/ICrossDomainMessenger.sol",
+      "destination": "contracts/optimism/interfaces/ICrossDomainMessenger.sol",
+      "sha256": "bbf0b97d1a93e9dbd720572dcd6917ba878faa243b34802776e2214b414b61f9",
+      "modifications": "pragma 0.8.10 → 0.8.26"
+    },
+    {
+      "source": "contracts/optimism/interfaces/IL1ERC20Bridge.sol",
+      "destination": "contracts/optimism/interfaces/IL1ERC20Bridge.sol",
+      "sha256": "4d90686306e9ca5f7096e6aa15023bdd1d11c76090a8cbd2197a4886da3392cb",
+      "modifications": "pragma 0.8.10 → 0.8.26; depositERC20 and depositERC20To declared payable, each with a @dev note on msg.value"
+    },
+    {
+      "source": "contracts/optimism/interfaces/IL2ERC20Bridge.sol",
+      "destination": "contracts/optimism/interfaces/IL2ERC20Bridge.sol",
+      "sha256": "38557adfbdbaab789aa51753656e6849b08daf7feb8432eeb049f06e78c545d3",
+      "modifications": "pragma 0.8.10 → 0.8.26; withdraw and withdrawTo declared payable, each with a @dev note on msg.value"
+    },
+    {
+      "source": "contracts/optimism/L1ERC20TokenBridge.sol",
+      "destination": "contracts/optimism/L1ERC20TokenBridge.sol",
+      "sha256": "fb11cb52f638ac49b9b003208fac7ec70d8df911712192fd0bdbd6d14020de7a",
+      "modifications": "pragma 0.8.10 → 0.8.26; depositERC20/depositERC20To payable; finalizeERC20Withdrawal public virtual; _initiateERC20Deposit virtual; Address.isContract(msg.sender) → msg.sender.code.length > 0 (Address import dropped)"
+    },
+    {
+      "source": "contracts/optimism/L2ERC20TokenBridge.sol",
+      "destination": "contracts/optimism/L2ERC20TokenBridge.sol",
+      "sha256": "5411c98406c47d02015eb2c460a5af4d8cd8aa807c06e82faae0468d7fec466b",
+      "modifications": "pragma 0.8.10 → 0.8.26; withdraw/withdrawTo payable; finalizeDeposit public virtual; _initiateWithdrawal virtual; IERC20Bridged.bridgeMint/bridgeBurn → IL2MintBurnToken.mint/burnFrom"
+    }
+  ],
+  "new": [
+    "contracts/optimism/CCIPMigrationSender.sol",
+    "contracts/optimism/L1MigrationBridge.sol",
+    "contracts/optimism/L2MigrationBridge.sol",
+    "contracts/optimism/interfaces/IL2MintBurnToken.sol"
+  ],
+  "notes": "sha256 values are of the upstream files at the pinned commit (the implementations behind the Base and Ethereum proxies, Diffyscan exact match in components/ledger). The copies were then modified as listed. Compiled with the repository baseline (OpenZeppelin 5.0.2, solc 0.8.26, paris) instead of upstream's OpenZeppelin 4.6.0 / solc 0.8.10; the linear storage layout (AccessControl._roles at slot 0) is unchanged."
+}

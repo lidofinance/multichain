@@ -1,0 +1,4 @@
+# Unified patches retain a leading context marker on otherwise empty lines.
+# Keep historical patch bytes intact when checking the enclosing repository diff.
+*.patch whitespace=-blank-at-eol,-blank-at-eof
+*.diff whitespace=-blank-at-eol,-blank-at-eof

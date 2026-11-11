@@ -11,12 +11,14 @@ import {OffRamp} from "@chainlink/contracts-ccip/offRamp/OffRamp.sol";
 import {AdvancedPoolHooks} from "@chainlink/contracts-ccip/pools/AdvancedPoolHooks.sol";
 import {Internal} from "@chainlink/contracts-ccip/libraries/Internal.sol";
 import {RateLimiter} from "@chainlink/contracts-ccip/libraries/RateLimiter.sol";
+import {TokenPool} from "@chainlink/contracts-ccip/pools/TokenPool.sol";
 
 import {MockCCV} from "../mocks/MockCCV.sol";
 import {MockFeeQuoter} from "../mocks/MockFeeQuoter.sol";
 import {MockArmProxy} from "../mocks/MockArmProxy.sol";
 
-import {BridgeScenarioBase, IPom, IPausableHooks} from "./BridgeScenarioBase.sol";
+import {BridgeScenarioBase, IPausableHooks} from "./BridgeScenarioBase.sol";
+import {ILidoTimelock} from "@ccip-lido/interfaces/ILidoTimelock.sol";
 
 /// @notice Forked 1.2.0 Router surface we need: register our 2.0 ramps + read back.
 interface IForkedRouter {
@@ -77,13 +79,14 @@ interface IPoolRateLimit {
 /// @title CcvBridge — step 06/09 Claim-B harness.
 /// @notice The forks only have CCIP 1.5 system ramps, so this test deploys our OWN CCIP 2.0
 /// OnRamp + OffRamp on each fork, registers them in the forked 1.5 Router (via owner
-/// impersonation), reconfigures our pool hooks to a 2-of-2 mock-CCV quorum (via POM.directCall
+/// impersonation), reconfigures our pool hooks to a 2-of-2 mock-CCV quorum (through the timelock bypass
 /// pranked as the DAO admin), and drives a real bridge round-trip:
 ///   L1 ccipSend (lock in siloed lockbox) -> capture CCIPMessageSent.encodedMessage ->
 ///   L2 OffRamp.execute (2-of-2 CCV quorum -> releaseOrMint -> mint), and the reverse.
 /// See PLAN §1/§6b.1 (corrected) + memory `reference-ccip-version-fork`.
 contract CcvBridgeTest is BridgeScenarioBase {
-    function setUp() public {
+    // Own fork instances per test keep governance time warps out of the other scenarios.
+    function _setUpCcvForks() internal virtual {
         _setUpForksAndRecord();
 
         // 1) deploy our 2.0 ramp layer + mocks on each fork
@@ -200,8 +203,8 @@ contract CcvBridgeTest is BridgeScenarioBase {
         vm.prank(fr.owner());
         fr.applyRampUpdates(onUpd, new IForkedRouter.OffRampU[](0), offAdd);
 
-        // d) reconfigure pool hooks to require BOTH CCVs (2-of-2) for the lane, via POM.directCall
-        //    (POM admin is the DAO: Agent on L1 / OpExec on L2).
+        // d) reconfigure pool hooks to require BOTH CCVs (2-of-2) for the lane, through the timelock
+        //    bypass (the timelock admin is the DAO: Agent on L1 / OpExec on L2).
         AdvancedPoolHooks.CCVConfigArg[] memory cfg = new AdvancedPoolHooks.CCVConfigArg[](1);
         cfg[0] = AdvancedPoolHooks.CCVConfigArg({
             remoteChainSelector: c.remoteSelector,
@@ -210,8 +213,7 @@ contract CcvBridgeTest is BridgeScenarioBase {
             inboundCCVs: both,
             thresholdInboundCCVs: new address[](0)
         });
-        vm.prank(c.govAdmin);
-        IPom(c.pom).directCall(c.hooks, 0, abi.encodeCall(AdvancedPoolHooks.applyCCVConfigUpdates, (cfg)));
+                _bypass(c, c.hooks, abi.encodeCall(AdvancedPoolHooks.applyCCVConfigUpdates, (cfg)));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -261,6 +263,7 @@ contract CcvBridgeTest is BridgeScenarioBase {
 
     /// @notice Full round-trip: L1 -> L2 (lock + mint), then L2 -> L1 (burn + release).
     function test_bridge_roundtrip() public {
+        _setUpCcvForks();
         uint256 amount = 10e18;
 
         // ── L1 -> L2 ──
@@ -306,6 +309,7 @@ contract CcvBridgeTest is BridgeScenarioBase {
     /// executeSingleMessage in a try/catch, so a missing-CCV revert is recorded as a FAILURE
     /// execution state rather than bubbling up — assert FAILURE + zero mint.
     function test_quorum_1of2_does_not_mint() public {
+        _setUpCcvForks();
         uint256 amount = 5e18;
 
         vm.selectFork(l1Fork);
@@ -326,14 +330,14 @@ contract CcvBridgeTest is BridgeScenarioBase {
         assertEq(IERC20(l2.token).balanceOf(recipient), balBefore, "1-of-2 must not mint any tokens");
     }
 
-    /// @notice A paused hook blocks outbound transfers. The DAO (POM admin) pauses the pool hooks
-    /// via POM.directCall; the source send then reverts in lockOrBurn (whenNotPaused).
+    /// @notice A paused hook blocks outbound transfers. The DAO (timelock admin) pauses the pool
+    /// hooks through the bypass; the source send then reverts in lockOrBurn (whenNotPaused).
     function test_paused_hook_blocks_send() public {
+        _setUpCcvForks();
         vm.selectFork(l1Fork);
 
-        // pause L1 pool hooks (onlyOwner == POM; admin == Agent)
-        vm.prank(l1.govAdmin);
-        IPom(l1.pom).directCall(l1.hooks, 0, abi.encodeCall(IPausableHooks.pauseCrossChainTransfers, ()));
+        // pause L1 pool hooks (owner == timelock; its admin == Agent)
+                _bypass(l1, l1.hooks, abi.encodeCall(IPausableHooks.pauseCrossChainTransfers, ()));
 
         uint256 amount = 1e18;
         deal(l1.token, l1.pool, IERC20(l1.token).balanceOf(l1.pool) + amount);
@@ -347,11 +351,12 @@ contract CcvBridgeTest is BridgeScenarioBase {
     /// @notice Governance round-trip (PLAN §5.1 / D-GOV-01): the L1 Agent (tail of
     /// Voting→DG→Timelock→AdminExecutor→Agent, pinned as OpExec.ethereumGovernanceExecutor) sends
     /// a cross-domain message that, relayed by the L2 messenger, queues an OpExec action which —
-    /// after the delay — calls POM.directCall to reconfigure the lane's CCV quorum (2 -> 1).
+    /// after the delay — executes through the L2 timelock's bypass to reconfigure the lane's CCV quorum (2 -> 1).
     /// We relay by impersonating the L2CrossDomainMessenger with xDomainMessageSender == Agent.
     function test_gov_roundtrip_reconfigures_ccv() public {
+        _setUpCcvForks();
         vm.selectFork(l2Fork);
-        address opExec = l2.govAdmin; // OptimismBridgeExecutor == POM admin on L2
+        address opExec = l2.govAdmin; // OptimismBridgeExecutor == timelock admin on L2
         address agent = l1.govAdmin; // L1 Aragon Agent == OpExec.ethereumGovernanceExecutor
         address messenger = 0x4200000000000000000000000000000000000007;
 
@@ -359,7 +364,7 @@ contract CcvBridgeTest is BridgeScenarioBase {
             IHooksView(l2.hooks).getRequiredCCVs(l2.token, l2.remoteSelector, 1e18, bytes4(0), "", 0).length;
         assertEq(beforeLen, 2, "precondition: lane should be 2-of-2");
 
-        // Action: POM.directCall(hooks, applyCCVConfigUpdates([single CCV])) for the L1 lane.
+        // Action: timelock.bypasserExecuteBatch([hooks.applyCCVConfigUpdates([single CCV])]) for the L1 lane.
         address[] memory one = new address[](1);
         one[0] = l2.ccvA;
         AdvancedPoolHooks.CCVConfigArg[] memory cfg = new AdvancedPoolHooks.CCVConfigArg[](1);
@@ -370,16 +375,19 @@ contract CcvBridgeTest is BridgeScenarioBase {
             inboundCCVs: one,
             thresholdInboundCCVs: new address[](0)
         });
-        bytes memory pomCall =
-            abi.encodeCall(IPom.directCall, (l2.hooks, 0, abi.encodeCall(AdvancedPoolHooks.applyCCVConfigUpdates, (cfg))));
+        ILidoTimelock.Call[] memory batch = new ILidoTimelock.Call[](1);
+        batch[0] = ILidoTimelock.Call({
+            target: l2.hooks, value: 0, data: abi.encodeCall(AdvancedPoolHooks.applyCCVConfigUpdates, (cfg))
+        });
+        bytes memory timelockCall = abi.encodeCall(ILidoTimelock.bypasserExecuteBatch, (batch));
 
         address[] memory targets = new address[](1);
-        targets[0] = l2.pom;
+        targets[0] = l2.timelock;
         uint256[] memory values = new uint256[](1);
         string[] memory sigs = new string[](1);
         sigs[0] = "";
         bytes[] memory cds = new bytes[](1);
-        cds[0] = pomCall;
+        cds[0] = timelockCall;
         bool[] memory dels = new bool[](1);
 
         // Relay: queue must come from the L2 messenger with xDomainMessageSender == Agent.
@@ -392,7 +400,7 @@ contract CcvBridgeTest is BridgeScenarioBase {
         vm.clearMockedCalls();
 
         // Execute after the timelock delay.
-        vm.warp(block.timestamp + IOpExec(opExec).getDelay() + 1);
+        vm.warp(vm.getBlockTimestamp() + IOpExec(opExec).getDelay() + 1);
         IOpExec(opExec).execute(actionId);
 
         uint256 afterLen =
@@ -403,6 +411,7 @@ contract CcvBridgeTest is BridgeScenarioBase {
     /// @notice An over-capacity outbound transfer is rejected by the pool's token-bucket rate
     /// limiter (gate A-RL-01; outbound capacity = 500e18). A single consume > capacity reverts.
     function test_over_cap_rate_limit_reverts() public {
+        _setUpCcvForks();
         vm.selectFork(l1Fork);
 
         // Read the lane's actual outbound bucket instead of hardcoding 500e18, so this stays a real
@@ -423,12 +432,12 @@ contract CcvBridgeTest is BridgeScenarioBase {
     }
 
     /// @notice An over-capacity INBOUND transfer is rejected by the DESTINATION pool's inbound
-    /// token-bucket limiter (gate A-RL-01; inbound capacity = 330e18, distinct from the 500e18
-    /// outbound cap). Mirrors test_over_cap_rate_limit_reverts for the receive leg: the 2.0 OffRamp
+    /// token-bucket limiter (gate A-RL-01). Mirrors test_over_cap_rate_limit_reverts for the receive leg: the 2.0 OffRamp
     /// wraps executeSingleMessage in try/catch, so the releaseOrMint rate-limit revert surfaces as a
     /// FAILURE execution state (not a bubbled revert) — assert FAILURE + zero mint. Full 2-of-2 CCVs
     /// are supplied so the ONLY gate that can fail is the inbound rate limit, not the CCV quorum.
     function test_over_cap_inbound_rate_limit_does_not_mint() public {
+        _setUpCcvForks();
         // Read the L2 pool's actual inbound bucket for the L1 lane (read dynamically, like the
         // outbound test, so a reconfig can't turn this into a false positive).
         vm.selectFork(l2Fork);
@@ -437,9 +446,23 @@ contract CcvBridgeTest is BridgeScenarioBase {
         assertTrue(inbound.isEnabled, "precondition: inbound rate limit must be enabled");
         uint256 amount = uint256(inbound.capacity) + 1; // > inbound cap => releaseOrMint consume reverts
 
-        // Source leg on L1: amount (330e18+1) is below the 500e18 outbound cap, so the send itself
-        // succeeds and only the L2 inbound cap is exceeded on receive.
+        // Isolate the destination gate. Some targets have a smaller outbound capacity than
+        // the destination's inbound capacity. Disable only the source outbound bucket on this
+        // test-local fork through governance, preserving its inbound config. The separate
+        // outbound test above checks the deployed source limit without this reconfiguration.
         vm.selectFork(l1Fork);
+        (, RateLimiter.TokenBucket memory sourceInbound) =
+            IPoolRateLimit(l1.pool).getCurrentRateLimiterState(l1.remoteSelector, false);
+        TokenPool.RateLimitConfigArgs[] memory limits = new TokenPool.RateLimitConfigArgs[](1);
+        limits[0] = TokenPool.RateLimitConfigArgs({
+            remoteChainSelector: l1.remoteSelector,
+            fastFinality: false,
+            outboundRateLimiterConfig: RateLimiter.Config(false, 0, 0),
+            inboundRateLimiterConfig: RateLimiter.Config(
+                sourceInbound.isEnabled, sourceInbound.capacity, sourceInbound.rate
+            )
+        });
+        _bypass(l1, l1.pool, abi.encodeCall(TokenPool.setRateLimitConfig, (limits)));
         (bytes32 mid, bytes memory enc) = _send(l1, amount, recipient);
 
         // Dest leg on L2: execute with full 2-of-2 CCVs; releaseOrMint hits the inbound cap.

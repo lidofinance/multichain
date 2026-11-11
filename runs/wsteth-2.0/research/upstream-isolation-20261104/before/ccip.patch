@@ -1,0 +1,747 @@
+diff --git a/chains/evm/contracts/lido-hvmv/config/README.md b/chains/evm/contracts/lido-hvmv/config/README.md
+index 2d19371..8ecd902 100644
+--- a/chains/evm/contracts/lido-hvmv/config/README.md
++++ b/chains/evm/contracts/lido-hvmv/config/README.md
+@@ -224,6 +224,66 @@ token and pool are read from its own config, `chains/<remote_chain_name>.json`,
+ | `remote_chain_name` | string | **Yes** | `chain.chain_name` of the remote chain's config |
+ | `is_siloed` | bool | **Yes** | Whether this lane gets its own lock box (SiloedLockRelease only) |
+ 
++Lanes that are not siloed share one lock box; every siloed lane gets its own. A lane whose remote side already exists
++and is served by another pool today can be taken over instead of deployed: declare it in `imported_lanes`. A lane the
++deployer must not configure — one the pool's owner connects later by a proposal — is listed in `deferred_lanes`.
++
++---
++
++### `imported_lanes`
++
++Optional. Keyed by `remote_chain_name`; every key must also appear in `remote_lanes`. An imported lane is one the pool
++takes over from an existing pool on this chain: the remote chain is not deployed by these scripts (its
++`chains/<remote_chain_name>.json` carries only the fields `2_Configure` reads: `ccip`, `addresses.token`,
++`deployed.token_pool`), and `2_Configure` configures the lane from this block instead of the defaults.
++
++| Field | Type | Required | Description |
++|-------|------|----------|-------------|
++| `remote_pools` | address[] | **Yes** | Every remote pool the replaced pool accepts for that chain; the remote record's `deployed.token_pool` must be among them |
++| `rate_limits.outbound` | object | **Yes** | `enabled`, `capacity`, `rate` applied to the lane instead of `rate_limiter_defaults.outbound` |
++| `rate_limits.inbound` | object | **Yes** | the same for the inbound direction |
++| `required_ccvs` | string | **Yes** | Must be `"none"`: the hooks get no CCV entry for the lane and the placeholder verifier and resolver are not configured for it, so the lane keeps its default verification |
++
++```json
++"imported_lanes": {
++  "ink": {
++    "remote_pools": ["0x2dC99aF320bC317C567F24ee95811DcbD5983dFd"],
++    "rate_limits": {
++      "outbound": {"enabled": true, "capacity": "2", "rate": "1"},
++      "inbound": {"enabled": true, "capacity": "264000000000000", "rate": "1"}
++    },
++    "required_ccvs": "none"
++  }
++}
++```
++
++---
++
++### `deferred_lanes`
++
++Optional. An array of `remote_chain_name`s, each also in `remote_lanes` and not in `imported_lanes`. A deferred lane
++is deployed like any other — `1_Deploy` builds its lock box, `2_Configure` authorizes the pool on it and hands it to
++the timelock — but `2_Configure` applies none of its configuration: no chain update, fee config or lock box binding on
++the pool, no CCV entry in the hooks, no entries in the placeholder verifier and the resolver. The lane is connected
++afterwards by the pool's owner, the `LidoTimelock`: `4_ConnectLane.s.sol` reads the same records and writes the batch
++of owner-only calls (`applyChainUpdates`, `applyTokenTransferFeeConfigUpdates`, `configureLockBoxes` on a
++SiloedLockRelease pool, `applyCCVConfigUpdates`, `applyRemoteChainConfigUpdates`, `applyOutboundImplementationUpdates`)
++to the file named by `PROPOSAL_OUT` for a proposal of the timelock's proposer (Chainlink MCMS) or the admin's bypass;
++it broadcasts nothing.
++
++```sh
++CHAIN_CONFIG=./contracts/lido-hvmv/config/chains/ethereum.json LANE=base \
++PROPOSAL_OUT=./contracts/lido-hvmv/config/ethereum.lane-base.json \
++forge script contracts/lido-hvmv/script/deployment/4_ConnectLane.s.sol:ConnectLaneScript --rpc-url $RPC
++```
++
++```json
++"deferred_lanes": ["base"]
++```
++
++This is how a hub that takes over an existing pool is bound while it mirrors that pool exactly (every imported lane
++configured, the new lane absent) and gains the new lane by a separate proposal once the pool is the registry's.
++
+ ---
+ 
+ ### `deployed`
+@@ -323,4 +383,6 @@ overwriting any existing values:
+ | `governance_addresses.chainlink_mcms` | address | Yes | Proposer, canceller |
+ | `remote_lanes[].remote_chain_name` | string | Yes | Remote chain's `chain.chain_name` |
+ | `remote_lanes[].is_siloed` | bool | Yes | Own lock box for this lane |
++| `imported_lanes.<name>.*` | object | No | Lane taken over from an existing pool: its remote pools and limits, no CCVs (see `imported_lanes`) |
++| `deferred_lanes[]` | string | No | Lane `2_Configure` leaves to the owner; `4_ConnectLane` emits its batch (see `deferred_lanes`) |
+ | `deployed.*` | address | No | Auto-populated |
+diff --git a/chains/evm/contracts/lido-hvmv/script/deployment/1_Deploy.s.sol b/chains/evm/contracts/lido-hvmv/script/deployment/1_Deploy.s.sol
+index d9b477c..fefad20 100644
+--- a/chains/evm/contracts/lido-hvmv/script/deployment/1_Deploy.s.sol
++++ b/chains/evm/contracts/lido-hvmv/script/deployment/1_Deploy.s.sol
+@@ -6,8 +6,9 @@ pragma solidity ^0.8.24;
+ import {PausableAdvancedPoolHooks} from "../../PausableAdvancedPoolHooks.sol";
+ import {VersionedVerifierResolver} from "@chainlink/contracts-ccip/ccvs/VersionedVerifierResolver.sol";
+ import {ERC20BridgedPermit} from "@lido/wsteth-token/token/ERC20BridgedPermit.sol";
+-import {TransparentUpgradeableProxy} from
+-  "@openzeppelin/contracts@5.3.0/proxy/transparent/TransparentUpgradeableProxy.sol";
++import {
++  TransparentUpgradeableProxy
++} from "@openzeppelin/contracts@5.3.0/proxy/transparent/TransparentUpgradeableProxy.sol";
+ import {IERC20Metadata} from "@openzeppelin/contracts@5.3.0/token/ERC20/extensions/IERC20Metadata.sol";
+ import {console} from "forge-std/console.sol";
+ 
+@@ -26,6 +27,7 @@ contract DeployScript is ConfigParser {
+   uint256 internal s_deployerPrivateKey;
+   string internal s_chainConfigPath;
+   TokenDeployment internal s_tokenDeployment;
++  bool internal s_hubMigrationOnly;
+ 
+   function setUp() public {
+     _loadConfigs();
+@@ -35,7 +37,7 @@ contract DeployScript is ConfigParser {
+     return s_deployer;
+   }
+ 
+-  function run() public {
++  function run() public virtual {
+     _revertIfBroadcastingWithTestKey(s_deployerPrivateKey);
+     _revertIfAlreadyDeployed(s_chainConfigPath);
+     require(block.chainid == s_chainConfig.chain.chain_id, "Chain ID mismatch: RPC chain != config chain_id");
+@@ -46,7 +48,7 @@ contract DeployScript is ConfigParser {
+     _deployLockBoxes();
+     _deployTokenPool();
+     _deployAdvancedPoolHooks();
+-    _deployCCVStack();
++    if (!s_hubMigrationOnly) _deployCCVStack();
+     _deployTimelock();
+ 
+     vm.stopBroadcast();
+@@ -64,6 +66,14 @@ contract DeployScript is ConfigParser {
+ 
+     _loadDefaultConfig(defaultConfigPath);
+     _loadChainConfig(s_chainConfigPath);
++    s_hubMigrationOnly = vm.envOr("HUB_MIGRATION_ONLY", false);
++    if (s_hubMigrationOnly) {
++      require(s_chainConfig.chain.pool_type == PoolType.SiloedLockRelease, "Hub migration requires a lock/release pool");
++      for (uint256 i; i < s_chainConfig.remote_lanes.length; ++i) {
++        string memory name = s_chainConfig.remote_lanes[i].remote_chain_name;
++        require(_isDeferredLane(name) || s_importedLanes[name].present, "Hub migration only admits imported lanes");
++      }
++    }
+     if (s_tokenDeployedByScripts) s_tokenDeployment = _loadTokenDeployment(s_chainConfigPath);
+ 
+     s_ccip = _fetchCCIPAddresses(s_chainConfig.chain.chain_id);
+@@ -94,6 +104,7 @@ contract DeployScript is ConfigParser {
+ 
+       for (uint256 i; i < s_chainConfig.remote_lanes.length; i++) {
+         RemoteLane memory lane = s_chainConfig.remote_lanes[i];
++        if (s_hubMigrationOnly && _isDeferredLane(lane.remote_chain_name)) continue;
+         address lockBox;
+ 
+         if (lane.is_siloed) {
+diff --git a/chains/evm/contracts/lido-hvmv/script/deployment/2_Configure.s.sol b/chains/evm/contracts/lido-hvmv/script/deployment/2_Configure.s.sol
+index 6bf08f8..f8abd19 100644
+--- a/chains/evm/contracts/lido-hvmv/script/deployment/2_Configure.s.sol
++++ b/chains/evm/contracts/lido-hvmv/script/deployment/2_Configure.s.sol
+@@ -27,9 +27,15 @@ import {ILidoTimelock} from "../../interfaces/ILidoTimelock.sol";
+ /// @notice Configures all deployed contracts and transfers their ownership to the LidoTimelock.
+ /// @dev Prerequisite: 1_Deploy has been run on ALL chains (local + all remote chains).
+ ///      Reads remote chain JSONs to resolve cross-chain addresses.
++///      Lanes listed in the record's `deferred_lanes` are left for the pool's owner: their lockbox is authorized and
++///      handed over like the others, but their chain update, fee config, lockbox binding, CCV entry and verifier and
++///      resolver entries are not applied here — 4_ConnectLane emits those calls for an owner's proposal. The per-lane
++///      builders below are shared with that script, so both apply the same configuration.
+ ///      Env vars: CHAIN_CONFIG (required), DEFAULT_CONFIG (optional), DEPLOYER_PRIVATE_KEY (optional)
+ contract ConfigureScript is ConfigParser {
+   error MissingCCVDeployment(address verifier, address resolver);
++  error ImportedLaneRemotePoolMismatch(string remoteChainName, address recordPool);
++  error NoLockBoxForLane(string remoteChainName);
+ 
+   uint32 internal constant DUMMY_MESSAGE_ID_GAS_FOR_VERIFICATION = 1;
+   uint16 internal constant DUMMY_MESSAGE_ID_PAYLOAD_SIZE_BYTES = 36;
+@@ -38,6 +44,7 @@ contract ConfigureScript is ConfigParser {
+   string internal s_chainConfigPath;
+   uint256 internal s_deployerPrivateKey;
+   address internal s_deployer;
++  bool internal s_hubMigrationOnly;
+ 
+   // Resolved remote chain data (indexed same as s_chainConfig.remote_lanes)
+   mapping(address lockBox => bool configured) internal s_configuredLockBoxes;
+@@ -85,10 +92,15 @@ contract ConfigureScript is ConfigParser {
+ 
+     _loadDefaultConfig(defaultConfigPath);
+     _loadChainConfig(s_chainConfigPath);
++    s_hubMigrationOnly = vm.envOr("HUB_MIGRATION_ONLY", false);
++    if (s_hubMigrationOnly) {
++      require(s_chainConfig.chain.pool_type == PoolType.SiloedLockRelease, "Hub migration requires a lock/release pool");
++      require(_lanesWithLocalCCVs() == 0, "Hub migration cannot omit required CCVs");
++    }
+     _loadCCIPAddresses(s_chainConfigPath);
+     _loadDeployedAddresses(s_chainConfigPath);
+     _loadCCVDeployment(s_chainConfigPath);
+-    if (s_ccv.message_id_verifier == address(0) || s_ccv.verifier_resolver == address(0)) {
++    if (!s_hubMigrationOnly && (s_ccv.message_id_verifier == address(0) || s_ccv.verifier_resolver == address(0))) {
+       revert MissingCCVDeployment(s_ccv.message_id_verifier, s_ccv.verifier_resolver);
+     }
+   }
+@@ -108,6 +120,7 @@ contract ConfigureScript is ConfigParser {
+ 
+     for (uint256 i; i < s_chainConfig.remote_lanes.length; i++) {
+       string memory remoteName = s_chainConfig.remote_lanes[i].remote_chain_name;
++      if (s_hubMigrationOnly && _isDeferredLane(remoteName)) continue;
+       string memory remotePath = string.concat(configDir, "/", remoteName, ".json");
+       s_remoteData[remoteName] = _loadRemoteChainData(remotePath);
+     }
+@@ -129,99 +142,70 @@ contract ConfigureScript is ConfigParser {
+   function _configureTokenPool() internal {
+     TokenPool(s_deployed.token_pool).updateAdvancedPoolHooks(IAdvancedPoolHooks(s_deployed.advanced_pool_hooks));
+ 
+-    uint256 laneCount = s_chainConfig.remote_lanes.length;
+-    TokenPool.ChainUpdate[] memory chainUpdates = new TokenPool.ChainUpdate[](laneCount);
++    uint256 count = _lanesConfiguredHere();
++    TokenPool.ChainUpdate[] memory chainUpdates = new TokenPool.ChainUpdate[](count);
+     TokenPool.TokenTransferFeeConfigArgs[] memory tokenTransferFeeConfigs =
+-      new TokenPool.TokenTransferFeeConfigArgs[](laneCount);
++      new TokenPool.TokenTransferFeeConfigArgs[](count);
++    uint256 configured;
+ 
+-    for (uint256 i; i < laneCount; i++) {
++    for (uint256 i; i < s_chainConfig.remote_lanes.length; i++) {
+       string memory remoteName = s_chainConfig.remote_lanes[i].remote_chain_name;
+-      RemoteChainData memory remote = s_remoteData[remoteName];
+-
+-      bytes[] memory remotePoolAddresses = new bytes[](1);
+-      remotePoolAddresses[0] = abi.encode(remote.token_pool);
+-
+-      chainUpdates[i] = TokenPool.ChainUpdate({
+-        remoteChainSelector: remote.ccip.chain_selector,
+-        remotePoolAddresses: remotePoolAddresses,
+-        remoteTokenAddress: abi.encode(remote.token),
+-        outboundRateLimiterConfig: _toRateLimiterConfig(s_defaultConfig.rate_limiter_defaults.outbound),
+-        inboundRateLimiterConfig: _toRateLimiterConfig(s_defaultConfig.rate_limiter_defaults.inbound)
+-      });
+-
+-      tokenTransferFeeConfigs[i] = TokenPool.TokenTransferFeeConfigArgs({
+-        destChainSelector: remote.ccip.chain_selector,
+-        tokenTransferFeeConfig: IPoolV2.TokenTransferFeeConfig({
+-          destGasOverhead: s_defaultConfig.token_transfer_fee_defaults.dest_gas_overhead,
+-          destBytesOverhead: STOCK_SOURCE_POOL_DATA_LENGTH,
+-          finalityFeeUSDCents: 0,
+-          fastFinalityFeeUSDCents: 0,
+-          finalityTransferFeeBps: 0,
+-          fastFinalityTransferFeeBps: 0,
+-          isEnabled: true
+-        })
+-      });
++      if (_isDeferredLane(remoteName)) continue;
++      chainUpdates[configured] = _chainUpdateFor(remoteName);
++      tokenTransferFeeConfigs[configured++] = _feeConfigFor(remoteName);
+     }
+ 
+-    if (chainUpdates.length > 0) {
++    if (count > 0) {
+       TokenPool(s_deployed.token_pool).applyChainUpdates(new uint64[](0), chainUpdates);
+       TokenPool(s_deployed.token_pool).applyTokenTransferFeeConfigUpdates(tokenTransferFeeConfigs, new uint64[](0));
+     }
+   }
+ 
+   function _configureLockBoxes() internal {
+-    if (s_chainConfig.chain.pool_type == PoolType.SiloedLockRelease && s_deployed.lock_boxes.length > 0) {
+-      // Build lock box configs mapping lock_box -> remote_chain_selector
+-      ISiloedLockReleaseTokenPool.LockBoxConfig[] memory lockBoxConfigs =
+-        new ISiloedLockReleaseTokenPool.LockBoxConfig[](s_deployed.lock_boxes.length);
+-
+-      address[] memory callers = new address[](1);
+-      callers[0] = s_deployed.token_pool;
+-
+-      for (uint256 i; i < s_deployed.lock_boxes.length; i++) {
+-        LockBoxEntry memory entry = s_deployed.lock_boxes[i];
++    if (s_chainConfig.chain.pool_type != PoolType.SiloedLockRelease || s_deployed.lock_boxes.length == 0) return;
+ 
+-        string memory remoteName = entry.remote_chain_name;
+-        RemoteChainData memory remote = s_remoteData[remoteName];
++    address[] memory callers = new address[](1);
++    callers[0] = s_deployed.token_pool;
+ 
+-        lockBoxConfigs[i] = ISiloedLockReleaseTokenPool.LockBoxConfig({
+-          remoteChainSelector: remote.ccip.chain_selector,
+-          lockBox: entry.lock_box
+-        });
++    uint256 bound;
++    for (uint256 i; i < s_deployed.lock_boxes.length; i++) {
++      if (!_isDeferredLane(s_deployed.lock_boxes[i].remote_chain_name)) bound++;
++    }
++    ISiloedLockReleaseTokenPool.LockBoxConfig[] memory lockBoxConfigs =
++      new ISiloedLockReleaseTokenPool.LockBoxConfig[](bound);
++    uint256 configured;
+ 
+-        address lockBox = s_deployed.lock_boxes[i].lock_box;
+-        // Authorize the token pool on each unique lock box
+-        if (!s_configuredLockBoxes[lockBox]) {
+-          s_configuredLockBoxes[lockBox] = true;
+-          AuthorizedCallers(lockBox).applyAuthorizedCallerUpdates(
++    for (uint256 i; i < s_deployed.lock_boxes.length; i++) {
++      LockBoxEntry memory entry = s_deployed.lock_boxes[i];
++      // Every lockbox authorizes the pool once, a deferred lane's included: when the owner binds that lane, its
++      // lockbox is already the pool's.
++      if (!s_configuredLockBoxes[entry.lock_box]) {
++        s_configuredLockBoxes[entry.lock_box] = true;
++        AuthorizedCallers(entry.lock_box)
++          .applyAuthorizedCallerUpdates(
+             AuthorizedCallers.AuthorizedCallerArgs({addedCallers: callers, removedCallers: new address[](0)})
+           );
+-        }
+       }
++      if (_isDeferredLane(entry.remote_chain_name)) continue;
++      lockBoxConfigs[configured++] = _lockBoxConfigFor(entry.remote_chain_name);
++    }
+ 
+-      // Configure lock boxes on the pool
++    if (bound > 0) {
+       ISiloedLockReleaseTokenPool(s_deployed.token_pool).configureLockBoxes(lockBoxConfigs);
+     }
+   }
+ 
++  /// @dev Imported lanes get no entry: the hooks require no CCVs for them, so they keep their default verification.
++  ///      Deferred lanes get theirs from the owner (4_ConnectLane).
+   function _configureAdvancedPoolHooks() internal {
+     PausableAdvancedPoolHooks hooks = PausableAdvancedPoolHooks(payable(s_deployed.advanced_pool_hooks));
+-    uint256 laneCount = s_chainConfig.remote_lanes.length;
+-    AdvancedPoolHooks.CCVConfigArg[] memory ccvConfigs = new AdvancedPoolHooks.CCVConfigArg[](laneCount);
++    AdvancedPoolHooks.CCVConfigArg[] memory ccvConfigs = new AdvancedPoolHooks.CCVConfigArg[](_lanesWithLocalCCVs());
++    uint256 configured;
+ 
+-    for (uint256 i; i < laneCount; i++) {
++    for (uint256 i; i < s_chainConfig.remote_lanes.length; i++) {
+       string memory remoteName = s_chainConfig.remote_lanes[i].remote_chain_name;
+-      RemoteChainData memory remote = s_remoteData[remoteName];
+-      address[] memory resolver = new address[](1);
+-      resolver[0] = s_ccv.verifier_resolver;
+-
+-      ccvConfigs[i] = AdvancedPoolHooks.CCVConfigArg({
+-        remoteChainSelector: remote.ccip.chain_selector,
+-        outboundCCVs: resolver,
+-        thresholdOutboundCCVs: new address[](0),
+-        inboundCCVs: resolver,
+-        thresholdInboundCCVs: new address[](0)
+-      });
++      if (!_hasLocalCCVs(remoteName)) continue;
++      ccvConfigs[configured++] = _ccvConfigFor(remoteName);
+     }
+ 
+     if (ccvConfigs.length > 0) {
+@@ -230,29 +214,21 @@ contract ConfigureScript is ConfigParser {
+     hooks.setThresholdAmount(vm.envOr("CCV_THRESHOLD_AMOUNT", uint256(0)));
+   }
+ 
++  /// @dev The placeholder verifier and the resolver serve the lanes whose hooks require them; imported and deferred
++  ///      lanes are left out.
+   function _configureCCVStack() internal {
+-    uint256 laneCount = s_chainConfig.remote_lanes.length;
+-    BaseVerifier.RemoteChainConfigArgs[] memory remoteConfigs = new BaseVerifier.RemoteChainConfigArgs[](laneCount);
++    if (s_hubMigrationOnly) return;
++    uint256 localCount = _lanesWithLocalCCVs();
++    BaseVerifier.RemoteChainConfigArgs[] memory remoteConfigs = new BaseVerifier.RemoteChainConfigArgs[](localCount);
+     VersionedVerifierResolver.OutboundImplementationArgs[] memory outbound =
+-      new VersionedVerifierResolver.OutboundImplementationArgs[](laneCount);
++      new VersionedVerifierResolver.OutboundImplementationArgs[](localCount);
++    uint256 configured;
+ 
+-    for (uint256 i; i < laneCount; i++) {
++    for (uint256 i; i < s_chainConfig.remote_lanes.length; i++) {
+       string memory remoteName = s_chainConfig.remote_lanes[i].remote_chain_name;
+-      RemoteChainData memory remote = s_remoteData[remoteName];
+-
+-      remoteConfigs[i] = BaseVerifier.RemoteChainConfigArgs({
+-        router: IRouter(s_ccip.router),
+-        remoteChainSelector: remote.ccip.chain_selector,
+-        allowlistEnabled: false,
+-        feeUSDCents: 0,
+-        gasForVerification: DUMMY_MESSAGE_ID_GAS_FOR_VERIFICATION,
+-        payloadSizeBytes: DUMMY_MESSAGE_ID_PAYLOAD_SIZE_BYTES
+-      });
+-
+-      outbound[i] = VersionedVerifierResolver.OutboundImplementationArgs({
+-        destChainSelector: remote.ccip.chain_selector,
+-        verifier: s_ccv.message_id_verifier
+-      });
++      if (!_hasLocalCCVs(remoteName)) continue;
++      remoteConfigs[configured] = _verifierRemoteConfigFor(remoteName);
++      outbound[configured++] = _resolverOutboundFor(remoteName);
+     }
+ 
+     DummyMessageIdVerifier(s_ccv.message_id_verifier).applyRemoteChainConfigUpdates(remoteConfigs);
+@@ -260,8 +236,7 @@ contract ConfigureScript is ConfigParser {
+     VersionedVerifierResolver.InboundImplementationArgs[] memory inbound =
+       new VersionedVerifierResolver.InboundImplementationArgs[](1);
+     inbound[0] = VersionedVerifierResolver.InboundImplementationArgs({
+-      version: DummyMessageIdVerifier(s_ccv.message_id_verifier).versionTag(),
+-      verifier: s_ccv.message_id_verifier
++      version: DummyMessageIdVerifier(s_ccv.message_id_verifier).versionTag(), verifier: s_ccv.message_id_verifier
+     });
+ 
+     VersionedVerifierResolver resolver = VersionedVerifierResolver(s_ccv.verifier_resolver);
+@@ -279,6 +254,131 @@ contract ConfigureScript is ConfigParser {
+     }
+   }
+ 
++  // ═══════════════════════════════════════════════════════════════════════════════
++  // PER-LANE CONFIGURATION (shared with 4_ConnectLane)
++  // ═══════════════════════════════════════════════════════════════════════════════
++
++  /// @dev The lane's chain update: an imported lane keeps the replaced pool's remote pools and limits (the remote
++  ///      record's pool must be among them); any other lane gets the remote record's pool and the defaults.
++  function _chainUpdateFor(
++    string memory remoteName
++  ) internal view returns (TokenPool.ChainUpdate memory) {
++    RemoteChainData memory remote = s_remoteData[remoteName];
++    ImportedLane storage imported = s_importedLanes[remoteName];
++    bytes[] memory remotePoolAddresses;
++    RateLimiterConfig memory outbound = s_defaultConfig.rate_limiter_defaults.outbound;
++    RateLimiterConfig memory inbound = s_defaultConfig.rate_limiter_defaults.inbound;
++    if (imported.present) {
++      remotePoolAddresses = new bytes[](imported.remote_pools.length);
++      bool recordPoolListed;
++      for (uint256 j; j < imported.remote_pools.length; j++) {
++        remotePoolAddresses[j] = abi.encode(imported.remote_pools[j]);
++        if (imported.remote_pools[j] == remote.token_pool) recordPoolListed = true;
++      }
++      if (!recordPoolListed) revert ImportedLaneRemotePoolMismatch(remoteName, remote.token_pool);
++      outbound = imported.outbound;
++      inbound = imported.inbound;
++    } else {
++      remotePoolAddresses = new bytes[](1);
++      remotePoolAddresses[0] = abi.encode(remote.token_pool);
++    }
++
++    return TokenPool.ChainUpdate({
++      remoteChainSelector: remote.ccip.chain_selector,
++      remotePoolAddresses: remotePoolAddresses,
++      remoteTokenAddress: abi.encode(remote.token),
++      outboundRateLimiterConfig: _toRateLimiterConfig(outbound),
++      inboundRateLimiterConfig: _toRateLimiterConfig(inbound)
++    });
++  }
++
++  function _feeConfigFor(
++    string memory remoteName
++  ) internal view returns (TokenPool.TokenTransferFeeConfigArgs memory) {
++    return TokenPool.TokenTransferFeeConfigArgs({
++      destChainSelector: s_remoteData[remoteName].ccip.chain_selector,
++      tokenTransferFeeConfig: IPoolV2.TokenTransferFeeConfig({
++        destGasOverhead: s_defaultConfig.token_transfer_fee_defaults.dest_gas_overhead,
++        destBytesOverhead: STOCK_SOURCE_POOL_DATA_LENGTH,
++        finalityFeeUSDCents: 0,
++        fastFinalityFeeUSDCents: 0,
++        finalityTransferFeeBps: 0,
++        fastFinalityTransferFeeBps: 0,
++        isEnabled: true
++      })
++    });
++  }
++
++  /// @dev The lockbox 1_Deploy recorded for the lane, bound to the lane's selector.
++  function _lockBoxConfigFor(
++    string memory remoteName
++  ) internal view returns (ISiloedLockReleaseTokenPool.LockBoxConfig memory) {
++    for (uint256 i; i < s_deployed.lock_boxes.length; i++) {
++      if (keccak256(bytes(s_deployed.lock_boxes[i].remote_chain_name)) == keccak256(bytes(remoteName))) {
++        return ISiloedLockReleaseTokenPool.LockBoxConfig({
++          remoteChainSelector: s_remoteData[remoteName].ccip.chain_selector, lockBox: s_deployed.lock_boxes[i].lock_box
++        });
++      }
++    }
++    revert NoLockBoxForLane(remoteName);
++  }
++
++  /// @dev The hooks entry of a lane verified by the local resolver (placeholder CCV on both directions).
++  function _ccvConfigFor(
++    string memory remoteName
++  ) internal view returns (AdvancedPoolHooks.CCVConfigArg memory) {
++    address[] memory resolver = new address[](1);
++    resolver[0] = s_ccv.verifier_resolver;
++    return AdvancedPoolHooks.CCVConfigArg({
++      remoteChainSelector: s_remoteData[remoteName].ccip.chain_selector,
++      outboundCCVs: resolver,
++      thresholdOutboundCCVs: new address[](0),
++      inboundCCVs: resolver,
++      thresholdInboundCCVs: new address[](0)
++    });
++  }
++
++  function _verifierRemoteConfigFor(
++    string memory remoteName
++  ) internal view returns (BaseVerifier.RemoteChainConfigArgs memory) {
++    return BaseVerifier.RemoteChainConfigArgs({
++      router: IRouter(s_ccip.router),
++      remoteChainSelector: s_remoteData[remoteName].ccip.chain_selector,
++      allowlistEnabled: false,
++      feeUSDCents: 0,
++      gasForVerification: DUMMY_MESSAGE_ID_GAS_FOR_VERIFICATION,
++      payloadSizeBytes: DUMMY_MESSAGE_ID_PAYLOAD_SIZE_BYTES
++    });
++  }
++
++  function _resolverOutboundFor(
++    string memory remoteName
++  ) internal view returns (VersionedVerifierResolver.OutboundImplementationArgs memory) {
++    return VersionedVerifierResolver.OutboundImplementationArgs({
++      destChainSelector: s_remoteData[remoteName].ccip.chain_selector, verifier: s_ccv.message_id_verifier
++    });
++  }
++
++  /// @dev A lane whose hooks require the local resolver: neither imported (no CCVs) nor deferred (the owner's call).
++  function _hasLocalCCVs(
++    string memory remoteName
++  ) internal view returns (bool) {
++    return !s_importedLanes[remoteName].present && !_isDeferredLane(remoteName);
++  }
++
++  function _lanesWithLocalCCVs() internal view returns (uint256 count) {
++    for (uint256 i; i < s_chainConfig.remote_lanes.length; i++) {
++      if (_hasLocalCCVs(s_chainConfig.remote_lanes[i].remote_chain_name)) count++;
++    }
++  }
++
++  /// @dev Lanes this script configures on the pool: every lane that is not deferred.
++  function _lanesConfiguredHere() internal view returns (uint256 count) {
++    for (uint256 i; i < s_chainConfig.remote_lanes.length; i++) {
++      if (!_isDeferredLane(s_chainConfig.remote_lanes[i].remote_chain_name)) count++;
++    }
++  }
++
+   // ═══════════════════════════════════════════════════════════════════════════════
+   // OWNERSHIP TRANSFER
+   // ═══════════════════════════════════════════════════════════════════════════════
+@@ -287,12 +387,14 @@ contract ConfigureScript is ConfigParser {
+   ///      deployer still holds the timelock's ADMIN_ROLE.
+   function _transferOwnershipToTimelock() internal {
+     address timelock = s_deployed.timelock;
+-    address[] memory owned = new address[](4 + s_deployed.lock_boxes.length);
++    uint256 count = s_hubMigrationOnly ? 2 : 4;
++    address[] memory owned = new address[](count + s_deployed.lock_boxes.length);
+     owned[0] = s_deployed.token_pool;
+     owned[1] = s_deployed.advanced_pool_hooks;
+-    owned[2] = s_ccv.message_id_verifier;
+-    owned[3] = s_ccv.verifier_resolver;
+-    uint256 count = 4;
++    if (!s_hubMigrationOnly) {
++      owned[2] = s_ccv.message_id_verifier;
++      owned[3] = s_ccv.verifier_resolver;
++    }
+     for (uint256 i; i < s_deployed.lock_boxes.length; i++) {
+       address lockBox = s_deployed.lock_boxes[i].lock_box;
+       if (s_transferredLockBoxes[lockBox]) continue;
+diff --git a/chains/evm/contracts/lido-hvmv/script/lib/ConfigParser.sol b/chains/evm/contracts/lido-hvmv/script/lib/ConfigParser.sol
+index aee9f12..3beff29 100644
+--- a/chains/evm/contracts/lido-hvmv/script/lib/ConfigParser.sol
++++ b/chains/evm/contracts/lido-hvmv/script/lib/ConfigParser.sol
+@@ -33,6 +33,8 @@ abstract contract ConfigParser is CcipDeployBase {
+     address emergency_brakes,
+     address chainlink_mcms
+   );
++  error InvalidImportedLane(string path, string remoteChainName, string reason);
++  error InvalidDeferredLane(string path, string remoteChainName, string reason);
+ 
+   // ============ Enums ============
+ 
+@@ -106,6 +108,16 @@ abstract contract ConfigParser is CcipDeployBase {
+     string remote_chain_name;
+   }
+ 
++  /// @dev A lane the pool takes over from an existing deployment (`.imported_lanes.<remote_chain_name>`): the remote
++  ///      chain is not deployed by these scripts, the lane keeps the remote pools and rate limits the replaced pool
++  ///      serves today, and the hooks require no CCVs for it.
++  struct ImportedLane {
++    bool present;
++    address[] remote_pools;
++    RateLimiterConfig outbound;
++    RateLimiterConfig inbound;
++  }
++
+   // ============ Helper structs for JSON parsing ============
+ 
+   struct BlockedSelectorRaw {
+@@ -156,6 +168,10 @@ abstract contract ConfigParser is CcipDeployBase {
+   /// @dev Set by _loadChainConfig: addresses.token is address(0) in the config, so the scripts deploy the token.
+   /// Stays true after the deployed address is copied into addresses.token.
+   bool internal s_tokenDeployedByScripts;
++  /// @dev Set by _loadChainConfig from `.imported_lanes`; absent lanes have `present == false`.
++  mapping(string remoteChainName => ImportedLane lane) internal s_importedLanes;
++  /// @dev Set by _loadChainConfig from `.deferred_lanes`: lanes 2_Configure leaves to the pool's owner (4_ConnectLane).
++  mapping(string remoteChainName => bool deferred) internal s_deferredLanes;
+ 
+   // ============ Loading Functions ============
+ 
+@@ -240,6 +256,67 @@ abstract contract ConfigParser is CcipDeployBase {
+     for (uint256 i; i < lanes.length; i++) {
+       s_chainConfig.remote_lanes.push(lanes[i]);
+     }
++    _loadImportedLanes(path, json);
++    _loadDeferredLanes(path, json);
++  }
++
++  /// @notice Load the lanes whose configuration 2_Configure leaves to the pool's owner (`.deferred_lanes`, an array of
++  ///         `remote_chain_name`s).
++  /// @dev A deferred lane is deployed like any other (1_Deploy builds its lockbox, 2_Configure authorizes the pool on it
++  ///      and hands it to the timelock) but gets no chain update, fee config, lockbox binding, CCV entry or verifier and
++  ///      resolver entries from the deployer: 4_ConnectLane emits exactly those calls for a proposal of the owner.
++  ///      Imported lanes cannot be deferred: they are the lanes the pool must serve from the moment it is bound.
++  function _loadDeferredLanes(string memory path, string memory json) internal {
++    if (!vm.keyExistsJson(json, ".deferred_lanes")) return;
++    string[] memory names = vm.parseJsonStringArray(json, ".deferred_lanes");
++    for (uint256 i; i < names.length; i++) {
++      string memory name = names[i];
++      if (!_isRemoteLane(name)) revert InvalidDeferredLane(path, name, "not a remote lane");
++      if (s_importedLanes[name].present) revert InvalidDeferredLane(path, name, "an imported lane cannot be deferred");
++      if (s_deferredLanes[name]) revert InvalidDeferredLane(path, name, "listed twice");
++      s_deferredLanes[name] = true;
++    }
++  }
++
++  function _isDeferredLane(string memory name) internal view returns (bool) {
++    return s_deferredLanes[name];
++  }
++
++  /// @notice Load the lanes the pool takes over from an existing deployment (`.imported_lanes.<remote_chain_name>`).
++  /// @dev Each entry names a lane of `.remote_lanes` and carries `remote_pools` (every remote pool the replaced pool
++  ///      accepts for that chain; the remote record's `deployed.token_pool` must be among them), `rate_limits.outbound`
++  ///      and `rate_limits.inbound` (applied instead of `rate_limiter_defaults`), and `required_ccvs`, which must be
++  ///      `"none"`: 2_Configure configures no CCVs for the lane, so the lane keeps its default verification.
++  function _loadImportedLanes(string memory path, string memory json) internal {
++    if (!vm.keyExistsJson(json, ".imported_lanes")) return;
++    string[] memory names = vm.parseJsonKeys(json, ".imported_lanes");
++    for (uint256 i; i < names.length; i++) {
++      string memory name = names[i];
++      if (!_isRemoteLane(name)) revert InvalidImportedLane(path, name, "not a remote lane");
++      string memory key = string.concat(".imported_lanes.", name);
++      ImportedLane storage lane = s_importedLanes[name];
++      lane.present = true;
++      delete lane.remote_pools;
++      address[] memory pools = vm.parseJsonAddressArray(json, string.concat(key, ".remote_pools"));
++      if (pools.length == 0) revert InvalidImportedLane(path, name, "remote_pools is empty");
++      for (uint256 j; j < pools.length; j++) {
++        if (pools[j] == address(0)) revert InvalidImportedLane(path, name, "zero remote pool");
++        lane.remote_pools.push(pools[j]);
++      }
++      lane.outbound = _parseRateLimiterConfig(json, string.concat(key, ".rate_limits.outbound"));
++      lane.inbound = _parseRateLimiterConfig(json, string.concat(key, ".rate_limits.inbound"));
++      string memory requiredCCVs = vm.parseJsonString(json, string.concat(key, ".required_ccvs"));
++      if (keccak256(bytes(requiredCCVs)) != keccak256(bytes("none"))) {
++        revert InvalidImportedLane(path, name, "required_ccvs must be none");
++      }
++    }
++  }
++
++  function _isRemoteLane(string memory name) internal view returns (bool) {
++    for (uint256 i; i < s_chainConfig.remote_lanes.length; i++) {
++      if (keccak256(bytes(s_chainConfig.remote_lanes[i].remote_chain_name)) == keccak256(bytes(name))) return true;
++    }
++    return false;
+   }
+ 
+   /// @notice Load the parameters of the token to deploy (.token_deployment), read only when addresses.token is 0.
+diff --git a/chains/evm/contracts/lido-hvmv/test/LidoTimelock.t.sol b/chains/evm/contracts/lido-hvmv/test/LidoTimelock.t.sol
+index 2210c09..43dfc20 100644
+--- a/chains/evm/contracts/lido-hvmv/test/LidoTimelock.t.sol
++++ b/chains/evm/contracts/lido-hvmv/test/LidoTimelock.t.sol
+@@ -422,7 +422,7 @@ contract LidoTimelockTest is Test {
+   function test_DoneProposalsSurviveHalt() public {
+     RBACTimelock.Call[] memory first = _setValueCalls(1);
+     bytes32 firstId = _schedule(first, bytes32(0), bytes32(0));
+-    vm.warp(block.timestamp + MIN_DELAY);
++    vm.warp(vm.getBlockTimestamp() + MIN_DELAY);
+     _execute(first, bytes32(0), bytes32(0));
+ 
+     _halt();
+@@ -431,7 +431,7 @@ contract LidoTimelockTest is Test {
+ 
+     RBACTimelock.Call[] memory second = _setValueCalls(2);
+     _schedule(second, firstId, bytes32(0));
+-    vm.warp(block.timestamp + MIN_DELAY);
++    vm.warp(vm.getBlockTimestamp() + MIN_DELAY);
+     _execute(second, firstId, bytes32(0));
+     assertEq(s_target.value(), 2);
+   }
+@@ -458,13 +458,13 @@ contract LidoTimelockTest is Test {
+     _restart();
+ 
+     _schedule(second, firstId, bytes32(0));
+-    vm.warp(block.timestamp + MIN_DELAY);
++    vm.warp(vm.getBlockTimestamp() + MIN_DELAY);
+     vm.prank(s_executor);
+     vm.expectRevert("RBACTimelock: missing dependency");
+     s_timelock.executeBatch(second, firstId, bytes32(0));
+ 
+     assertEq(_schedule(first, bytes32(0), bytes32(0)), firstId);
+-    vm.warp(block.timestamp + MIN_DELAY);
++    vm.warp(vm.getBlockTimestamp() + MIN_DELAY);
+     _execute(first, bytes32(0), bytes32(0));
+     _execute(second, firstId, bytes32(0));
+     assertEq(s_target.value(), 2);
+diff --git a/chains/evm/contracts/lido-hvmv/test/script/deployment/ConfigParser.t.sol b/chains/evm/contracts/lido-hvmv/test/script/deployment/ConfigParser.t.sol
+index 403620a..425321a 100644
+--- a/chains/evm/contracts/lido-hvmv/test/script/deployment/ConfigParser.t.sol
++++ b/chains/evm/contracts/lido-hvmv/test/script/deployment/ConfigParser.t.sol
+@@ -85,6 +85,18 @@ contract ConfigParserHarness is ConfigParser {
+     return s_tokenDeployedByScripts;
+   }
+ 
++  function exposed_isDeferredLane(
++    string memory name
++  ) external view returns (bool) {
++    return _isDeferredLane(name);
++  }
++
++  function exposed_isImportedLane(
++    string memory name
++  ) external view returns (bool) {
++    return s_importedLanes[name].present;
++  }
++
+   function exposed_saveCCIPAndDeployedAddresses(
+     string memory path,
+     CCIPAddresses memory ccip,
+@@ -413,6 +425,40 @@ contract ConfigParserTest is Test {
+     assertFalse(harness.exposed_tokenDeployedByScripts());
+   }
+ 
++  function test_loadChainConfig_NoDeferredLanesByDefault() public {
++    harness.exposed_loadChainConfig(string.concat(FIXTURE_DIR, "/input_sepolia.json"));
++
++    assertFalse(harness.exposed_isDeferredLane("base_sepolia"));
++    assertFalse(harness.exposed_isDeferredLane("avalanche_fuji"));
++  }
++
++  function test_loadChainConfig_DeferredLanes() public {
++    harness.exposed_loadChainConfig(string.concat(FIXTURE_DIR, "/input_hub_deferred.json"));
++
++    assertTrue(harness.exposed_isDeferredLane("base_sepolia"), "the listed lane is deferred");
++    assertFalse(harness.exposed_isDeferredLane("avalanche_fuji"), "an unlisted lane is configured by 2_Configure");
++    assertFalse(harness.exposed_isImportedLane("base_sepolia"), "a deferred lane is not imported");
++    assertEq(harness.exposed_chainConfig().remote_lanes.length, 2, "a deferred lane stays a remote lane");
++  }
++
++  function test_RevertWhen_loadChainConfig_DeferredLaneIsNotARemoteLane() public {
++    string memory path = string.concat(FIXTURE_DIR, "/invalid_deferred_not_a_lane.json");
++    vm.expectRevert(
++      abi.encodeWithSelector(ConfigParser.InvalidDeferredLane.selector, path, "nowhere", "not a remote lane")
++    );
++    harness.exposed_loadChainConfig(path);
++  }
++
++  function test_RevertWhen_loadChainConfig_DeferredLaneIsImported() public {
++    string memory path = string.concat(FIXTURE_DIR, "/invalid_deferred_imported.json");
++    vm.expectRevert(
++      abi.encodeWithSelector(
++        ConfigParser.InvalidDeferredLane.selector, path, "base_sepolia", "an imported lane cannot be deferred"
++      )
++    );
++    harness.exposed_loadChainConfig(path);
++  }
++
+   function test_loadCCIPAddresses_PopulatesAllFields() public {
+     harness.exposed_loadCCIPAddresses(string.concat(FIXTURE_DIR, "/valid_full.json"));
+ 

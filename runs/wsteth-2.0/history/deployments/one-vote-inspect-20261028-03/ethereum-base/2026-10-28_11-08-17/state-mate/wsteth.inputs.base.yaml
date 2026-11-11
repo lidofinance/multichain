@@ -1,0 +1,38 @@
+# Inputs for the wiring-only config/state-mate/wsteth.yaml (state-mate `.inputs` feature), for the
+# ethereum–base pair. Passed explicitly via --inputs in step 08, which also asserts every value here
+# against the deploy record (config/chains/*.json) and fails loudly on drift.
+#
+#   config:    project-chosen role holders. PLACEHOLDERS for the fork rehearsal (2026-10-22): the
+#              Emergency Brakes multisig and the Chainlink MCMS are not named yet. Replace before
+#              any use beyond the rehearsal; the records in config/chains carry the same values.
+#   externals: Chainlink-owned CCIP infrastructure we reference, never deploy (router,
+#              TokenAdminRegistry, RMN proxy per chain) and the CCIP chain selectors; step 04
+#              hydrates the record from the Chainlink API, so a published-infra move stops the run
+#              here instead of silently redirecting the checks.
+config:
+  - &emergencyBrakes "0xEB00000000000000000000000000000000000001"
+  - &chainlinkMcms "0x3C3C000000000000000000000000000000000001"
+  - &l2EmergencyBrakes "0xEB00000000000000000000000000000000008453"
+  - &l2ChainlinkMcms "0x3C3C000000000000000000000000000000008453"
+  # LidoTimelock role cardinalities 1_Deploy produces: PROPOSAL_QUEUE_HALT_ROLE = {emergency_brakes},
+  # CANCELLER_ROLE = {emergency_brakes, chainlink_mcms}, per chain (each timelock has its own pair).
+  # Step 08 derives the expected counts from the records so an EXTRA holder — which per-address
+  # hasRole checks cannot see — cannot verify green.
+  - &haltRoleMemberCount "1"
+  - &cancellerRoleMemberCount "2"
+  - &l2CancellerRoleMemberCount "2"
+externals:
+  - &l1ChainId 1
+  - &l2ChainId 8453
+  - &l1CCIPRouter "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D"          # ethereum — ccip.router
+  - &l1TokenAdminRegistry "0xb22764f98dD05c789929716D677382Df22C05Cb6"  # ethereum — ccip.token_admin_registry
+  - &l2CCIPRouter "0x881e3A65B4d4a04dD529061dd0071cf975F58bCD"          # base — ccip.router
+  - &l2TokenAdminRegistry "0x6f6C373d09C07425BaAE72317863d7F6bb731e37"  # base — ccip.token_admin_registry
+  - &l1RmnProxy "0x411dE17f12D1A34ecC7F45f49844626267c75e81"              # ethereum — ccip.rmn_proxy
+  - &l2RmnProxy "0xC842c69d54F83170C42C4d556B4F6B2ca53Dd3E8"              # base — ccip.rmn_proxy
+  - &l1ChainSelector 5009297550715157269
+  - &l2ChainSelector 15971525489660198786
+  # OP-stack cross-domain messengers the legacy bridges are wired to (immutables in the bridges;
+  # pinned so an implementation built for another messenger fails verification).
+  - &l1Messenger "0x866E82a600A1414e583f7F13623F1aC5d58b0Afa"
+  - &l2Messenger "0x4200000000000000000000000000000000000007"

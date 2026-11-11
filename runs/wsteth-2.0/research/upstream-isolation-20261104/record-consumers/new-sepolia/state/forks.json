@@ -1,0 +1,54 @@
+{
+  "sepolia": {
+    "chainId": 11155111,
+    "block": 12062250,
+    "blockHash": "0x4b5e871885d0e2335e0413601cb397ce203b207052d6fe98b36c9e967760573c",
+    "rpcEnv": "RPC_SEPOLIA",
+    "localRpc": "http://127.0.0.1:61194",
+    "ccipAddressesChecked": {
+      "router": "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+      "rmn": "0xba3f6251de62dED61Ff98590cB2fDf6871FbB991",
+      "tokenAdminRegistry": "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82",
+      "registryModule": "0xa3c796d480638d7476792230da1E2ADa86e031b0"
+    }
+  },
+  "base_sepolia": {
+    "chainId": 84532,
+    "block": 54356990,
+    "blockHash": "0xa32c88a0841a7ff1cfaae7a356c4da222f55d13e35911ce393d04ef49ffa9979",
+    "rpcEnv": "RPC_BASE_SEPOLIA",
+    "localRpc": "http://127.0.0.1:61206",
+    "ccipAddressesChecked": {
+      "router": "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93",
+      "rmn": "0x99360767a4705f68CcCb9533195B761648d6d807",
+      "tokenAdminRegistry": "0x736D0bBb318c1B27Ff686cd19804094E66250e17",
+      "registryModule": "0x176ae8C6C11DD2c031B924CE1A0A43188035f3f6"
+    }
+  },
+  "monad": {
+    "chainId": 10143,
+    "block": 76908746,
+    "blockHash": "0x614afefbacc8e88b7eb87e863f26f4a696db01be1a402d9b45b314e27a85928c",
+    "rpcEnv": "RPC_MONAD_TESTNET",
+    "localRpc": "http://127.0.0.1:61219",
+    "ccipAddressesChecked": {
+      "router": "0x5aD0A67f4Da0E8665a3fbf15E4215A780407Cf33",
+      "rmn": "0xD610B8f58689de7755947C05342A2DFaC30ebD57",
+      "tokenAdminRegistry": "0xd3e461C55676B10634a5F81b747c324B85686Dd1",
+      "registryModule": "0x524B83ae8208490151339c626fd0E35b964483e3"
+    }
+  },
+  "sepolia_optimism": {
+    "chainId": 11155420,
+    "block": 50995363,
+    "blockHash": "0x599c2f0b24e3a22017c8faa0597ac98b2819b3a7c95431b1902aa8ba95fc3c48",
+    "rpcEnv": "RPC_OPTIMISM_SEPOLIA",
+    "localRpc": "http://127.0.0.1:61252",
+    "ccipAddressesChecked": {
+      "router": "0x114A20A10b43D4115e5aeef7345a1A71d2a60C57",
+      "rmn": "0xb40A3109075965cc09E93719e33E748abf680dAe",
+      "tokenAdminRegistry": "0x1d702b1FA12F347f0921C722f9D9166F00DEB67A",
+      "registryModule": "0x6AfeDdaE519bA02985B4DD027b3f22298e1D828D"
+    }
+  }
+}

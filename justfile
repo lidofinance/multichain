@@ -26,17 +26,27 @@ wsteth *args:
 wsteth-prepare target run *args:
     python3 orchestration/wsteth-ccip/workspace.py prepare "$@"
 
+# Fresh owned forks; both lines run the complete migration and verification pipeline.
+[positional-arguments]
+wsteth-rehearse line="both" *args:
+    python3 orchestration/wsteth-ccip/rehearse.py "$@"
+
 # Select an existing run without resetting its records
 [positional-arguments]
 wsteth-use run:
     python3 orchestration/wsteth-ccip/workspace.py use "$1"
 
-# Build using this ledger and the latest wsteth-ccip main (requires repository read access)
+# List legacy Ethereum <-> Base bridge transfers in flight and what each one waits for (read-only)
+[positional-arguments]
+legacy-inflight *args:
+    @uv run --locked python orchestration/legacy-bridge/inflight.py "$@"
+
+# Build using this checkout's ledger, catalogues and dated testnet snapshot
 [positional-arguments]
 dashboard-build *args:
     uv run --locked python components/dashboard/scripts/build_dashboard.py "$@"
 
-# Build and preview Lane Watch; --upstream PATH selects a local source directory
+# Build and preview Lane Watch from repository inputs
 [positional-arguments]
 dashboard *args:
     uv run --locked python components/dashboard/scripts/build_dashboard.py --serve "$@"
@@ -75,6 +85,20 @@ state-mate-coverage:
 state-mate filter="":
     STATE_MATE_CHECKOUT="{{state_mate_dir}}" bash orchestration/ledger/state-mate.sh "$1"
 
-# Test the locally maintained wstETH token and proxy
-wsteth-token-test:
+# Test the locally maintained wstETH token and proxy, then check its storage layout snapshot
+wsteth-token-test: wsteth-token-layout-check
     forge test --root components/wsteth-token --offline
+
+# The implementation must keep ERC20Core alone in linear storage (slots 0-2); see components/wsteth-token/README.md
+wsteth-token-layout-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    forge build --root components/wsteth-token --offline --silent
+    # Materialize the inspect output first: a failing `forge inspect` inside a process substitution
+    # is invisible to `set -e` and would surface as fake "layout drift" against an empty stream.
+    actual="$(mktemp)"; trap 'rm -f "$actual"' EXIT
+    forge inspect --root components/wsteth-token --offline contracts/token/ERC20BridgedPermit.sol:ERC20BridgedPermit storage-layout --json \
+        | jq '{storage: [.storage[] | {label, slot, offset, type}]}' > "$actual"
+    [ -s "$actual" ] || { echo "✗ forge inspect produced no storage layout"; exit 1; }
+    diff "$actual" components/wsteth-token/storage-layout/ERC20BridgedPermit.json \
+        && echo "✓ wsteth-token storage layout matches components/wsteth-token/storage-layout/ERC20BridgedPermit.json"

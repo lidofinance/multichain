@@ -1,0 +1,109 @@
+{
+  "live": {
+    "record": "config/chains.live-mantle-2026-09-15",
+    "deployedAt": "2026-09-15",
+    "env": "testnet",
+    "lane": [
+      11155111,
+      5003
+    ],
+    "tokens": {
+      "11155111": {
+        "chainId": "11155111",
+        "chainName": "Sepolia",
+        "tokenAddress": "0x03EA7F67bDE498c989b22628b5DFCeeeb4cA9434",
+        "poolAddress": "0x60dF5C229afF442dbe94C0E1a87c40036FCca242",
+        "poolType": "lockRelease",
+        "decimals": 18
+      },
+      "5003": {
+        "chainId": "5003",
+        "chainName": "Mantle Sepolia",
+        "tokenAddress": "0x964EC0899Aa702485A2e9FCC3C4832b320319d38",
+        "poolAddress": "0x7C4A71b282d7483EcEB858517d608354286605f1",
+        "poolType": "burnMint",
+        "decimals": 18
+      }
+    },
+    "seeds": {
+      "11155111": [
+        [
+          "0x058b56D4AAaAEb1Fe6Dd192425D7672a7584fa0B",
+          "ours:POM"
+        ],
+        [
+          "0x60dF5C229afF442dbe94C0E1a87c40036FCca242",
+          "ours:pool"
+        ],
+        [
+          "0x49bB57DFdc349eb56CD0a4e2dBfE5cC330980952",
+          "ours:hooks"
+        ],
+        [
+          "0x03EA7F67bDE498c989b22628b5DFCeeeb4cA9434",
+          "ours:token"
+        ],
+        [
+          "0xC570c5949c0cC7460f29fdbFA8c1151e282Ce879",
+          "ours:verifier"
+        ],
+        [
+          "0x160162c04296A96E44296604f4EF3Ab313Dc39e0",
+          "ours:resolver"
+        ],
+        [
+          "0x765D0Dd043f61DcBE0DCcdAe8ce868c105993B25",
+          "ours:lockbox"
+        ]
+      ],
+      "5003": [
+        [
+          "0x7075aF66b3A71ddeA8cB0ac19e96eEB119F1e8DF",
+          "ours:POM"
+        ],
+        [
+          "0x7C4A71b282d7483EcEB858517d608354286605f1",
+          "ours:pool"
+        ],
+        [
+          "0xb073066923aC6C4F20975B7f8C63d7e84dd84DE8",
+          "ours:hooks"
+        ],
+        [
+          "0x964EC0899Aa702485A2e9FCC3C4832b320319d38",
+          "ours:token"
+        ],
+        [
+          "0xE4Fc4eBd1BE17D77C4792AA9E72fC1A0b706F300",
+          "ours:verifier"
+        ],
+        [
+          "0x073198c3e239e064764825380eDc4A5f4B5A7B7e",
+          "ours:resolver"
+        ]
+      ]
+    }
+  },
+  "governanceHolders": {
+    "11155111": "0x9BCaad922B43Ba56829098f2ba99dBC83c4a207B",
+    "5003": "0x0e1B2C8de13ba0620010f527cc3ab30D9CbdE047"
+  },
+  "origin": {
+    "archiveCommit": "e754dba96653877fdaa25e9b3cd2701ed90945b7",
+    "archivedFilesSha256": {
+      "docs/upstream/dashboard-build.json": "c62cb8488e7aa73864b974939ae8ff0b8d991ad6a1504afbd89d114366052966",
+      "docs/roles.html": "762ff47416d64e75d0dd7ed81d308d18ebc07ea6b8dde56723284370b40a529b",
+      "docs/ccv.html": "c581e282ded61bf9c936e1bb24e1c9f58f1533f3cb5873a99c8b281eca979d91"
+    },
+    "originalRepository": "lidofinance/wsteth-ccip",
+    "sourceMode": "local",
+    "sourceCommit": null,
+    "sourceFilesSha256": {
+      "docs/CURRENT-DEPLOYMENT.md": "27b8680582f6d3403568e1b1120faeecb6bb7ee2ae902ee39126bfa940da74c0",
+      "docs/deployment-2026-09-15.md": "af91dad2dd610e96065e7b318fb3f69496536a7b9eae433f66ae1463acc53e76",
+      "config/chains.live-mantle-2026-09-15/mantle_sepolia.json": "285ef3ecbd92e6d4de8932d0576a300cb39c71321451ac6cb59925a189d7d111",
+      "config/chains.live-mantle-2026-09-15/sepolia.json": "081c53bf7a884eb6d2a4a0c7bec4a3b9cd2fdac2ee2072e038e5f401a0fc1978"
+    },
+    "originalLedgerCommit": "4cda087a88e09d5a3682c991852c8261167ab45b"
+  }
+}

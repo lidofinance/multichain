@@ -1,0 +1,19 @@
+Compiling 6 files with Solc 0.8.26
+Solc 0.8.26 finished in 30.01s
+Compiler run successful!
+
+Ran 5 tests for test/hub-migration/HubMigration.t.sol:HubMigrationTest
+[PASS] testArtifactsDeployConfigureAndStockRecordRead() (gas: 93392115)
+Logs:
+  === Lane connection proposal ===
+  Chain: ethereum
+  Lane: base
+  Written to: tests/fixtures/hub-migration/runtime/testArtifactsDeployConfigureAndStockRecordRead/proposal.json
+
+[PASS] testFullRemotePoolSetAndDistinctLimits() (gas: 10447760)
+[PASS] testImportedLaneCannotAlsoBeDeferred() (gas: 7762271)
+[PASS] testManifestDisagreementRejected() (gas: 10286628)
+[PASS] testWrongChainRejected() (gas: 7015285)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 50.66ms (84.83ms CPU time)
+
+Ran 1 test suite in 51.07ms (50.66ms CPU time): 5 tests passed, 0 failed, 0 skipped (5 total tests)

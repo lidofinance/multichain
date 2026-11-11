@@ -1,0 +1,77 @@
+<p>The September deployment uses UUPS POM proxies and the updated upstream API. There is no proposal mode, guardian role, <code>veto</code>, or <code>approve</code> function on this POM.</p>
+<div class="table">
+<table>
+<tr>
+<th>Authority</th>
+<th>Holder on each POM</th>
+<th>Effect</th>
+</tr>
+<tr>
+<td>
+<code>DEFAULT_ADMIN_ROLE</code>
+</td>
+<td>L1 Agent / L2 OpExec</td>
+<td>Direct calls, role administration, UUPS upgrades, pool/selector/delay settings; admin bypass for pause and restart levers</td>
+</tr>
+<tr>
+<td>
+<code>PROPOSER_ROLE</code>
+</td>
+<td>Chainlink MCMS testnet EOA</td>
+<td>
+<code>propose</code> and <code>cancel</code>; admin has no implicit proposer bypass</td>
+</tr>
+<tr>
+<td>
+<code>PROPOSAL_QUEUE_HALT_ROLE</code>
+</td>
+<td>Emergency and MCMS testnet EOAs</td>
+<td>
+<code>haltProposalQueue()</code>; increments epoch and invalidates pending proposals</td>
+</tr>
+<tr>
+<td>
+<code>CROSS_CHAIN_TRANSFERS_PAUSE_ROLE</code>
+</td>
+<td>Emergency and MCMS testnet EOAs</td>
+<td>
+<code>pauseCrossChainTransfers()</code> and <code>pauseRemoteLanes(...)</code>
+</td>
+</tr>
+<tr>
+<td>
+<code>PROPOSAL_QUEUE_RESTART_ROLE</code>
+</td>
+<td>Empty</td>
+<td>
+<code>restartProposalQueue()</code> is admin-only under this configuration</td>
+</tr>
+<tr>
+<td>
+<code>CROSS_CHAIN_TRANSFERS_UNPAUSE_ROLE</code>
+</td>
+<td>Empty</td>
+<td>Direct <code>unpauseCrossChainTransfers()</code> / <code>unpauseRemoteLanes(...)</code> are admin-only</td>
+</tr>
+<tr>
+<td>
+<code>EXECUTOR_ROLE</code>
+</td>
+<td>Empty</td>
+<td>Anyone can execute a ready proposal</td>
+</tr>
+</table>
+</div>
+<p>The deployer holds no POM role. The named Emergency and MCMS holders are disposable EOAs, not production multisigs. Deployer authority outside the POM includes the OpExec guardian and verifier allowlist administrator; see the state checks for the exact scope.</p>
+<h3>Queue and selector rules</h3>
+<p>Proposals have a <strong>3-day minimum delay</strong> and expire <strong>30 days after creation</strong>. The six selectors in <code>custom_delay_selectors</code> have a <strong>14-day</strong> minimum. Governance may change these settings directly. A ready proposal is permissionlessly executable while the queue runs. There is no veto step: Emergency can halt the whole queue, invalidating its current epoch. Restarting does not restore invalidated proposals.</p>
+<p>
+<code>setSelectorBlocked(bytes4,bool)</code> controls admission; <code>isSelectorBlocked(bytes4)</code> reads it. Blocking a selector does not invalidate already queued proposals. The filter is target-blind.</p>
+<ul>
+<li>Both chains block <code>transferOwnership(address)</code> (<code>0xf2fde38b</code>) and <code>upgradeToAndCall(address,bytes)</code> (<code>0x4f1ef286</code>) from proposals.</li>
+<li>L1 additionally blocks <code>unpauseCrossChainTransfers()</code> (<code>0xa6cc6ef9</code>).</li>
+<li>L2 allows a proposal targeting the hooks&#x27; <code>unpauseCrossChainTransfers()</code> after the global delay.</li>
+</ul>
+<p>A proposal can already be ready when a pause occurs: halt the queue as well when pending restart proposals must be invalidated.</p>
+<p>Queue halt, global transfer pause and per-lane pause are separate controls. Queue halt does not pause transfers or disable admin direct calls. Unpausing global transfers leaves lane pauses intact.</p>
+<p>The original configuration references were <code>config/default_config.json</code> (hub), <code>config/default_config.non_l1.json</code> (spoke), and <code>config/state-mate/wsteth.yaml</code> (verification wiring). Those source files are not included in this archive. The legacy <code>.guardian</code> chain-config field is retained for schema compatibility and grants no POM authority.</p>

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.26;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -41,6 +41,39 @@ contract ERC20Core is IERC20 {
     ) external returns (bool) {
         _spendAllowance(from_, msg.sender, amount_);
         _transfer(from_, to_, amount_);
+        return true;
+    }
+
+    /// @notice Atomically increases the allowance granted by the caller to `spender_`.
+    /// @param spender_ The spender whose allowance is increased
+    /// @param addedValue_ The amount added to the allowance
+    function increaseAllowance(address spender_, uint256 addedValue_)
+        external
+        returns (bool)
+    {
+        _approve(
+            msg.sender,
+            spender_,
+            allowance[msg.sender][spender_] + addedValue_
+        );
+        return true;
+    }
+
+    /// @notice Atomically decreases the allowance granted by the caller to `spender_`. Reverts if
+    ///     the allowance is below `subtractedValue_`.
+    /// @param spender_ The spender whose allowance is decreased
+    /// @param subtractedValue_ The amount subtracted from the allowance
+    function decreaseAllowance(address spender_, uint256 subtractedValue_)
+        external
+        returns (bool)
+    {
+        uint256 currentAllowance = allowance[msg.sender][spender_];
+        if (currentAllowance < subtractedValue_) {
+            revert ErrorDecreasedAllowanceBelowZero();
+        }
+        unchecked {
+            _approve(msg.sender, spender_, currentAllowance - subtractedValue_);
+        }
         return true;
     }
 
@@ -142,4 +175,5 @@ contract ERC20Core is IERC20 {
     error ErrorNotEnoughBalance();
     error ErrorNotEnoughAllowance();
     error ErrorAccountIsZeroAddress();
+    error ErrorDecreasedAllowanceBelowZero();
 }

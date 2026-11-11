@@ -1,0 +1,163 @@
+[
+  {
+    "contract": "ERC20LockBox",
+    "address": "0x6A3861C13816d7585143d8746e71d92D2aB37d03",
+    "creationCodeHash": "0x75fabf9fe06ce8bdb0af8cc7f3318c62ebf33c5415db10b06685055ccc38203f",
+    "constructorArgs": "0x0000000000000000000000009b5e9aac68c6c054d2b2579bd205f25c5dd4841f",
+    "sourceContract": "node_modules/@chainlink/contracts-ccip/contracts/pools/ERC20LockBox.sol:ERC20LockBox",
+    "compiler": {
+      "version": "0.8.26+commit.8a97fa7a"
+    },
+    "settings": {
+      "remappings": [
+        "/private/tmp/wsteth-upstream-isolation-20261104/components/ccip/chains/evm/node_modules/@lido/wsteth-token/:@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable-5.0.2/",
+        "/private/tmp/wsteth-upstream-isolation-20261104/components/ccip/chains/evm/node_modules/@lido/wsteth-token/:@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.0.2/",
+        "/private/tmp/wsteth-upstream-isolation-20261104/components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.0.2/:@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.0.2/",
+        "@chainlink/=node_modules/@chainlink/",
+        "@chainlink/ccip-owner-contracts/=node_modules/@chainlink/ccip-owner-contracts/src/",
+        "@chainlink/contracts-ccip/=node_modules/@chainlink/contracts-ccip/contracts/",
+        "@chainlink/contracts/=node_modules/@chainlink/contracts/",
+        "@chainlink/policy-management/=contracts/vendor/policy-management/",
+        "@lido/=node_modules/@lido/",
+        "@lido/wsteth-token/=node_modules/@lido/wsteth-token/contracts/",
+        "@openzeppelin/=node_modules/@openzeppelin/",
+        "@openzeppelin/contracts-upgradeable@5.3.0/=node_modules/@openzeppelin/contracts-upgradeable-5.3.0/",
+        "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.3.0/",
+        "@openzeppelin/contracts@4.8.3/=node_modules/@openzeppelin/contracts-4.8.3/",
+        "@openzeppelin/contracts@5.0.2/=node_modules/@openzeppelin/contracts-5.0.2/",
+        "@openzeppelin/contracts@5.3.0/=node_modules/@openzeppelin/contracts-5.3.0/",
+        "forge-std/=node_modules/@chainlink/contracts/src/v0.8/vendor/forge-std/src/",
+        "openzeppelin-contracts/=node_modules/@openzeppelin/contracts-4.9.2/",
+        "openzeppelin/=node_modules/.oz-4.9.2-src/contracts/",
+        "node_modules/@lido/wsteth-token/:@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable-5.0.2/",
+        "node_modules/@lido/wsteth-token/:@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.0.2/",
+        "node_modules/@openzeppelin/contracts-upgradeable-5.0.2/:@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.0.2/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 50000
+      },
+      "metadata": {
+        "bytecodeHash": "none"
+      },
+      "compilationTarget": {
+        "node_modules/@chainlink/contracts-ccip/contracts/pools/ERC20LockBox.sol": "ERC20LockBox"
+      },
+      "evmVersion": "paris",
+      "libraries": {},
+      "viaIR": true
+    },
+    "artifactSha256": "4a9c3892b3e74f3c0b0680d80cd0a8cf84f260bac8aab4a717a7fead1413ccfa",
+    "transactionHash": "0xbdab86d94b58b1191d31264047d8fdd7bbb7d610b2a440105411c2ef598dbc2c",
+    "runtimeChecked": true,
+    "constructorReadback": {
+      "getToken()(address)": "0x9B5E9Aac68C6C054D2B2579bD205f25C5Dd4841f"
+    }
+  },
+  {
+    "contract": "DummyMessageIdVerifier",
+    "address": "0x62f0Fca9a5d2EF9d714dd95cd10410955498Eaf2",
+    "creationCodeHash": "0x99b99094fc5124b10c2a92c6f6aa700fb786c303c9a2c839fa1ea3665b12a264",
+    "constructorArgs": "0x0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000349116a5970fd5ebaf46fef095c85ff5c96cbee00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ba3f6251de62ded61ff98590cb2fdf6871fbb99100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001b64756d6d793a2f2f6d6573736167652d69642d76657269666965720000000000",
+    "sourceContract": "contracts/lido-hvmv/ccvs/DummyMessageIdVerifier.sol:DummyMessageIdVerifier",
+    "compiler": {
+      "version": "0.8.26+commit.8a97fa7a"
+    },
+    "settings": {
+      "remappings": [
+        "/private/tmp/wsteth-upstream-isolation-20261104/components/ccip/chains/evm/node_modules/@lido/wsteth-token/:@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable-5.0.2/",
+        "/private/tmp/wsteth-upstream-isolation-20261104/components/ccip/chains/evm/node_modules/@lido/wsteth-token/:@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.0.2/",
+        "/private/tmp/wsteth-upstream-isolation-20261104/components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.0.2/:@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.0.2/",
+        "@chainlink/=node_modules/@chainlink/",
+        "@chainlink/ccip-owner-contracts/=node_modules/@chainlink/ccip-owner-contracts/src/",
+        "@chainlink/contracts-ccip/=node_modules/@chainlink/contracts-ccip/contracts/",
+        "@chainlink/contracts/=node_modules/@chainlink/contracts/",
+        "@chainlink/policy-management/=contracts/vendor/policy-management/",
+        "@lido/=node_modules/@lido/",
+        "@lido/wsteth-token/=node_modules/@lido/wsteth-token/contracts/",
+        "@openzeppelin/=node_modules/@openzeppelin/",
+        "@openzeppelin/contracts-upgradeable@5.3.0/=node_modules/@openzeppelin/contracts-upgradeable-5.3.0/",
+        "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.3.0/",
+        "@openzeppelin/contracts@4.8.3/=node_modules/@openzeppelin/contracts-4.8.3/",
+        "@openzeppelin/contracts@5.0.2/=node_modules/@openzeppelin/contracts-5.0.2/",
+        "@openzeppelin/contracts@5.3.0/=node_modules/@openzeppelin/contracts-5.3.0/",
+        "forge-std/=node_modules/@chainlink/contracts/src/v0.8/vendor/forge-std/src/",
+        "openzeppelin-contracts/=node_modules/@openzeppelin/contracts-4.9.2/",
+        "openzeppelin/=node_modules/.oz-4.9.2-src/contracts/",
+        "node_modules/@lido/wsteth-token/:@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable-5.0.2/",
+        "node_modules/@lido/wsteth-token/:@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.0.2/",
+        "node_modules/@openzeppelin/contracts-upgradeable-5.0.2/:@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.0.2/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 80000
+      },
+      "metadata": {
+        "bytecodeHash": "none"
+      },
+      "compilationTarget": {
+        "contracts/lido-hvmv/ccvs/DummyMessageIdVerifier.sol": "DummyMessageIdVerifier"
+      },
+      "evmVersion": "paris",
+      "libraries": {},
+      "viaIR": true
+    },
+    "artifactSha256": "5aa166f1e13c6539305ac0d439df36d52d8a626c15b54d1b19d4734a161ad1bb",
+    "transactionHash": "0x51dcc42c8814b10bb0d6d7e0d5040c39831dfae42077cff506f1e23bcd6e03bb",
+    "runtimeChecked": true,
+    "constructorReadback": {}
+  },
+  {
+    "contract": "VersionedVerifierResolver",
+    "address": "0xDAe04B31181a0Dd419BBa5C2E7cA54feB6B1ab8a",
+    "creationCodeHash": "0xf887a940dc6e6a9d908535978022bbe1f5ee725f849edb7d6711641f29fbfad4",
+    "constructorArgs": "0x",
+    "sourceContract": "node_modules/@chainlink/contracts-ccip/contracts/ccvs/VersionedVerifierResolver.sol:VersionedVerifierResolver",
+    "compiler": {
+      "version": "0.8.26+commit.8a97fa7a"
+    },
+    "settings": {
+      "remappings": [
+        "/private/tmp/wsteth-upstream-isolation-20261104/components/ccip/chains/evm/node_modules/@lido/wsteth-token/:@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable-5.0.2/",
+        "/private/tmp/wsteth-upstream-isolation-20261104/components/ccip/chains/evm/node_modules/@lido/wsteth-token/:@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.0.2/",
+        "/private/tmp/wsteth-upstream-isolation-20261104/components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.0.2/:@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.0.2/",
+        "@chainlink/=node_modules/@chainlink/",
+        "@chainlink/ccip-owner-contracts/=node_modules/@chainlink/ccip-owner-contracts/src/",
+        "@chainlink/contracts-ccip/=node_modules/@chainlink/contracts-ccip/contracts/",
+        "@chainlink/contracts/=node_modules/@chainlink/contracts/",
+        "@chainlink/policy-management/=contracts/vendor/policy-management/",
+        "@lido/=node_modules/@lido/",
+        "@lido/wsteth-token/=node_modules/@lido/wsteth-token/contracts/",
+        "@openzeppelin/=node_modules/@openzeppelin/",
+        "@openzeppelin/contracts-upgradeable@5.3.0/=node_modules/@openzeppelin/contracts-upgradeable-5.3.0/",
+        "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.3.0/",
+        "@openzeppelin/contracts@4.8.3/=node_modules/@openzeppelin/contracts-4.8.3/",
+        "@openzeppelin/contracts@5.0.2/=node_modules/@openzeppelin/contracts-5.0.2/",
+        "@openzeppelin/contracts@5.3.0/=node_modules/@openzeppelin/contracts-5.3.0/",
+        "forge-std/=node_modules/@chainlink/contracts/src/v0.8/vendor/forge-std/src/",
+        "openzeppelin-contracts/=node_modules/@openzeppelin/contracts-4.9.2/",
+        "openzeppelin/=node_modules/.oz-4.9.2-src/contracts/",
+        "node_modules/@lido/wsteth-token/:@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable-5.0.2/",
+        "node_modules/@lido/wsteth-token/:@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.0.2/",
+        "node_modules/@openzeppelin/contracts-upgradeable-5.0.2/:@openzeppelin/contracts/=node_modules/@openzeppelin/contracts-5.0.2/"
+      ],
+      "optimizer": {
+        "enabled": true,
+        "runs": 80000
+      },
+      "metadata": {
+        "bytecodeHash": "none"
+      },
+      "compilationTarget": {
+        "node_modules/@chainlink/contracts-ccip/contracts/ccvs/VersionedVerifierResolver.sol": "VersionedVerifierResolver"
+      },
+      "evmVersion": "paris",
+      "libraries": {},
+      "viaIR": true
+    },
+    "artifactSha256": "d530160bdc11f64736dfa99356908c4db2b5660c192fc4d55c477b69d6a25508",
+    "transactionHash": "0xfdad5d2bdc80a7c094306fae521aa9b4632f7956df9f2d0211c5f2fd273da19f",
+    "runtimeChecked": true,
+    "constructorReadback": {}
+  }
+]

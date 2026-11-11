@@ -1,0 +1,388 @@
+{
+  "schemaVersion": 1,
+  "target": {
+    "pool": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+    "timelock": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+    "expectedLanes": [
+      "bitlayer",
+      "zerog",
+      "ink",
+      "plasma",
+      "monad",
+      "megaeth",
+      "jovay",
+      "abstract",
+      "robinhood"
+    ],
+    "siloRebalancerAfterCutover": "restore"
+  },
+  "readAt": {
+    "chainId": 1,
+    "block": 26335529,
+    "blockHash": "0x5437afa5ab566a0c9c285c95461cde61f721d820a448a528a77ec118a0fee35b",
+    "timestamp": 1793723987,
+    "rpc": "http://127.0.0.1:63193",
+    "registryApiEnvironment": "mainnet"
+  },
+  "token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+  "router": "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D",
+  "registry": {
+    "address": "0xb22764f98dD05c789929716D677382Df22C05Cb6",
+    "administrator": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+    "pendingAdministrator": "0x0000000000000000000000000000000000000000",
+    "pool": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7"
+  },
+  "oldPool": {
+    "address": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+    "typeAndVersion": "SiloedLockReleaseTokenPool 1.6.0",
+    "owner": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+    "rebalancer": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+    "rateLimitAdmin": "0x0000000000000000000000000000000000000000",
+    "balance": "16557198674619320399367",
+    "unsiloedLiquidity": "16512586992555507958720",
+    "siloedTotal": "44611682063812440647",
+    "unaccounted": "0"
+  },
+  "chainlinkTimelock": {
+    "address": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+    "minDelay": 10800,
+    "blockedSelectorCount": 0,
+    "roles": {
+      "ADMIN_ROLE": {
+        "hash": "0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775",
+        "members": [
+          "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449"
+        ]
+      },
+      "PROPOSER_ROLE": {
+        "hash": "0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1",
+        "members": [
+          "0xE53289F32c8E690b7173aA33affE9B6B0CB0012F",
+          "0xD6597750bf74DCAEC57e0F9aD2ec998D837005bf",
+          "0xD9757aA52907798d1aF2FDa7A6C0cC733E5aCf7e"
+        ]
+      },
+      "EXECUTOR_ROLE": {
+        "hash": "0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63",
+        "members": [
+          "0xF3E54a1FDA3d4351C8BD5065678c0F5DDD0D7BCB"
+        ]
+      },
+      "CANCELLER_ROLE": {
+        "hash": "0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783",
+        "members": [
+          "0xE53289F32c8E690b7173aA33affE9B6B0CB0012F",
+          "0xAD97C0270a243270136E40278155C12ce7C7F87B",
+          "0xD6597750bf74DCAEC57e0F9aD2ec998D837005bf",
+          "0xD9757aA52907798d1aF2FDa7A6C0cC733E5aCf7e",
+          "0x117ec8aD107976e1dBCc21717ff78407Bc36aADc"
+        ]
+      },
+      "BYPASSER_ROLE": {
+        "hash": "0xa1b2b8005de234c4b8ce8cd0be058239056e0d54f6097825b5117101469d5a8d",
+        "members": [
+          "0x117ec8aD107976e1dBCc21717ff78407Bc36aADc"
+        ]
+      }
+    }
+  },
+  "lanes": [
+    {
+      "slug": "abstract",
+      "selector": "3577778157919314504",
+      "chainId": 2741,
+      "internalId": "abstract-mainnet",
+      "displayName": "Abstract",
+      "siloed": false,
+      "rebalancer": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+      "siloBalance": "0",
+      "availableTokens": "16512586992555507958720",
+      "remoteToken": "0x313F663E79ef202251a28F0252c254842D5ABC6a",
+      "remotePools": [
+        "0x38Ad0414B523Fa344429ff14dAC305e4fB6Ab248"
+      ],
+      "outbound": {
+        "enabled": true,
+        "capacity": "2",
+        "rate": "1"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "26400000000000004",
+        "rate": "1"
+      },
+      "onRamp": "0xc3423F3FB30857D9C14717b119884b1B63d250b7",
+      "lockBoxGroup": "shared",
+      "registry": {
+        "router": "0x09521B0B5BB2d4406124c0207Cf551829B45f84d",
+        "rmn_proxy": "0x2edAc8B8928c4e1Ed559e619b6A8a4aaCe9Ef18A",
+        "token_admin_registry": "0x7EEdf2DBC74924Cb1f23fC8845CD35bF18b697de",
+        "registry_module_owner": "0xB79791184973589c38e114D43Eb8E4588C283A18"
+      }
+    },
+    {
+      "slug": "bitlayer",
+      "selector": "7937294810946806131",
+      "chainId": 200901,
+      "internalId": "bitcoin-mainnet-bitlayer-1",
+      "displayName": "Bitlayer",
+      "siloed": true,
+      "rebalancer": "0x2728df4D22253004C017675bd609962cD641D797",
+      "siloBalance": "105063567385275758",
+      "availableTokens": "105063567385275758",
+      "remoteToken": "0x5659b4C62897Fa36C05780cD96c2D5c0a5602488",
+      "remotePools": [
+        "0xC78210649aF8A450C0f6E98107a0b614a3198359"
+      ],
+      "outbound": {
+        "enabled": true,
+        "capacity": "114000000000000000000",
+        "rate": "32000000000000000"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "114000000000000000000",
+        "rate": "32000000000000000"
+      },
+      "onRamp": "0xc3423F3FB30857D9C14717b119884b1B63d250b7",
+      "lockBoxGroup": "bitlayer",
+      "registry": {
+        "router": "0x6c0aA29330c58dda07faD577fF5a0280823a910c",
+        "rmn_proxy": "0xcaa6131cEe85ba2F140cBa05F6825aC60B6CEA56",
+        "token_admin_registry": "0xd999758aEB04BDa755Ae78344FFF5534947620CD",
+        "registry_module_owner": "0x1f524a11d89D68a4E4b1c8A195E91Fb1d8f0B56a"
+      }
+    },
+    {
+      "slug": "ink",
+      "selector": "3461204551265785888",
+      "chainId": 57073,
+      "internalId": "ethereum-mainnet-ink-1",
+      "displayName": "Ink",
+      "siloed": false,
+      "rebalancer": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+      "siloBalance": "0",
+      "availableTokens": "16512586992555507958720",
+      "remoteToken": "0xE561152E8d3f618b386EF4dD6E3fb980Eb2f9e61",
+      "remotePools": [
+        "0x2dC99af320BC317c567f24eE95811dcbd5983DfD"
+      ],
+      "outbound": {
+        "enabled": true,
+        "capacity": "2",
+        "rate": "1"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "264000000000000",
+        "rate": "1"
+      },
+      "onRamp": "0xc3423F3FB30857D9C14717b119884b1B63d250b7",
+      "lockBoxGroup": "shared",
+      "registry": {
+        "router": "0xca7c90A52B44E301AC01Cb5EB99b2fD99339433A",
+        "rmn_proxy": "0x3A293fa336E118900AD0f2EcfeC0DAa6A4DeDaA1",
+        "token_admin_registry": "0xEb062d21c713A3d940BB0FaECFdC387d6Ea23697",
+        "registry_module_owner": "0x04c5046A1f4E3fFf094c26dFCAA75eF293932f18"
+      }
+    },
+    {
+      "slug": "jovay",
+      "selector": "1523760397290643893",
+      "chainId": 5734951,
+      "internalId": "jovay-mainnet",
+      "displayName": "Jovay",
+      "siloed": false,
+      "rebalancer": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+      "siloBalance": "0",
+      "availableTokens": "16512586992555507958720",
+      "remoteToken": "0x2dC99af320BC317c567f24eE95811dcbd5983DfD",
+      "remotePools": [
+        "0x1c2F528e3BEeFF81Bc03CC63E64dB131d18be7fA"
+      ],
+      "outbound": {
+        "enabled": true,
+        "capacity": "2",
+        "rate": "1"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "220000000000000",
+        "rate": "1"
+      },
+      "onRamp": "0xc3423F3FB30857D9C14717b119884b1B63d250b7",
+      "lockBoxGroup": "shared",
+      "registry": {
+        "router": "0x492641F648a4986844848E0beFE66D14817bCE34",
+        "rmn_proxy": "0xf09AFe78d3c7d359b334d7cB88995751F7eC5E13",
+        "token_admin_registry": "0xA27056438FfA1f286AB197488808692F0db93F8B",
+        "registry_module_owner": "0xf4a170A36D4C656F614d44453f73308Bdb275196"
+      }
+    },
+    {
+      "slug": "megaeth",
+      "selector": "6093540873831549674",
+      "chainId": 4326,
+      "internalId": "megaeth-mainnet",
+      "displayName": "MegaETH Mainnet",
+      "siloed": false,
+      "rebalancer": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+      "siloBalance": "0",
+      "availableTokens": "16512586992555507958720",
+      "remoteToken": "0x601aC63637933D88285A025C685AC4e9a92a98dA",
+      "remotePools": [
+        "0x15C03488B29e27d62BAf10E30b0c474bf60E0264"
+      ],
+      "outbound": {
+        "enabled": true,
+        "capacity": "2000000000000000000000",
+        "rate": "23148148140000000"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "2000000000000000000000",
+        "rate": "23148148140000000"
+      },
+      "onRamp": "0xc3423F3FB30857D9C14717b119884b1B63d250b7",
+      "lockBoxGroup": "shared",
+      "registry": {
+        "router": "0xfa546248C54939AA6C48279CdC1EAf9A1125c411",
+        "rmn_proxy": "0xA27056438FfA1f286AB197488808692F0db93F8B",
+        "token_admin_registry": "0xf4a170A36D4C656F614d44453f73308Bdb275196",
+        "registry_module_owner": "0x1E11bAB3f07fa72312182fFDc460AE45400E6e7b"
+      }
+    },
+    {
+      "slug": "monad",
+      "selector": "8481857512324358265",
+      "chainId": 143,
+      "internalId": "monad-mainnet",
+      "displayName": "Monad",
+      "siloed": false,
+      "rebalancer": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+      "siloBalance": "0",
+      "availableTokens": "16512586992555507958720",
+      "remoteToken": "0x10Aeaf63194db8d453d4D85a06E5eFE1dd0b5417",
+      "remotePools": [
+        "0x2f2E55517aac64c4066f6eB333b4Cb072eD00E8A"
+      ],
+      "outbound": {
+        "enabled": true,
+        "capacity": "2000000000000000000000",
+        "rate": "23148148140000000"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "2200000000000000262144",
+        "rate": "25462962954000004"
+      },
+      "onRamp": "0xc3423F3FB30857D9C14717b119884b1B63d250b7",
+      "lockBoxGroup": "shared",
+      "registry": {
+        "router": "0x33566fE5976AAa420F3d5C64996641Fc3858CaDB",
+        "rmn_proxy": "0x99dFCa5d88f4D9C023531F4403966b8d61562AcD",
+        "token_admin_registry": "0x11ACd984DD680363117B310f6ebdf78fD6c0195f",
+        "registry_module_owner": "0xB71513B6c80Adf35B43eACC24DA7A08A806a7f2C"
+      }
+    },
+    {
+      "slug": "plasma",
+      "selector": "9335212494177455608",
+      "chainId": 9745,
+      "internalId": "plasma-mainnet",
+      "displayName": "Plasma",
+      "siloed": false,
+      "rebalancer": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+      "siloBalance": "0",
+      "availableTokens": "16512586992555507958720",
+      "remoteToken": "0x481e638105407Be40c2f2E2e006DE272d05930d0",
+      "remotePools": [
+        "0xa4b1d393104a5eF340154c337009156aA0E83Bd8"
+      ],
+      "outbound": {
+        "enabled": true,
+        "capacity": "2",
+        "rate": "1"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "220000000000000",
+        "rate": "1"
+      },
+      "onRamp": "0xc3423F3FB30857D9C14717b119884b1B63d250b7",
+      "lockBoxGroup": "shared",
+      "registry": {
+        "router": "0xcDca5D374e46A6DDDab50bD2D9acB8c796eC35C3",
+        "rmn_proxy": "0xAEf7A922931848d2e731D5914f428b4E851d1Ad5",
+        "token_admin_registry": "0xc23071a8AE83671f37bdA1DaDBC745a9780f632A",
+        "registry_module_owner": "0x02A4D69cFfeC00Fbf7F3B60c93e3529Dfc58894d"
+      }
+    },
+    {
+      "slug": "robinhood",
+      "selector": "6180753054346818345",
+      "chainId": 4663,
+      "internalId": "robinhood-mainnet",
+      "displayName": "Robinhood Chain",
+      "siloed": true,
+      "rebalancer": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+      "siloBalance": "44493573873920312918",
+      "availableTokens": "44493573873920312918",
+      "remoteToken": "0x2dC99af320BC317c567f24eE95811dcbd5983DfD",
+      "remotePools": [
+        "0x1c2F528e3BEeFF81Bc03CC63E64dB131d18be7fA"
+      ],
+      "outbound": {
+        "enabled": true,
+        "capacity": "2200000000000000000000",
+        "rate": "25462962962962962"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "1500000000000000000000",
+        "rate": "17361111111111111"
+      },
+      "onRamp": "0xc3423F3FB30857D9C14717b119884b1B63d250b7",
+      "lockBoxGroup": "robinhood",
+      "registry": {
+        "router": "0x06fC836cf9839B1cd891C440A0a45242DA6Ae1c9",
+        "rmn_proxy": "0xe8464c353210Cc398A45dB2454FBc5BCd25fFf20",
+        "token_admin_registry": "0x1912C3cFafE8A76A32a92861d815aC2837F237Ca",
+        "registry_module_owner": "0x3237c0D7B58BEc8Dc17F00103B784Bd6678f789E"
+      }
+    },
+    {
+      "slug": "zerog",
+      "selector": "4426351306075016396",
+      "chainId": 16661,
+      "internalId": "0g-mainnet",
+      "displayName": "0G",
+      "siloed": true,
+      "rebalancer": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+      "siloBalance": "13044622506851971",
+      "availableTokens": "13044622506851971",
+      "remoteToken": "0x161a128567BF0C005b58211757F7e46eed983F02",
+      "remotePools": [
+        "0xFEe991bB8695a336f5C4ab00062BEEd4b5783f4F"
+      ],
+      "outbound": {
+        "enabled": true,
+        "capacity": "114000000000000000000",
+        "rate": "32000000000000000"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "114000000000000000000",
+        "rate": "32000000000000000"
+      },
+      "onRamp": "0xc3423F3FB30857D9C14717b119884b1B63d250b7",
+      "lockBoxGroup": "zerog",
+      "registry": {
+        "router": "0x0aA145a62153190B8f0D3cA00c441e451529f755",
+        "rmn_proxy": "0xBF38331E34ef7f248020611bB31Be0576D06413D",
+        "token_admin_registry": "0x051665f2455116e929b9972c36d23070F5054Ce0",
+        "registry_module_owner": "0x91339eb99C4c2Be9A071203DD99E014A3189FD29"
+      }
+    }
+  ]
+}

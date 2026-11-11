@@ -1,15 +1,16 @@
 # Top-level Foundry project for wsteth-2.0's OWN sources/scripts:
 #   src/    - legacy build entrypoints and the 2nd mock CCV (Hyperlane leg)
-#   script/ - 02 OpExec, 03 L2 token, 06 dual-CCV + relayer, verify
+#   script/ - 02 OpExec, 06 migration batches, verify
 #   test/   - Claim-B scenario tests (gov round-trip, bridge both ways, negatives)
 #
 # OZ version split is handled by PROFILE, not contextual remaps (which don't propagate past
 # the first hop). The default profile resolves @openzeppelin/contracts -> 5.3.0 (CCIP + our
-# 5.3 code). The `token` profile resolves it -> 4.8.3 + upgradeable 4.7.3 for the locally maintained wsteth-token
-# wstETH (pragma 0.8.10). Build its artifacts with FOUNDRY_PROFILE=token; deploy scripts use default.
+# 5.3 code). The `govexec` profile builds the pinned 0.8.10 OptimismBridgeExecutor.
+# Build artifacts with FOUNDRY_PROFILE=govexec; deploy scripts use default.
 #
-# The CCIP pool/hook/CCV/POM deploy is driven by the vendored ccip submodule's OWN foundry
-# project (../../components/ccip/chains/evm), not compiled here — see the justfile.
+# The CCIP pool/hook/CCV/timelock deploy — and on scratch spokes the wstETH token behind its
+# TransparentUpgradeableProxy — is driven by the ccip component's OWN foundry project
+# (../../components/ccip/chains/evm, profile ccip-compile), not compiled here — see the justfile.
 
 [profile.default]
 src = "src"
@@ -17,14 +18,15 @@ script = "script"
 test = "../../targets/wsteth-ccip-sepolia-mantle-dev/test"
 out = "out"
 libs = ["../../components", "../../libs"]
-# Scripts and scenarios use the modern compiler; upstream 0.8.10 artifacts use profile.token.
+# Scripts and scenarios use the modern compiler; the vendored executor artifact uses profile.govexec.
 solc = "0.8.34"
 evm_version = "osaka"
 optimizer = true
 optimizer_runs = 200
 ffi = true
-# Token sources are OZ-4.x/0.8.10 — compiled only under [profile.token], skipped by default.
-skip = ["src/vendor/*"]
+# Vendored build entrypoints and the via-IR migration scripts are compiled only under their own
+# profiles (govexec, migration), skipped by default.
+skip = ["src/vendor/**", "script/migration/**", "script/hub-migration/**"]
 fs_permissions = [
     { access = "read-write", path = "../../runs/wsteth-2.0/workspaces" },
     { access = "read", path = "../../runs/wsteth-2.0/history" },
@@ -32,30 +34,117 @@ fs_permissions = [
     { access = "read-write", path = "./state" },
     { access = "read-write", path = "./config" },
     { access = "read", path = "./deployments" },
-    { access = "read", path = "./out-token" },
+    { access = "read", path = "./out-govexec" },
+    # The component's deploy policy, read by the scenario harnesses that drive its scripts in-process.
+    { access = "read", path = "../../components/ccip/chains/evm/contracts/lido-hvmv/config" },
 ]
 remappings = [
+    "forge-std/=../../libs/forge-std/src/",
+    "@chainlink/contracts/=../../components/ccip/chains/evm/node_modules/@chainlink/contracts/",
+    "@chainlink/contracts-ccip/=../../components/ccip/chains/evm/node_modules/@chainlink/contracts-ccip/contracts/",
+    "governance-crosschain-bridges/=../../components/governance-crosschain-bridges/",
+    "@wsteth-token/contracts/=../../components/wsteth-token/contracts/",
+    "@ccip-lido/=../../components/ccip/chains/evm/contracts/lido-hvmv/",
+    "@chainlink/policy-management/=../../components/ccip/chains/evm/contracts/vendor/policy-management/",
+    "@openzeppelin/contracts@4.8.3/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-4.8.3/",
+    "@openzeppelin/contracts@5.0.2/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.0.2/",
+
     "@openzeppelin/contracts/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.3.0/",
     "@openzeppelin/contracts@5.3.0/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.3.0/",
     "@openzeppelin/contracts-upgradeable/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.3.0/contracts/",
     "@openzeppelin/contracts-upgradeable@5.3.0/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.3.0/",
 ]
 
-# Upstream 0.8.10 contracts, built separately from the modern deployment scripts.
-[profile.token]
-src = "src/vendor"
-script = "src/vendor"
-test = "src/vendor"
-out = "out-token"
-cache_path = "cache-token"
+# Pinned upstream governance executor, kept separate from the token's compiler settings.
+# Preserve the pre-review solc 0.8.10 / london / optimizer 200 / no-IR / IPFS build input.
+# With the OP messenger immutable filled in, executable bytes match Optimism mainnet
+# 0xEfa0dB536d2c8089685630fafe88CF7805966FC3 (checked 2026-10-08). Full bytecode also
+# includes a metadata hash: this workspace's source names/remappings differ from that
+# historical build, so executable equality must not be reported as full-bytecode equality.
+[profile.govexec]
+src = "src/vendor/govexec"
+script = "src/vendor/govexec"
+test = "src/vendor/govexec"
+out = "out-govexec"
+cache_path = "cache-govexec"
 solc = "0.8.10"
 evm_version = "london"
 skip = []
+auto_detect_remappings = false
+# Preserve the pre-review compiler input, including its metadata hash. These aliases are
+# deliberate compatibility pins, even when OpExec does not import the corresponding packages.
+optimizer = true
+optimizer_runs = 200
+via_ir = false
+bytecode_hash = "ipfs"
 remappings = [
-    "@openzeppelin/contracts/=../../components/openzeppelin-contracts-4x/contracts/",
-    "@openzeppelin/contracts-upgradeable/=../../components/openzeppelin-contracts-upgradeable-4x/contracts/",
+    "forge-std/=../../libs/forge-std/src/",
+    "@chainlink/contracts/=../../components/ccip/chains/evm/node_modules/@chainlink/contracts/",
+    "@chainlink/contracts-ccip/=../../components/ccip/chains/evm/node_modules/@chainlink/contracts-ccip/contracts/",
+    "governance-crosschain-bridges/=../../components/governance-crosschain-bridges/",
+    "@wsteth-token/contracts/=../../components/wsteth-token/contracts/",
+    "@ccip-lido/=../../components/ccip/chains/evm/contracts/lido-hvmv/",
+    "@chainlink/policy-management/=../../components/ccip/chains/evm/contracts/vendor/policy-management/",
+    "@openzeppelin/contracts@4.8.3/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-4.8.3/",
+    "@openzeppelin/contracts@5.0.2/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.0.2/",
+    "@openzeppelin/contracts/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.3.0/",
+    "@openzeppelin/contracts@5.3.0/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-5.3.0/",
+    "@openzeppelin/contracts-upgradeable/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.3.0/contracts/",
+    "@openzeppelin/contracts-upgradeable@5.3.0/=../../components/ccip/chains/evm/node_modules/@openzeppelin/contracts-upgradeable-5.3.0/",
 ]
 
 [fmt]
 line_length = 120
 tab_width = 4
+
+# Only orchestration code is compiled here; every CREATE reads a CCIP release artifact.
+[profile.hub-migration]
+src = "script/hub-migration"
+script = "script/hub-migration"
+test = "test/hub-migration"
+out = "out-hub-migration"
+cache_path = "cache-hub-migration"
+solc = "0.8.26"
+evm_version = "paris"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+skip = []
+auto_detect_remappings = false
+fs_permissions = [
+    { access = "read-write", path = "../../runs/wsteth-2.0/workspaces" },
+    { access = "read-write", path = "./state" },
+    { access = "read-write", path = "./config" },
+    { access = "read-write", path = "./tests/fixtures/hub-migration" },
+    { access = "read", path = "../../components/ccip/chains/evm/contracts/lido-hvmv/config" },
+    { access = "read", path = "../../components/ccip/chains/evm/foundry-artifacts" },
+]
+
+# In-place migration scripts (step 06): governance payloads and component-artifact deployments for
+# the Base legacy-bridge migration. They import nothing from the components: implementations are
+# deployed from the component builds' artifacts (bytes the component foundry.toml produced), and
+# every call is encoded by signature, so this profile needs only forge-std.
+[profile.migration]
+src = "script/migration"
+script = "script/migration"
+test = "script/migration"
+out = "out-migration"
+cache_path = "cache-migration"
+solc = "0.8.26"
+evm_version = "paris"
+optimizer = true
+optimizer_runs = 200
+# Scripts only (nothing here is deployed bytecode): via-IR keeps the long input lists off the stack.
+via_ir = true
+skip = []
+auto_detect_remappings = false
+remappings = [
+    "forge-std/=../../libs/forge-std/src/",
+]
+fs_permissions = [
+    { access = "read-write", path = "../../runs/wsteth-2.0/workspaces" },
+    { access = "read-write", path = "./state" },
+    { access = "read", path = "./config" },
+    { access = "read", path = "../../components/l2-bridge-migration/out" },
+    { access = "read", path = "../../components/wsteth-token/out" },
+]

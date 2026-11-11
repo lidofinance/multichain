@@ -45,7 +45,9 @@
     {
       "source": "contracts/proxy/OssifiableProxy.sol",
       "destination": "contracts/proxy/OssifiableProxy.sol",
-      "sha256": "a614df351d1dfa219cbb4e0e77f462d636028fe2deddd2c9ab45fbac5da5854d"
+      "sha256": "a614df351d1dfa219cbb4e0e77f462d636028fe2deddd2c9ab45fbac5da5854d",
+      "removed": "2026-10-08",
+      "removedNote": "Removed with the move to OpenZeppelin 5.3.0 TransparentUpgradeableProxy + ProxyAdmin (the components/wsteth-token/lib/openzeppelin-contracts-5.3.0 submodule, compiled by the token build). Fleet proxies already on-chain keep running the OssifiableProxy bytecode; its source is in this file's git history and in each run's inputs/ snapshot."
     },
     {
       "source": "orchestration/wsteth-ccip/src/vendor/BurnMintERC20BridgedPermit.sol",
@@ -53,5 +55,5 @@
       "sha256": "6ba7ddf2f41f06cbaf43b9e60148032dce828af4ebbe462ed2b90542c865783c"
     }
   ],
-  "notes": "Historical source hashes describe the original imports, not current file contents. The MIT-licensed BurnMintERC20BridgedPermit extension was merged into ERC20BridgedPermit (roles, atomic initialization, implementation locking and mint/burn). ERC20Bridged comments now refer to the merged contract. Other imported upstream sources remain unchanged."
+  "notes": "Historical source hashes describe the original imports, not current file contents. The MIT-licensed BurnMintERC20BridgedPermit extension was merged into ERC20BridgedPermit (roles, atomic initialization, implementation locking and mint/burn). ERC20Bridged comments now refer to the merged contract. Other imported upstream sources remain unchanged. On 2026-10-08 the dependency baseline moved to the editions the CCIP token deployment uses: OpenZeppelin contracts + upgradeable 5.0.2 for the implementation (AccessControlEnumerableUpgradeable now at access/extensions/, ERC-7201 namespaced storage), OpenZeppelin 5.3.0 TransparentUpgradeableProxy + ProxyAdmin as the proxy, Solidity 0.8.26 / paris. OssifiableProxy.sol was removed (fleet proxies already on-chain keep it; new deployments use the Transparent proxy). PermitExtension no longer inherits OpenZeppelin EIP712: it derives the domain from immutables so the implementation keeps no linear storage beyond ERC20Core slots 0-2. The sha256 values above still describe the original imports. The OssifiableProxy.sol entry above is kept as import history and marked removed."
 }

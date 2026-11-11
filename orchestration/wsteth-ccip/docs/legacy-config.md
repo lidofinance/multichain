@@ -1,4 +1,11 @@
-# Deployment configs
+# Historical deployment configs (September 2026)
+
+> Retired manager-era record. Paths, commands, APIs, policies and test counts below describe
+> the September deployment, not the current orchestration. Current targets use the unmodified
+> CCIP component policy: a 3-day minimum delay, 14-day proposal expiry and the LidoTimelock
+> blocked-selector API. See [current governance](../README.md#target-and-run-boundary)
+> and `components/ccip/chains/evm/contracts/lido-hvmv/config/default_config.json` (repo-relative).
+
 
 Current public record: [`chains.live-mantle-2026-09-15`](chains.live-mantle-2026-09-15/).
 [Addresses and evidence](../docs/deployment-2026-09-15.md) ·
@@ -27,19 +34,19 @@ Do not combine a public record with the default local scratch forks.
 `default_config.json` is the L1 hub policy; `default_config.non_l1.json` is the spoke policy.
 The pipeline injects the appropriate file through `DEFAULT_CONFIG`. They differ only in blocking
 `unpauseCrossChainTransfers()` (`0xa6cc6ef9`) on L1. `just lint-config` checks this relationship.
-The current API uses `setSelectorBlocked` / `isSelectorBlocked`, with no proposal modes or veto.
-The default delay is 3 days, expiry is 30 days from creation, and six selector overrides are 14 days.
+The September manager API used `setSelectorBlocked` / `isSelectorBlocked`, with no proposal modes or veto.
+That manager policy had a 3-day default delay, 30-day expiry from creation and six 14-day selector overrides. These settings do not apply to LidoTimelock.
 
 `governance_addresses.emergency_brakes` and `.chainlink_mcms` are distinct testnet EOAs.
-`.guardian` is a legacy schema field and grants no POM role. The generated `.lido_dao_agent`
-is the L1 Agent or L2 OpExec. The deployer is removed from POM roles at handover.
+The generated `.lido_dao_agent` is the L1 Agent or L2 OpExec. The deployer is removed from the
+timelock roles at handover.
 
 ## Verification inputs
 
 `state-mate/wsteth.yaml` defines checks; `wsteth.inputs.yaml` carries authored roles and external
 Chainlink facts. `wsteth.deployed.yaml` is the generated address book for the selected record.
-POM implementation pins in the record state are independent deployment evidence, not values
-learned from whichever implementation is currently installed.
+The timelock, CallProxy and token pins in the record state are independent deployment evidence
+taken from the CREATE records, not values learned from the chain afterwards.
 
 The September run passed 431 live checks. That result is dated and scoped to these assertions;
 see the report for source-verification and live-delivery limits.

@@ -1,0 +1,540 @@
+{
+  "schemaVersion": 1,
+  "runId": "public-20261104-fresh-01",
+  "environment": "public-testnet",
+  "generatedAt": "2026-11-04T20:47:25.286Z",
+  "purpose": "Nethermind CCV onboarding for fresh testnet tokens",
+  "policy": {
+    "initial": "Chainlink + local resolver pointing to DummyMessageIdVerifier",
+    "initialAuthenticatingProviders": 1,
+    "planned": "Chainlink + Nethermind, both required, all four directions",
+    "nethermindStatus": "not-deployed; addresses and provider configuration pending"
+  },
+  "chains": {
+    "sepolia": {
+      "chainId": 11155111,
+      "chainSelector": "16015286601757825753",
+      "token": "0xEA7dE76a0965696a13ee41AD222978398be27278",
+      "tokenPool": "0x90Bd1BA45b6fB0A6CF7397EC62a6fd2017925033",
+      "hooks": "0x93d9772F228F7c6C677A3Aca76CFec5636648dE9",
+      "localResolver": "0xac4684527386209f289434E84879499dE45B71b9",
+      "dummyVerifier": "0x832d11c01a2BAE2Cc557179e277e28507e424A9F",
+      "timelock": "0x898A55EB873eE5a3A8F675Da72A237Ea58179930",
+      "callProxy": "0xCaf8c5225d7145baB59033c3A3DbE976c5c2e8Ff",
+      "daoExecutor": "0x25C9d019102BB4b79F1D12D79309E6eE3145f528",
+      "tokenName": "Wrapped liquid staked Ether 2.0",
+      "tokenSymbol": "wstETH",
+      "decimals": 18,
+      "tokenImplementation": null,
+      "tokenProxyAdmin": null,
+      "router": "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+      "tokenAdminRegistry": "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82",
+      "lockboxes": [
+        {
+          "lock_box": "0xD3621826b34BC7eFaB3AeA766d8D0A341C5d4fe0",
+          "remote_chain_name": "mantle_sepolia"
+        },
+        {
+          "lock_box": "0x1763971bC9dD5Af58a37Fa1048205EaE9A05e9d5",
+          "remote_chain_name": "base_sepolia"
+        }
+      ],
+      "remoteChains": [
+        "mantle_sepolia",
+        "base_sepolia"
+      ],
+      "tokenDeployment": {
+        "block": 12064529,
+        "blockHash": "0x08ab4a8203e6ba2e7b15c20e8ba454b8c09ac115e2bdb3d45172e9ef061a86ab",
+        "transactionHash": "0x8b320a89094095124cd7ecd0cb0a4af7d770eee3b2c032f3242977b5f3e9859b"
+      },
+      "explorer": "https://sepolia.etherscan.io/address/0xEA7dE76a0965696a13ee41AD222978398be27278",
+      "onchainReadback": {
+        "block": 12064893,
+        "blockHash": "0x8ca98249a4742dd148816352a7c4ed2f179c7ccaac3ed3ca15c7bb92ada73ec8"
+      },
+      "chainlinkResolver": "0x8f3ee3c77D2B27c32306a89D367654F959Db223D",
+      "chainlinkImplementations": {
+        "address": "0x8f3ee3c77D2B27c32306a89D367654F959Db223D",
+        "outbound": [
+          [
+            "8236463271206331221",
+            "0x5295455B4fD7010DB3729456f2C33ca8f2c2BF1d"
+          ],
+          [
+            "10344971235874465080",
+            "0x5295455B4fD7010DB3729456f2C33ca8f2c2BF1d"
+          ]
+        ],
+        "inbound": [
+          [
+            "0xe9a05a20",
+            "0x5295455B4fD7010DB3729456f2C33ca8f2c2BF1d"
+          ]
+        ]
+      },
+      "initialCcvConfigurationTransaction": "0xec57ee53bcf360002f3444fe6d3d72139fdfa363bdcf756dcdb2b7e22ba5d39c",
+      "requiredCcvByRemoteChain": [
+        [
+          "8236463271206331221",
+          [
+            "0xac4684527386209f289434E84879499dE45B71b9",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ],
+          [],
+          [
+            "0xac4684527386209f289434E84879499dE45B71b9",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ],
+          []
+        ],
+        [
+          "10344971235874465080",
+          [
+            "0xac4684527386209f289434E84879499dE45B71b9",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ],
+          [],
+          [
+            "0xac4684527386209f289434E84879499dE45B71b9",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ],
+          []
+        ]
+      ]
+    },
+    "mantle_sepolia": {
+      "chainId": 5003,
+      "chainSelector": "8236463271206331221",
+      "token": "0x0625b02671d6Aa31844175779527D49d119DAfE0",
+      "tokenPool": "0xEa207062B60bB2b34402C8807B06CcDb3ee35D50",
+      "hooks": "0x174F4240C8605f2CCf5D9979F75595Cc7e6510a0",
+      "localResolver": "0x1Ac7265B69402AFf447A1397D608f687C3F1b11F",
+      "dummyVerifier": "0xeD512e40649B221Ce67e5C9399904C6C5b5E80da",
+      "timelock": "0x5FC256aBed9C3c425C1AD281E3F8a1B7F88279d3",
+      "callProxy": "0x55bB3a852Beb6c3cfACb209383087c6916F8CF49",
+      "daoExecutor": "0x89968fe8cceA229F5564A83431f89ffaBbE62Df5",
+      "tokenName": "Wrapped liquid staked Ether 2.0",
+      "tokenSymbol": "wstETH",
+      "decimals": 18,
+      "tokenImplementation": "0x35Dc14086Da5453db6D646A1e132Be4d852b96de",
+      "tokenProxyAdmin": "0xB6d6536D8E7f0625Ec5194abD19074c720Af6ADD",
+      "router": "0xFd33fd627017fEf041445FC19a2B6521C9778f86",
+      "tokenAdminRegistry": "0x0F1eE88A582f31d92510E300fc1330AA5a525D51",
+      "lockboxes": [],
+      "remoteChains": [
+        "sepolia"
+      ],
+      "tokenDeployment": {
+        "block": 46139838,
+        "blockHash": "0xdfa7690645ddce0cb7a8d6f22d4a144b311037ca7ed48d4781cd22240562416a",
+        "transactionHash": "0x8ae6ae29281b4ca48c193344a482e2bbc00b74808b1386742d4872e3ac79ea16"
+      },
+      "explorer": "https://sepolia.mantlescan.xyz/address/0x0625b02671d6Aa31844175779527D49d119DAfE0",
+      "onchainReadback": {
+        "block": 46140287,
+        "blockHash": "0x704301feae463fc2f7349969ae668c4919ea7eae84b7790903fde1d7ff4d9053"
+      },
+      "chainlinkResolver": "0x8f3ee3c77D2B27c32306a89D367654F959Db223D",
+      "chainlinkImplementations": {
+        "address": "0x8f3ee3c77D2B27c32306a89D367654F959Db223D",
+        "outbound": [
+          [
+            "16015286601757825753",
+            "0x5Ec7F9e1b74D3ee88ABfe58C41445eb92B7c3969"
+          ]
+        ],
+        "inbound": [
+          [
+            "0xe9a05a20",
+            "0x5Ec7F9e1b74D3ee88ABfe58C41445eb92B7c3969"
+          ]
+        ]
+      },
+      "initialCcvConfigurationTransaction": "0x2b10364387499aedb54a04851e0052e92a319cb2a15c95bd118d7d646f0dcabb",
+      "requiredCcvByRemoteChain": [
+        [
+          "16015286601757825753",
+          [
+            "0x1Ac7265B69402AFf447A1397D608f687C3F1b11F",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ],
+          [],
+          [
+            "0x1Ac7265B69402AFf447A1397D608f687C3F1b11F",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ],
+          []
+        ]
+      ]
+    },
+    "base_sepolia": {
+      "chainId": 84532,
+      "chainSelector": "10344971235874465080",
+      "token": "0x33C71c79d1A4A1D065865B6a7DB87Ed2FD5DF86e",
+      "tokenPool": "0x4b44164848e9D39BB128Ca404fbCC846120c0F6b",
+      "hooks": "0x1fbb35e57c6937dd7EADD3f0749D494E53666D12",
+      "localResolver": "0xAAC40536b69c72db395859248Afe30e74c447670",
+      "dummyVerifier": "0x1121097BB818810456E61B56E599fC053e256e27",
+      "timelock": "0x0633DE68D5007A220E0201132FE16625B5cf60e2",
+      "callProxy": "0x71007e77092457dbf2844512e126E54872426F02",
+      "daoExecutor": "0x95b032D4F90a79E9eeCDdDAEcfb3E58a19cC9480",
+      "tokenName": "Wrapped liquid staked Ether 2.0",
+      "tokenSymbol": "wstETH",
+      "decimals": 18,
+      "tokenImplementation": "0x3B9d572D8613Ca09b5a9e88042D8EA411Df396D3",
+      "tokenProxyAdmin": "0x686Fe112adE9ECf439d73Df2AEE8A10121c00d49",
+      "router": "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93",
+      "tokenAdminRegistry": "0x736D0bBb318c1B27Ff686cd19804094E66250e17",
+      "lockboxes": [],
+      "remoteChains": [
+        "sepolia"
+      ],
+      "tokenDeployment": {
+        "block": 54512593,
+        "blockHash": "0xa60b3fb07165cb0a02c56bc9934d24c0a90ef1fddfd390d7c04a56b8c4bd1a06",
+        "transactionHash": "0x9c9c9b896e4d611c95b372c8f943556b30dc52eb56ebd356a7781e36b168aefc"
+      },
+      "explorer": "https://sepolia.basescan.org/address/0x33C71c79d1A4A1D065865B6a7DB87Ed2FD5DF86e",
+      "onchainReadback": {
+        "block": 54516916,
+        "blockHash": "0xf1f4a1ffffe0c2892ae9db068073a5045286de9b2f0950ea8b1e9f97c9ac6a6c"
+      },
+      "chainlinkResolver": "0x8f3ee3c77D2B27c32306a89D367654F959Db223D",
+      "chainlinkImplementations": {
+        "address": "0x8f3ee3c77D2B27c32306a89D367654F959Db223D",
+        "outbound": [
+          [
+            "16015286601757825753",
+            "0xEdB3Af523b8e348B8c12218d47bA8FfBeeD967ea"
+          ]
+        ],
+        "inbound": [
+          [
+            "0xe9a05a20",
+            "0xEdB3Af523b8e348B8c12218d47bA8FfBeeD967ea"
+          ]
+        ]
+      },
+      "initialCcvConfigurationTransaction": "0xe5bae4c6dc4f5c098aef4105fabc8482f6fd471bbb81c8f78d51fcbfe14702d0",
+      "requiredCcvByRemoteChain": [
+        [
+          "16015286601757825753",
+          [
+            "0xAAC40536b69c72db395859248Afe30e74c447670",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ],
+          [],
+          [
+            "0xAAC40536b69c72db395859248Afe30e74c447670",
+            "0x8f3ee3c77D2B27c32306a89D367654F959Db223D"
+          ],
+          []
+        ]
+      ]
+    }
+  },
+  "governance": {
+    "chainId": 11155111,
+    "wstETH": "0xEA7dE76a0965696a13ee41AD222978398be27278",
+    "stETH": "0x86004A06FbC1AeC7Ea19B09FA3290426A689Dcaf",
+    "lidoLocator": "0xedc78B5044Ce7c6ec01122DA5c3e8Bdcec8B4Cb3",
+    "agent": "0x25C9d019102BB4b79F1D12D79309E6eE3145f528",
+    "voting": "0xD9081AF5eaCE7345F5620Bf423F70e0D73621DB5",
+    "dg": {
+      "dualGovernance": "0xB12Ca69a9B2a294463B51c6D562Bc3a431c4E4A5",
+      "adminExecutor": "0xeDC60169EC75Fb4edF2F86466698d8dB44BB980E",
+      "timelock": "0xD616e60431dC32DfC6b82F4C15ed38BC3DE4919C",
+      "resealManager": "0xD08Fdd0476d1E7045Bfa1Fc32AC1919013fD8883"
+    },
+    "timelock": "0x898A55EB873eE5a3A8F675Da72A237Ea58179930",
+    "callProxy": "0xCaf8c5225d7145baB59033c3A3DbE976c5c2e8Ff"
+  },
+  "timing": {
+    "voting": 300,
+    "objection": 60,
+    "dgAfterSubmit": 120,
+    "dgAfterSchedule": 120,
+    "l2Executor": 0,
+    "ccip": 300,
+    "maximumConfigurableDelay": 600,
+    "proposalExpiry": 86400,
+    "executionGrace": 86400,
+    "ordinaryGovernanceMandatoryWaitSeconds": 540
+  },
+  "accessChecks": 192,
+  "deploymentStatus": "deployed-and-handed-over",
+  "checks": {
+    "access": {
+      "passed": 192,
+      "failed": 0
+    },
+    "integration": {
+      "scope": "forks of fresh public deployments",
+      "mantle_sepolia": {
+        "passed": 35,
+        "failed": 0,
+        "skipped": 0
+      },
+      "base_sepolia": {
+        "passed": 35,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "state": {
+      "scope": "read-only public RPC",
+      "eachPair": {
+        "passed": 198,
+        "skipped": 23,
+        "failed": 0,
+        "mandatoryTableChecks": 9
+      },
+      "pairs": [
+        "sepolia-mantle_sepolia",
+        "sepolia-base_sepolia"
+      ]
+    },
+    "publicGovernance": {
+      "mantle_sepolia": {
+        "status": "passed",
+        "voteId": "1",
+        "proposalId": "2",
+        "actionId": "0",
+        "messageHash": "0xe8018c2ddcf526ba1b9ead99866d324f5b02bd022aaf3fa2e47c09e4de0eaa9e",
+        "call": "OptimismBridgeExecutor.updateDelay(0)",
+        "executorDelayAfter": 0,
+        "canonicalRelay": {
+          "transactionHash": "0x613eef76d530231061fff4778a6d81894dfeef299cb0873a7d1cacd508f71184",
+          "block": 46140747
+        },
+        "receipts": [
+          {
+            "chain": "sepolia",
+            "hash": "0xb64214e23865f965302a0b41ccc29f0c5e1c36cab4f7f187cf5742da0819f471",
+            "from": "0x895B7d7020C2205FfA957385541616458Fe7911a",
+            "to": "0x074DCcD888C21246F2645Fb0FD999655c3143DD0",
+            "block": 12064912,
+            "status": 1,
+            "timestamp": 1793825472,
+            "gasUsed": "4167875"
+          },
+          {
+            "chain": "sepolia",
+            "hash": "0x30420b514e2ed1f0359008a7acf08649955bb6a2dfbf266f8e7615117dd56326",
+            "from": "0x895B7d7020C2205FfA957385541616458Fe7911a",
+            "to": "0xD9081AF5eaCE7345F5620Bf423F70e0D73621DB5",
+            "block": 12064914,
+            "status": 1,
+            "timestamp": 1793825496,
+            "gasUsed": "286949"
+          },
+          {
+            "chain": "sepolia",
+            "hash": "0x2103e5912152d060412fc7f206505a3948cad6a126a1f5da74e29231faebad7e",
+            "from": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+            "to": "0xD9081AF5eaCE7345F5620Bf423F70e0D73621DB5",
+            "block": 12064938,
+            "status": 1,
+            "timestamp": 1793825796,
+            "gasUsed": "3175082"
+          },
+          {
+            "chain": "sepolia",
+            "hash": "0xc2179b4cf4a810af1652e58dd4c6c2e003ddef7ff59d4691650fa9046a013d69",
+            "from": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+            "to": "0xB12Ca69a9B2a294463B51c6D562Bc3a431c4E4A5",
+            "block": 12064951,
+            "status": 1,
+            "timestamp": 1793825952,
+            "gasUsed": "103373"
+          },
+          {
+            "chain": "sepolia",
+            "hash": "0xf9727023579996aecb21ef2089099db1f616f37e2e71f64bc0a6bb78db8b4522",
+            "from": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+            "to": "0xD616e60431dC32DfC6b82F4C15ed38BC3DE4919C",
+            "block": 12064964,
+            "status": 1,
+            "timestamp": 1793826108,
+            "gasUsed": "6096756"
+          },
+          {
+            "chain": "mantle_sepolia",
+            "hash": "0x10ef12993b17331a834e69298510c1f5dae5962b172f3f9b8d94a97f58d2f2ff",
+            "from": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+            "to": "0x89968fe8cceA229F5564A83431f89ffaBbE62Df5",
+            "block": 46140755,
+            "status": 1,
+            "timestamp": 1793826183,
+            "gasUsed": "91373"
+          }
+        ],
+        "elapsedSeconds": 711
+      },
+      "base_sepolia": {
+        "status": "passed",
+        "voteId": "2",
+        "proposalId": "3",
+        "actionId": "0",
+        "messageHash": "0xe8d2b87c33debbcb691bc14f8392f6f999b35ebe2fb136e9bc34c30145485680",
+        "call": "OptimismBridgeExecutor.updateDelay(0)",
+        "executorDelayAfter": 0,
+        "canonicalRelay": {
+          "transactionHash": "0x7fe8566580a5e9b720060de1a3368db6678b7fa12e6241bf55354912a6bd0695",
+          "block": 54522951
+        },
+        "receipts": [
+          {
+            "chain": "sepolia",
+            "hash": "0xd98f3e1cf31a8164af83605128806c4bf82db04ac4cfcffee846340cee0535b2",
+            "from": "0x895B7d7020C2205FfA957385541616458Fe7911a",
+            "to": "0x074DCcD888C21246F2645Fb0FD999655c3143DD0",
+            "block": 12064915,
+            "status": 1,
+            "timestamp": 1793825508,
+            "gasUsed": "4167875"
+          },
+          {
+            "chain": "sepolia",
+            "hash": "0x7aec33fef57992705b3633d855e93859f85e8ad23d2d015a0e7df6e36fcfc61e",
+            "from": "0x895B7d7020C2205FfA957385541616458Fe7911a",
+            "to": "0xD9081AF5eaCE7345F5620Bf423F70e0D73621DB5",
+            "block": 12064916,
+            "status": 1,
+            "timestamp": 1793825520,
+            "gasUsed": "286949"
+          },
+          {
+            "chain": "sepolia",
+            "hash": "0xbbafa8f3e55513d7e6f02a17687064019ecc973db09c55cbdda637da75ac1e04",
+            "from": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+            "to": "0xD9081AF5eaCE7345F5620Bf423F70e0D73621DB5",
+            "block": 12064941,
+            "status": 1,
+            "timestamp": 1793825832,
+            "gasUsed": "3175082"
+          },
+          {
+            "chain": "sepolia",
+            "hash": "0x95c40cd540f3c5b4bd8889209d6b62e8b63eac8a0eb07915c195a637e1419cfe",
+            "from": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+            "to": "0xB12Ca69a9B2a294463B51c6D562Bc3a431c4E4A5",
+            "block": 12064954,
+            "status": 1,
+            "timestamp": 1793825988,
+            "gasUsed": "103373"
+          },
+          {
+            "chain": "sepolia",
+            "hash": "0xb4b055625feef1613744bb6ec4c4219dd4b1a3dc2a87e83fd5a5f4fc0680d2fc",
+            "from": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+            "to": "0xD616e60431dC32DfC6b82F4C15ed38BC3DE4919C",
+            "block": 12064968,
+            "status": 1,
+            "timestamp": 1793826156,
+            "gasUsed": "5683705"
+          },
+          {
+            "chain": "base_sepolia",
+            "hash": "0xae5fdfd99a8b197dea8f6dc1da1af4bca775e378078e734df8feadd6eafe77c9",
+            "from": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+            "to": "0x95b032D4F90a79E9eeCDdDAEcfb3E58a19cC9480",
+            "block": 54522970,
+            "status": 1,
+            "timestamp": 1793826462,
+            "gasUsed": "91373"
+          }
+        ],
+        "elapsedSeconds": 954
+      }
+    },
+    "publicCcipTokenRoundtrip": "not-tested; provider configuration/services pending"
+  },
+  "explorerSourceVerification": {
+    "status": "source-available-exact-verification-incomplete",
+    "checkedAt": "2026-11-04T21:57:27.775Z",
+    "verified": 142,
+    "total": 142,
+    "portable": 138,
+    "absolutePathIssues": 4,
+    "chains": {
+      "5003": {
+        "total": 10,
+        "verified": 10,
+        "portable": 10
+      },
+      "84532": {
+        "total": 10,
+        "verified": 10,
+        "portable": 10
+      },
+      "11155111": {
+        "total": 122,
+        "verified": 122,
+        "portable": 118
+      }
+    },
+    "remaining": [
+      {
+        "address": "0xeDC60169EC75Fb4edF2F86466698d8dB44BB980E",
+        "contractName": "contracts/Executor.sol:Executor",
+        "explorer": "https://sepolia.etherscan.io/address/0xeDC60169EC75Fb4edF2F86466698d8dB44BB980E#code"
+      },
+      {
+        "address": "0x6aFC5dD1b0CF91b57469d37616fF30339506e1a8",
+        "contractName": "contracts/ImmutableDualGovernanceConfigProvider.sol:ImmutableDualGovernanceConfigProvider",
+        "explorer": "https://sepolia.etherscan.io/address/0x6aFC5dD1b0CF91b57469d37616fF30339506e1a8#code"
+      },
+      {
+        "address": "0xAcF071E71dF221711395D657c3250B39a2b17C86",
+        "contractName": "contracts/TimelockedGovernance.sol:TimelockedGovernance",
+        "explorer": "https://sepolia.etherscan.io/address/0xAcF071E71dF221711395D657c3250B39a2b17C86#code"
+      },
+      {
+        "address": "0xD616e60431dC32DfC6b82F4C15ed38BC3DE4919C",
+        "contractName": "contracts/EmergencyProtectedTimelock.sol:EmergencyProtectedTimelock",
+        "explorer": "https://sepolia.etherscan.io/address/0xD616e60431dC32DfC6b82F4C15ed38BC3DE4919C#code"
+      }
+    ],
+    "evidence": "explorer-inventory-audit.final.json",
+    "sourcePathRule": "Relative source names and remappings only; enforced before every new publication",
+    "remediation": "No further remediation requested for this deployment; prepared portable inputs and unsent support draft retained as history.",
+    "acceptedException": {
+      "status": "accepted-for-current-deployment",
+      "scope": "Four already published Dual Governance records in public-20261104-fresh-01",
+      "reason": "User explicitly accepted retaining absolute paths for this current deployment; new publications must remain portable.",
+      "recordedAt": "2026-11-04T22:08:37.830606+00:00"
+    },
+    "exactVerificationAudit": {
+      "checkedAt": "2026-11-05T09:23:12.382Z",
+      "total": 142,
+      "sourceAvailable": 142,
+      "exactVerified": 32,
+      "similarMatch": 109,
+      "constructorNotAudited": 9,
+      "constructorMismatch": 79,
+      "errors": 0,
+      "status": "incomplete-accepted-for-current-deployment",
+      "report": "SEPOLIA-EXACT-VERIFICATION-2026-11-05.json",
+      "warningsRemoved": false,
+      "acceptedException": {
+        "status": "accepted-for-current-deployment",
+        "recordedAt": "2026-11-05T09:40:45.394954+00:00",
+        "reason": "User accepted existing Similar Match / constructor warnings and declined contacting explorer support. Further remediation is not requested.",
+        "supportContacted": false,
+        "furtherRemediationRequested": false
+      }
+    }
+  },
+  "updatedAt": "2026-11-05T09:40:45.394954+00:00",
+  "publicBridgeSmoke": {
+    "status": "roundtrips-passed",
+    "checkedAt": "2026-11-04T22:45:25.534Z",
+    "amountPerLaneWstETH": "0.001",
+    "result": "SEPOLIA-SMOKE-2026-11-04.json",
+    "authenticatingProviders": 1,
+    "nethermindVerified": false,
+    "allFourMessagesSucceeded": true
+  }
+}

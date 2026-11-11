@@ -1,0 +1,30 @@
+Compiling 87 files with Solc 0.8.34
+Solc 0.8.34 finished in 1.53s
+Compiler run successful with warnings:
+Warning (2018): Function state mutability can be restricted to view
+  --> /private/tmp/wsteth-upstream-isolation-20261104/targets/wsteth-base-migration-sepolia/test/bootstrap/SepoliaBootstrap.t.sol:40:5:
+   |
+40 |     function test_full_lido_and_pristine_backed_token() public {
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+  --> /private/tmp/wsteth-upstream-isolation-20261104/targets/wsteth-base-migration-sepolia/test/bootstrap/SepoliaBootstrap.t.sol:87:5:
+   |
+87 |     function test_two_reciprocal_existing_lanes_and_custody() public {
+   |     ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+   --> /private/tmp/wsteth-upstream-isolation-20261104/targets/wsteth-ccip-sepolia-mantle-dev/test/scenario/BridgeScenarioBase.sol:206:5:
+    |
+206 |     function _extractEncodedMessage(address onRamp) internal returns (bytes memory encodedMessage) {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+
+Ran 4 tests for /private/tmp/wsteth-upstream-isolation-20261104/targets/wsteth-base-migration-sepolia/test/bootstrap/SepoliaBootstrap.t.sol:SepoliaBootstrapTest
+[PASS] test_base_starts_on_legacy_bridge_with_backing() (gas: 5512012)
+[PASS] test_full_lido_and_pristine_backed_token() (gas: 141878)
+[PASS] test_official_registry_and_legacy_pool_authority() (gas: 3635276)
+[PASS] test_two_reciprocal_existing_lanes_and_custody() (gas: 8140254)
+Suite result: ok. 4 passed; 0 failed; 0 skipped; finished in 270.02ms (240.91ms CPU time)
+
+Ran 1 test suite in 276.29ms (270.02ms CPU time): 4 tests passed, 0 failed, 0 skipped (4 total tests)

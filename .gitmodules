@@ -13,13 +13,16 @@
 [submodule "components/governance-crosschain-bridges"]
 	path = components/governance-crosschain-bridges
 	url = https://github.com/lidofinance/governance-crosschain-bridges
-[submodule "components/openzeppelin-contracts-upgradeable-4x"]
-	path = components/openzeppelin-contracts-upgradeable-4x
-	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
 [submodule "libs/state-mate"]
 	path = libs/state-mate
 	branch = feat/separate-deployed
 	url = git@github.com:lidofinance/state-mate.git
-[submodule "components/openzeppelin-contracts-4x"]
-	path = components/openzeppelin-contracts-4x
+[submodule "components/openzeppelin-contracts-5.0.2"]
+	path = components/openzeppelin-contracts-5.0.2
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "components/openzeppelin-contracts-upgradeable-5.0.2"]
+	path = components/openzeppelin-contracts-upgradeable-5.0.2
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
+[submodule "components/openzeppelin-contracts-5.3.0"]
+	path = components/wsteth-token/lib/openzeppelin-contracts-5.3.0
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts

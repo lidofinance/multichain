@@ -1,0 +1,33 @@
+{
+  "addresses": {
+    "token": "0x2dC99af320BC317c567f24eE95811dcbd5983DfD"
+  },
+  "ccip": {
+    "chain_selector": "6180753054346818345",
+    "router": "0x06fC836cf9839B1cd891C440A0a45242DA6Ae1c9",
+    "rmn_proxy": "0xe8464c353210Cc398A45dB2454FBc5BCd25fFf20",
+    "token_admin_registry": "0x1912C3cFafE8A76A32a92861d815aC2837F237Ca",
+    "registry_module_owner": "0x3237c0D7B58BEc8Dc17F00103B784Bd6678f789E"
+  },
+  "chain": {
+    "chain_id": 4663,
+    "chain_name": "robinhood"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "ethereum"
+    }
+  ],
+  "deployed": {
+    "token_pool": "0x1c2F528e3BEeFF81Bc03CC63E64dB131d18be7fA"
+  },
+  "imported": {
+    "source_pool": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+    "block": 26335529,
+    "selector": "6180753054346818345",
+    "internal_id": "robinhood-mainnet",
+    "display_name": "Robinhood Chain",
+    "note": "spoke of a lane the hub takes over from the existing pool; not deployed by this run — only what 2_Configure reads from a remote record"
+  }
+}

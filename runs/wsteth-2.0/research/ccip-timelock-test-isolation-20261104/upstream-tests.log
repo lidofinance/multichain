@@ -1,0 +1,132 @@
+Compiling 37 files with Solc 0.8.19
+Compiling 38 files with Solc 0.8.26
+Compiling 34 files with Solc 0.8.26
+Compiling 162 files with Solc 0.8.26
+Solc 0.8.26 finished in 1.36s
+Solc 0.8.26 finished in 1.62s
+Solc 0.8.19 finished in 8.32s
+Solc 0.8.26 finished in 52.86s
+Compiler run successful!
+
+Ran 2 tests for contracts/lido-hvmv/test/LidoTimelock.t.sol:LidoTimelockTest
+[FAIL: RBACTimelock: operation is not ready] test_DoneProposalsSurviveHalt() (gas: 410335)
+Traces:
+  [410335] LidoTimelockTest::test_DoneProposalsSurviveHalt()
+    ├─ [0] VM::prank(Proposer: [0xD5E6d91F12a1c3f8E8493784f9dc29fC5Ad638cB])
+    │   └─ ← [Return]
+    ├─ [87221] LidoTimelock::scheduleBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000001 })], 0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000000000000000000000000000, 259200 [2.592e5])
+    │   ├─ emit CallScheduled(id: 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, index: 0, target: MockTarget: [0x2e234DAe75C793f67A35089C9d99245E1C58470b], value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000001, predecessor: 0x0000000000000000000000000000000000000000000000000000000000000000, salt: 0x0000000000000000000000000000000000000000000000000000000000000000, delay: 259200 [2.592e5])
+    │   └─ ← [Return]
+    ├─ [1834] LidoTimelock::hashOperationBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000001 })], 0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000000000000000000000000000) [staticcall]
+    │   └─ ← [Return] 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba
+    ├─ [0] VM::warp(1234827090 [1.234e9])
+    │   └─ ← [Return]
+    ├─ [0] VM::prank(Executor: [0xFfb32DA0e92C4196D694a3737B07c38423A8A3B3])
+    │   └─ ← [Return]
+    ├─ [69272] LidoTimelock::executeBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000001 })], 0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000000000000000000000000000)
+    │   ├─ [22270] MockTarget::setValue(1)
+    │   │   └─ ← [Return]
+    │   ├─ emit CallExecuted(id: 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, index: 0, target: MockTarget: [0x2e234DAe75C793f67A35089C9d99245E1C58470b], value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000001)
+    │   └─ ← [Return]
+    ├─ [0] VM::prank(Halter: [0x3D7f14F395a76A7946AB5F8f3C9F6b78dB86b14F])
+    │   └─ ← [Return]
+    ├─ [32023] LidoTimelock::haltProposalQueue()
+    │   ├─ emit ProposalQueueHaltedAtEpoch(epoch: 1)
+    │   └─ ← [Return]
+    ├─ [0] VM::prank(Admin: [0x1c4083413Cf0051f90584908ee304F96FcF9128d])
+    │   └─ ← [Return]
+    ├─ [29656] LidoTimelock::restartProposalQueue()
+    │   ├─ emit ProposalQueueRestarted(epoch: 1)
+    │   └─ ← [Return]
+    ├─ [5017] LidoTimelock::isOperationDone(0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba) [staticcall]
+    │   └─ ← [Return] true
+    ├─ [0] VM::assertTrue(true) [staticcall]
+    │   └─ ← [Return]
+    ├─ [0] VM::prank(Proposer: [0xD5E6d91F12a1c3f8E8493784f9dc29fC5Ad638cB])
+    │   └─ ← [Return]
+    ├─ [87605] LidoTimelock::scheduleBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000002 })], 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, 0x0000000000000000000000000000000000000000000000000000000000000000, 259200 [2.592e5])
+    │   ├─ emit CallScheduled(id: 0x75ba91e492850002127598299bc984d7b21bbfe3837a6fedff4e6abedd9d6bbb, index: 0, target: MockTarget: [0x2e234DAe75C793f67A35089C9d99245E1C58470b], value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000002, predecessor: 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, salt: 0x0000000000000000000000000000000000000000000000000000000000000000, delay: 259200 [2.592e5])
+    │   └─ ← [Return]
+    ├─ [1834] LidoTimelock::hashOperationBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000002 })], 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, 0x0000000000000000000000000000000000000000000000000000000000000000) [staticcall]
+    │   └─ ← [Return] 0x75ba91e492850002127598299bc984d7b21bbfe3837a6fedff4e6abedd9d6bbb
+    ├─ [0] VM::warp(1234827090 [1.234e9])
+    │   └─ ← [Return]
+    ├─ [0] VM::prank(Executor: [0xFfb32DA0e92C4196D694a3737B07c38423A8A3B3])
+    │   └─ ← [Return]
+    ├─ [36542] LidoTimelock::executeBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000002 })], 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, 0x0000000000000000000000000000000000000000000000000000000000000000)
+    │   └─ ← [Revert] RBACTimelock: operation is not ready
+    └─ ← [Revert] RBACTimelock: operation is not ready
+
+Backtrace:
+  at LidoTimelock.executeBatch
+  at LidoTimelockTest.test_DoneProposalsSurviveHalt
+
+[FAIL: RBACTimelock: operation is not ready] test_PredecessorPendingAtHaltBlocksDependentUntilReproposed() (gas: 435587)
+Traces:
+  [435587] LidoTimelockTest::test_PredecessorPendingAtHaltBlocksDependentUntilReproposed()
+    ├─ [0] VM::prank(Proposer: [0xD5E6d91F12a1c3f8E8493784f9dc29fC5Ad638cB])
+    │   └─ ← [Return]
+    ├─ [87221] LidoTimelock::scheduleBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000001 })], 0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000000000000000000000000000, 259200 [2.592e5])
+    │   ├─ emit CallScheduled(id: 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, index: 0, target: MockTarget: [0x2e234DAe75C793f67A35089C9d99245E1C58470b], value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000001, predecessor: 0x0000000000000000000000000000000000000000000000000000000000000000, salt: 0x0000000000000000000000000000000000000000000000000000000000000000, delay: 259200 [2.592e5])
+    │   └─ ← [Return]
+    ├─ [1834] LidoTimelock::hashOperationBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000001 })], 0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000000000000000000000000000) [staticcall]
+    │   └─ ← [Return] 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba
+    ├─ [0] VM::prank(Halter: [0x3D7f14F395a76A7946AB5F8f3C9F6b78dB86b14F])
+    │   └─ ← [Return]
+    ├─ [32023] LidoTimelock::haltProposalQueue()
+    │   ├─ emit ProposalQueueHaltedAtEpoch(epoch: 1)
+    │   └─ ← [Return]
+    ├─ [0] VM::prank(Admin: [0x1c4083413Cf0051f90584908ee304F96FcF9128d])
+    │   └─ ← [Return]
+    ├─ [29656] LidoTimelock::restartProposalQueue()
+    │   ├─ emit ProposalQueueRestarted(epoch: 1)
+    │   └─ ← [Return]
+    ├─ [0] VM::prank(Proposer: [0xD5E6d91F12a1c3f8E8493784f9dc29fC5Ad638cB])
+    │   └─ ← [Return]
+    ├─ [87605] LidoTimelock::scheduleBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000002 })], 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, 0x0000000000000000000000000000000000000000000000000000000000000000, 259200 [2.592e5])
+    │   ├─ emit CallScheduled(id: 0x75ba91e492850002127598299bc984d7b21bbfe3837a6fedff4e6abedd9d6bbb, index: 0, target: MockTarget: [0x2e234DAe75C793f67A35089C9d99245E1C58470b], value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000002, predecessor: 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, salt: 0x0000000000000000000000000000000000000000000000000000000000000000, delay: 259200 [2.592e5])
+    │   └─ ← [Return]
+    ├─ [1834] LidoTimelock::hashOperationBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000002 })], 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, 0x0000000000000000000000000000000000000000000000000000000000000000) [staticcall]
+    │   └─ ← [Return] 0x75ba91e492850002127598299bc984d7b21bbfe3837a6fedff4e6abedd9d6bbb
+    ├─ [0] VM::warp(1234827090 [1.234e9])
+    │   └─ ← [Return]
+    ├─ [0] VM::prank(Executor: [0xFfb32DA0e92C4196D694a3737B07c38423A8A3B3])
+    │   └─ ← [Return]
+    ├─ [0] VM::expectRevert(RBACTimelock: missing dependency)
+    │   └─ ← [Return]
+    ├─ [41315] LidoTimelock::executeBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000002 })], 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, 0x0000000000000000000000000000000000000000000000000000000000000000)
+    │   └─ ← [Revert] RBACTimelock: missing dependency
+    ├─ [0] VM::prank(Proposer: [0xD5E6d91F12a1c3f8E8493784f9dc29fC5Ad638cB])
+    │   └─ ← [Return]
+    ├─ [53181] LidoTimelock::scheduleBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000001 })], 0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000000000000000000000000000, 259200 [2.592e5])
+    │   ├─ emit CallScheduled(id: 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, index: 0, target: MockTarget: [0x2e234DAe75C793f67A35089C9d99245E1C58470b], value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000001, predecessor: 0x0000000000000000000000000000000000000000000000000000000000000000, salt: 0x0000000000000000000000000000000000000000000000000000000000000000, delay: 259200 [2.592e5])
+    │   └─ ← [Return]
+    ├─ [1834] LidoTimelock::hashOperationBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000001 })], 0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000000000000000000000000000) [staticcall]
+    │   └─ ← [Return] 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba
+    ├─ [0] VM::assertEq(0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba, 0x6f79ab5253200f06286fa066acb63d1f89948fe9d987c0bad7d1c144605e90ba) [staticcall]
+    │   └─ ← [Return]
+    ├─ [0] VM::warp(1234827090 [1.234e9])
+    │   └─ ← [Return]
+    ├─ [0] VM::prank(Executor: [0xFfb32DA0e92C4196D694a3737B07c38423A8A3B3])
+    │   └─ ← [Return]
+    ├─ [36158] LidoTimelock::executeBatch([Call({ target: 0x2e234DAe75C793f67A35089C9d99245E1C58470b, value: 0, data: 0x552410770000000000000000000000000000000000000000000000000000000000000001 })], 0x0000000000000000000000000000000000000000000000000000000000000000, 0x0000000000000000000000000000000000000000000000000000000000000000)
+    │   └─ ← [Revert] RBACTimelock: operation is not ready
+    └─ ← [Revert] RBACTimelock: operation is not ready
+
+Backtrace:
+  at LidoTimelock.executeBatch
+  at LidoTimelockTest.test_PredecessorPendingAtHaltBlocksDependentUntilReproposed
+
+Suite result: FAILED. 0 passed; 2 failed; 0 skipped; finished in 3.06ms (1.28ms CPU time)
+
+Ran 1 test suite in 7.31ms (3.06ms CPU time): 0 tests passed, 2 failed, 0 skipped (2 total tests)
+
+Failing tests:
+Encountered 2 failing tests in contracts/lido-hvmv/test/LidoTimelock.t.sol:LidoTimelockTest
+[FAIL: RBACTimelock: operation is not ready] test_DoneProposalsSurviveHalt() (gas: 410335)
+[FAIL: RBACTimelock: operation is not ready] test_PredecessorPendingAtHaltBlocksDependentUntilReproposed() (gas: 435587)
+
+Encountered a total of 2 failing tests, 0 tests succeeded
+
+Tip: Run `forge test --rerun` to retry only the 2 failed tests
+Tip: Run `forge test --debug --match-test <TEST_NAME>` to inspect one failing test in the debugger
