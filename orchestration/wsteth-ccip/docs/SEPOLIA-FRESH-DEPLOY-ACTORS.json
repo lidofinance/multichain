@@ -1,0 +1,418 @@
+{
+  "schemaVersion": 1,
+  "preparedAt": "2026-11-04T13:21:32.086Z",
+  "purpose": "planned-fresh-public-testnet-deployment",
+  "deploymentStatus": "not-started",
+  "target": "wsteth-ccip-sepolia-mantle-dev",
+  "chains": [
+    {
+      "slug": "sepolia",
+      "chainId": 11155111
+    },
+    {
+      "slug": "base_sepolia",
+      "chainId": 84532
+    },
+    {
+      "slug": "mantle_sepolia",
+      "chainId": 5003
+    }
+  ],
+  "derivation": {
+    "source": "orchestration/wsteth-ccip/.env:ACTORS_MNEMONIC",
+    "pathTemplate": "m/44'/60'/0'/0/{index}",
+    "bip39Passphrase": "empty; matches existing scripts"
+  },
+  "privateKeyFile": ".private/wsteth-testnet-2026-11-04/keys.env",
+  "actors": [
+    {
+      "id": "deployer",
+      "index": null,
+      "title": "Deployer / guardian L2 executor",
+      "keyVariable": "DEPLOYER_PRIVATE_KEY",
+      "networks": [
+        "sepolia",
+        "base_sepolia",
+        "mantle_sepolia"
+      ],
+      "roles": [
+        "Деплой и временный admin до handover",
+        "Guardian обоих L2 governance executor: отмена action sets",
+        "Scratch ENS/APM deployment infrastructure retained under this controlled key; not a token/pool administrator after handover"
+      ],
+      "wiring": "existing",
+      "derivationPath": null,
+      "address": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+      "keySource": "orchestration/wsteth-ccip/.env:DEPLOYER_PRIVATE_KEY (separate key)",
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "reserve_0",
+      "index": 0,
+      "title": "Резерв, без назначенных прав",
+      "keyVariable": "RESERVE_0_PRIVATE_KEY",
+      "networks": [],
+      "roles": [],
+      "wiring": "unassigned",
+      "derivationPath": "m/44'/60'/0'/0/0",
+      "address": "0xd994024e2F9c9d8B199b4564223ad9807aAD1434",
+      "keySource": "ACTORS_MNEMONIC",
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "emergency_brakes",
+      "index": 1,
+      "title": "Emergency Brakes",
+      "keyVariable": "EMERGENCY_BRAKES_PRIVATE_KEY",
+      "networks": [
+        "sepolia",
+        "base_sepolia",
+        "mantle_sepolia"
+      ],
+      "roles": [
+        "LidoTimelock: CANCELLER_ROLE, PROPOSAL_QUEUE_HALT_ROLE",
+        "Hooks: CROSS_CHAIN_TRANSFERS_PAUSE_ROLE",
+        "L1 Lido PAUSE_ROLE / STAKING_PAUSE_ROLE; CircuitBreaker pauser for WithdrawalQueue and VEBO"
+      ],
+      "wiring": "existing",
+      "derivationPath": "m/44'/60'/0'/0/1",
+      "address": "0x608056b8d596da5816146014E88DFfDECAF59DcD",
+      "keySource": "ACTORS_MNEMONIC",
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "ccip_proposer",
+      "index": 2,
+      "title": "Тестовый Chainlink proposer",
+      "keyVariable": "CCIP_PROPOSER_PRIVATE_KEY",
+      "networks": [
+        "sepolia",
+        "base_sepolia",
+        "mantle_sepolia"
+      ],
+      "roles": [
+        "LidoTimelock: PROPOSER_ROLE, CANCELLER_ROLE",
+        "Поле конфигурации chainlink_mcms; это наш EOA, не официальный MCMS"
+      ],
+      "wiring": "existing",
+      "derivationPath": "m/44'/60'/0'/0/2",
+      "address": "0x1D72FbCcfC86C88E23771d6D58a8F1Cb77186d1d",
+      "keySource": "ACTORS_MNEMONIC",
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "dao_voter",
+      "index": 3,
+      "title": "Держатель TLDO / DAO voter",
+      "keyVariable": "DAO_VOTER_PRIVATE_KEY",
+      "networks": [
+        "sepolia"
+      ],
+      "roles": [
+        "План: 100% начального выпуска TLDO, создание и поддержка голосований",
+        "Ранее индекс 3 был резервом; прямой admin токенов/пулов ему не назначается"
+      ],
+      "wiring": "controlled-testnet-profile",
+      "derivationPath": "m/44'/60'/0'/0/3",
+      "address": "0x895B7d7020C2205FfA957385541616458Fe7911a",
+      "keySource": "ACTORS_MNEMONIC",
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "dg_reseal",
+      "index": 4,
+      "title": "DG reseal committee",
+      "keyVariable": "DG_RESEAL_PRIVATE_KEY",
+      "networks": [
+        "sepolia"
+      ],
+      "roles": [
+        "dualGovernance.resealCommittee"
+      ],
+      "wiring": "existing",
+      "derivationPath": "m/44'/60'/0'/0/4",
+      "address": "0x56f61794A722a55Dfe248abFE3f8D1cB741e3Fd6",
+      "keySource": "ACTORS_MNEMONIC",
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "dg_emergency_proposer",
+      "index": 5,
+      "title": "DG emergency governance proposer",
+      "keyVariable": "DG_EMERGENCY_PROPOSER_PRIVATE_KEY",
+      "networks": [
+        "sepolia"
+      ],
+      "roles": [
+        "dualGovernance.timelock.emergencyProtection.emergencyGovernanceProposer"
+      ],
+      "wiring": "existing",
+      "derivationPath": "m/44'/60'/0'/0/5",
+      "address": "0x7596742254E4c9383280d4E8609E667F81f8bc86",
+      "keySource": "ACTORS_MNEMONIC",
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "dg_emergency_activation",
+      "index": 6,
+      "title": "DG emergency activation committee",
+      "keyVariable": "DG_EMERGENCY_ACTIVATION_PRIVATE_KEY",
+      "networks": [
+        "sepolia"
+      ],
+      "roles": [
+        "dualGovernance.timelock.emergencyProtection.emergencyActivationCommittee"
+      ],
+      "wiring": "existing",
+      "derivationPath": "m/44'/60'/0'/0/6",
+      "address": "0x7B3C72102598A3b6027F56C1b920c4076f11CCA7",
+      "keySource": "ACTORS_MNEMONIC",
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "dg_emergency_execution",
+      "index": 7,
+      "title": "DG emergency execution committee",
+      "keyVariable": "DG_EMERGENCY_EXECUTION_PRIVATE_KEY",
+      "networks": [
+        "sepolia"
+      ],
+      "roles": [
+        "dualGovernance.timelock.emergencyProtection.emergencyExecutionCommittee"
+      ],
+      "wiring": "existing",
+      "derivationPath": "m/44'/60'/0'/0/7",
+      "address": "0xc8bD77bb45136eD4B67870feF0Fd05DD4A174B3A",
+      "keySource": "ACTORS_MNEMONIC",
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "dg_tiebreaker_1",
+      "index": 8,
+      "title": "DG tiebreaker: участник подкомитета 1",
+      "keyVariable": "DG_TIEBREAKER_1_PRIVATE_KEY",
+      "networks": [
+        "sepolia"
+      ],
+      "roles": [
+        "dualGovernance.tiebreaker.committees[0].members[0]"
+      ],
+      "wiring": "existing",
+      "derivationPath": "m/44'/60'/0'/0/8",
+      "address": "0x5a09cccE4f017642C948C3CB4c432DCb839d873c",
+      "keySource": "ACTORS_MNEMONIC",
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "dg_tiebreaker_2",
+      "index": 9,
+      "title": "DG tiebreaker: участник подкомитета 2",
+      "keyVariable": "DG_TIEBREAKER_2_PRIVATE_KEY",
+      "networks": [
+        "sepolia"
+      ],
+      "roles": [
+        "dualGovernance.tiebreaker.committees[1].members[0]"
+      ],
+      "wiring": "existing",
+      "derivationPath": "m/44'/60'/0'/0/9",
+      "address": "0x81545fAAB0b3D13cd163Df300bB7c4aE3b6395C2",
+      "keySource": "ACTORS_MNEMONIC",
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "dg_tiebreaker_3",
+      "index": 10,
+      "title": "DG tiebreaker: участник подкомитета 3",
+      "keyVariable": "DG_TIEBREAKER_3_PRIVATE_KEY",
+      "networks": [
+        "sepolia"
+      ],
+      "roles": [
+        "dualGovernance.tiebreaker.committees[2].members[0]"
+      ],
+      "wiring": "existing",
+      "derivationPath": "m/44'/60'/0'/0/10",
+      "address": "0x427e84566d6530E0d036542D17f32E15e16ef516",
+      "keySource": "ACTORS_MNEMONIC",
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "oracle_1",
+      "index": 11,
+      "title": "oracle_1",
+      "address": "0xB4D2adF6C1193400C6b1EAE84f106CB0F38E8196",
+      "networks": [
+        "sepolia"
+      ],
+      "keyVariable": "ORACLE_1_PRIVATE_KEY",
+      "derivationPath": "m/44'/60'/0'/0/11",
+      "keySource": "ACTORS_MNEMONIC",
+      "wiring": "core-access",
+      "roles": [
+        "AO and VEBO HashConsensus member; quorum 2 of 3"
+      ],
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "oracle_2",
+      "index": 12,
+      "title": "oracle_2",
+      "address": "0xFb2E706C56Bc4EF56563EA172D63149ed451F424",
+      "networks": [
+        "sepolia"
+      ],
+      "keyVariable": "ORACLE_2_PRIVATE_KEY",
+      "derivationPath": "m/44'/60'/0'/0/12",
+      "keySource": "ACTORS_MNEMONIC",
+      "wiring": "core-access",
+      "roles": [
+        "AO and VEBO HashConsensus member; quorum 2 of 3"
+      ],
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "oracle_3",
+      "index": 13,
+      "title": "oracle_3",
+      "address": "0x6cC2F69ceABE65532BD949e1Ae9C2c4127Eb1936",
+      "networks": [
+        "sepolia"
+      ],
+      "keyVariable": "ORACLE_3_PRIVATE_KEY",
+      "derivationPath": "m/44'/60'/0'/0/13",
+      "keySource": "ACTORS_MNEMONIC",
+      "wiring": "core-access",
+      "roles": [
+        "AO and VEBO HashConsensus member; quorum 2 of 3"
+      ],
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "dsm_guardian_1",
+      "index": 14,
+      "title": "dsm_guardian_1",
+      "address": "0x8516da7118f3cA9a587ae79d09Bfd59a44D50623",
+      "networks": [
+        "sepolia"
+      ],
+      "keyVariable": "DSM_GUARDIAN_1_PRIVATE_KEY",
+      "derivationPath": "m/44'/60'/0'/0/14",
+      "keySource": "ACTORS_MNEMONIC",
+      "wiring": "core-access",
+      "roles": [
+        "Signer of a dedicated TestnetDsmGuardian ERC-1271 contract; DSM quorum 2 of 3 contract guardians"
+      ],
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "dsm_guardian_2",
+      "index": 15,
+      "title": "dsm_guardian_2",
+      "address": "0xaa2EcD6E3073dA9543145a85A3aAFF8d9c5f22d7",
+      "networks": [
+        "sepolia"
+      ],
+      "keyVariable": "DSM_GUARDIAN_2_PRIVATE_KEY",
+      "derivationPath": "m/44'/60'/0'/0/15",
+      "keySource": "ACTORS_MNEMONIC",
+      "wiring": "core-access",
+      "roles": [
+        "Signer of a dedicated TestnetDsmGuardian ERC-1271 contract; DSM quorum 2 of 3 contract guardians"
+      ],
+      "controlChecked": "offline-sign-and-recover"
+    },
+    {
+      "id": "dsm_guardian_3",
+      "index": 16,
+      "title": "dsm_guardian_3",
+      "address": "0x3F3785D2433EeADF785e33e20200b33F1F42E80a",
+      "networks": [
+        "sepolia"
+      ],
+      "keyVariable": "DSM_GUARDIAN_3_PRIVATE_KEY",
+      "derivationPath": "m/44'/60'/0'/0/16",
+      "keySource": "ACTORS_MNEMONIC",
+      "wiring": "core-access",
+      "roles": [
+        "Signer of a dedicated TestnetDsmGuardian ERC-1271 contract; DSM quorum 2 of 3 contract guardians"
+      ],
+      "controlChecked": "offline-sign-and-recover"
+    }
+  ],
+  "plannedDaoVoting": {
+    "holder": "dao_voter",
+    "initialSupplySharePercent": 100,
+    "status": "wired-by-controlled-testnet-profile",
+    "absoluteSupply": "1000000000000000000000000"
+  },
+  "plannedDefaults": {
+    "realCcvPolicy": {
+      "providers": [
+        "Chainlink",
+        "Nethermind"
+      ],
+      "requiredProviders": 2,
+      "bidirectionalLanes": [
+        [
+          "sepolia",
+          "base_sepolia"
+        ],
+        [
+          "sepolia",
+          "mantle_sepolia"
+        ]
+      ],
+      "replaceDummy": true,
+      "status": "awaiting-provider-contracts-and-service-configuration"
+    },
+    "l2ExecutorGuardian": "deployer",
+    "dummyAllowlistAdmin": "0x0000000000000000000000000000000000000000",
+    "poolRateLimitAdmin": "0x0000000000000000000000000000000000000000",
+    "poolFeeAdmin": "0x0000000000000000000000000000000000000000",
+    "feeAggregator": "DAO Agent on L1; governance executor on L2",
+    "lidoTimelockDelaySeconds": {
+      "upstreamDefault": 259200,
+      "controlledTestnet": 300
+    },
+    "timingProfile": "targets/wsteth-ccip-sepolia-mantle-dev/config/access-profile.json",
+    "bootstrapCcvPolicy": {
+      "requiredPaths": [
+        "Chainlink",
+        "local resolver -> DummyMessageIdVerifier"
+      ],
+      "chainlinkResolver": "0x8f3ee3c77D2B27c32306a89D367654F959Db223D",
+      "bidirectionalLanes": [
+        [
+          "sepolia",
+          "base_sepolia"
+        ],
+        [
+          "sepolia",
+          "mantle_sepolia"
+        ]
+      ],
+      "configurationStep": "initial-ccv before deployer handover",
+      "independentAuthenticatingProviders": 1
+    }
+  },
+  "checks": {
+    "distinctAddresses": 18,
+    "offlineSignAndRecover": true,
+    "standardDevAccountsRejected": true,
+    "targetBrakesAndProposerMatch": true,
+    "historicalDgAddressesMatch": true,
+    "currentTrackedFilesContainNoExportedCredentials": true,
+    "onchainRolesChecked": false,
+    "publicFundingCheckedForTheseActors": true,
+    "publicOperationalActorsFunded": false,
+    "publicReadinessEvidence": "runs/wsteth-2.0/rehearsals/access-20261104-ccv-verified/public-readiness.json",
+    "latestPassedForkRun": "access-20261104-chainlink-dummy",
+    "managementCoverage": "Core OZ/proxy/owner roles, Aragon ACL routes, DG committees, DSM ERC-1271, oracle committees, CircuitBreaker, CCIP and L2 token/executor; readback and signed fork execution recorded per run"
+  },
+  "pendingBeforeDeployment": [
+    "Require a passed fresh fork run: state/access-invariants.json and state/access-rehearsal.json.",
+    "Fund public transaction senders; verify balances before broadcasting.",
+    "After public deployment, verify roles and network delivery; fork transport emulation is not evidence of public delivery."
+  ]
+}

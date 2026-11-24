@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Step 00 — preflight: verify the initial conditions are suitable to START a deployment.
-# Read-only (no transactions, no state writes). Checks, per chain (L1 Sepolia / the L2_CHAIN L2):
+# Read-only (no transactions, no state writes). Checks, per chain (the L1_CHAIN hub / the L2_CHAIN spoke):
 #   • RPC health — reachable, expected chain id, latest block + freshness, substrate (anvil|live)
 #   • deployer — key↔address consistency, nonce, balance vs spend thresholds
 #   • on-chain dependencies from config/chains/*.json — the EXTERNAL contracts the pipeline
@@ -21,6 +21,18 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${HERE}/.." && pwd)"
 cd "${ROOT}"
+# Check tools before _common.sh uses python3, jq, cast or git, and before any RPC read.
+echo "── tooling ───────────────────────────────────────────────────────────────"
+missing_tool=0
+for tool in cast forge jq bc uv node rsync git python3; do
+    if command -v "${tool}" >/dev/null 2>&1; then
+        echo "  ✔ ${tool}: $(command -v "${tool}")"
+    else
+        echo "  ✗ ${tool} not found in PATH"
+        missing_tool=1
+    fi
+done
+[ "${missing_tool}" = 0 ] || exit 1
 . "${HERE}/_common.sh"
 
 MIN_DEPLOYER_L1_ETH="${MIN_DEPLOYER_L1_ETH:-2}"
@@ -57,10 +69,6 @@ ether() { cast from-wei "$1" 2>/dev/null || echo "?"; }
 # ge_eth <wei> <eth>: succeed iff <wei> >= <eth> ether (integer wei math via cast).
 ge_eth() { [ "$(echo "$1 >= $(cast to-wei "$2" ether)" | bc)" = "1" ]; }
 
-echo "── tooling ───────────────────────────────────────────────────────────────"
-for tool in cast forge jq bc; do
-    command -v "${tool}" >/dev/null 2>&1 && ok "${tool}: $(command -v "${tool}")" || fail "${tool} not found in PATH"
-done
 for sub in ../../components/core ../../components/ccip ../../libs/state-mate ../../components/governance-crosschain-bridges; do
     if [ -e "${sub}/.git" ]; then
         sha="$(git -C "${sub}" rev-parse --short HEAD 2>/dev/null || echo '?')"
@@ -83,13 +91,13 @@ if [ -e ../../components/core/.git ]; then
 fi
 
 # Cheap pre-build check of the local token's authorization boundary. The retained
-# IERC20Bridged interface is not an implemented mint/burn path. Step 03 checks
-# the compiled ABI and deployed token as well.
+# IERC20Bridged interface is not an implemented mint/burn path. The component's 1_Deploy compiles
+# and deploys this token on scratch spokes; components/wsteth-token's tests cover its ABI.
 L2_TOKEN_SRC="../../components/wsteth-token/contracts/token"
 if [ -f "${L2_TOKEN_SRC}/ERC20Bridged.sol" ]; then
     if grep -qE '^[[:space:]]*address public (immutable )?bridge;|onlyBridge|^[[:space:]]*contract ERC20Bridged is[^{]*IERC20Bridged' \
             "${L2_TOKEN_SRC}/ERC20Bridged.sol" "${L2_TOKEN_SRC}/ERC20BridgedPermit.sol"; then
-        fail "L2 token base still carries the legacy \`bridge\` mint/burn authority (${L2_TOKEN_SRC}/ERC20Bridged.sol) — local token source violates the authority model; step 03 would deploy a token with a second mint principal outside the role system"
+        fail "L2 token base still carries the legacy \`bridge\` mint/burn authority (${L2_TOKEN_SRC}/ERC20Bridged.sol) — local token source violates the authority model; 1_Deploy would deploy a token with a second mint principal outside the role system"
     else
         ok "L2 token base carries no legacy \`bridge\` authority (locally maintained)"
     fi
@@ -184,34 +192,44 @@ check_chain() {
 
     echo "── ${tag} — record state (${cfg}) ────────────────────────────────────"
     local token deployed
-    token="$(jq -r '.addresses.token // empty' "${cfg}")"
+    # address(0) is the template value: the component deploys the token from token_deployment.
+    token="$(jq -r '.addresses.token // empty | select(. != "0x0000000000000000000000000000000000000000")' "${cfg}")"
     deployed="$(jq -r '.deployed.token_pool // empty' "${cfg}")"
-    if [ -n "${token}" ] || [ -n "${deployed}" ]; then
-        warn "record already carries deployment output (token=${token:-—}, pool=${deployed:-—}) — a fresh deploy overwrites it (prepare a new run for a fresh deployment)"
+    if [ "${WSTETH_OPERATION}" = "in-place-upgrade" ]; then
+        # The existing token is an INPUT here; only a pool deployment is output.
+        if [ -n "${deployed}" ]; then
+            warn "record already carries a pool deployment (${deployed}) — 1_Deploy refuses a deployed record (prepare a new run on a fresh fork for a clean rehearsal)"
+        elif [ -n "${token}" ]; then
+            ok "record names the existing token ${token}; no lane deployed yet"
+        elif [ "${WSTETH_BOOTSTRAP:-}" = sepolia-migration ]; then
+            is_anvil "${rpc}" || { fail "bootstrap requires a local fork"; return; }
+            ok "new token will be created by the Sepolia bootstrap"
+        else
+            fail "in-place upgrade record names no token (.addresses.token)"
+        fi
+    elif [ -n "${token}" ] || [ -n "${deployed}" ]; then
+        warn "record already carries deployment output (token=${token:-—}, pool=${deployed:-—}) — 1_Deploy refuses a deployed record (prepare a new run for a fresh deployment)"
     else
         ok "record pristine (no deployment output)"
     fi
-    # .guardian is a legacy record field and is unused by current 1_Deploy: GUARDIAN_ROLE no
-    # longer exists on PoolOperationManager. Do not treat guardian == emergency_brakes as a
-    # POM-role collapse.
 }
 
-L1_SEL="$(jq -r '.ccip.chain_selector' config/chains/sepolia.json)"
+L1_SEL="$(jq -r '.ccip.chain_selector' "${L1_CFG_CANON}")"
 L2_SEL="$(jq -r '.ccip.chain_selector' "${L2_CFG_CANON}")"
 
-check_chain "L1 Sepolia"     "${L1_RPC}" 11155111        config/chains/sepolia.json "${MIN_DEPLOYER_L1_ETH}" "${L2_SEL}"
-check_chain "L2 ${L2_CHAIN}" "${L2_RPC}" "${L2_CHAIN_ID}" "${L2_CFG_CANON}"          "${MIN_DEPLOYER_L2_ETH}" "${L1_SEL}"
+check_chain "L1 ${L1_CHAIN}" "${L1_RPC}" "${L1_CHAIN_ID}" "${L1_CFG_CANON}" "${MIN_DEPLOYER_L1_ETH}" "${L2_SEL}"
+check_chain "L2 ${L2_CHAIN}" "${L2_RPC}" "${L2_CHAIN_ID}" "${L2_CFG_CANON}" "${MIN_DEPLOYER_L2_ETH}" "${L1_SEL}"
 
 # Pair consistency: an L1 record that already carries deploy output for a DIFFERENT L2 means the
-# Sepolia fork/record belongs to another pair — step 04's skip logic would then never create this
-# pair's lockbox.
-echo "── pair consistency (config/chains/sepolia.json vs L2_CHAIN=${L2_CHAIN}) ──"
-L1_LANE="$(jq -r '.remote_lanes[0].remote_chain_name // empty' config/chains/sepolia.json)"
-L1_DEPLOYED="$(jq -r '.deployed.token_pool // empty' config/chains/sepolia.json)"
+# hub fork/record belongs to another pair — 1_Deploy refuses it, and this pair's lockbox would
+# never be created.
+echo "── pair consistency (${L1_CFG_CANON} vs L2_CHAIN=${L2_CHAIN}) ──"
+L1_LANE="$(jq -r '.remote_lanes[0].remote_chain_name // empty' "${L1_CFG_CANON}")"
+L1_DEPLOYED="$(jq -r '.deployed.token_pool // empty' "${L1_CFG_CANON}")"
 if [ -n "${L1_DEPLOYED}" ] && [ "${L1_LANE}" != "${L2_CHAIN}" ]; then
-    warn "L1 record carries a deployment for the sepolia-${L1_LANE:-?} pair (lane != ${L2_CHAIN}) — prepare a new run on a fresh fork before deploying this pair"
+    warn "L1 record carries a deployment for the ${L1_CHAIN}-${L1_LANE:-?} pair (lane != ${L2_CHAIN}) — prepare a new run on a fresh fork before deploying this pair"
 else
-    ok "L1 record consistent with the sepolia-${L2_CHAIN} pair"
+    ok "L1 record consistent with the ${L1_CHAIN}-${L2_CHAIN} pair"
 fi
 
 echo "──────────────────────────────────────────────────────────────────────────"

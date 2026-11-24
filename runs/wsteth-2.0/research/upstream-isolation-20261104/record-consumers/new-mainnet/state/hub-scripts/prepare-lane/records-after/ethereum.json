@@ -1,0 +1,284 @@
+{
+  "addresses": {
+    "token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+  },
+  "ccip": {
+    "chain_selector": "5009297550715157269",
+    "registry_module_owner": "0x4855174E9479E211337832E109E7721d43A4CA64",
+    "rmn_proxy": "0x411dE17f12D1A34ecC7F45f49844626267c75e81",
+    "router": "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D",
+    "token_admin_registry": "0xb22764f98dD05c789929716D677382Df22C05Cb6"
+  },
+  "ccv": {
+    "message_id_verifier": "0x5b6ea72F83541FC270E90873DB8B53F209Ed9C72",
+    "verifier_resolver": "0x236A113712AFE2c052E0f3bcf562030ab0eAB908"
+  },
+  "chain": {
+    "chain_id": 1,
+    "chain_name": "ethereum",
+    "pool_type": "SiloedLockRelease"
+  },
+  "deferred_lanes": [
+    "base"
+  ],
+  "deployed": {
+    "advanced_pool_hooks": "0xfbAE3675db48b700dd7b0c9c21A147096780E862",
+    "call_proxy": "0x3743B93618Be8BdA4ad146d97fF3DC7CA471867B",
+    "lock_boxes": [
+      {
+        "lock_box": "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB",
+        "remote_chain_name": "abstract"
+      },
+      {
+        "lock_box": "0xa0BA126e57Ffa62ea42aA1C6A6016fA8A7A16539",
+        "remote_chain_name": "bitlayer"
+      },
+      {
+        "lock_box": "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB",
+        "remote_chain_name": "ink"
+      },
+      {
+        "lock_box": "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB",
+        "remote_chain_name": "jovay"
+      },
+      {
+        "lock_box": "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB",
+        "remote_chain_name": "megaeth"
+      },
+      {
+        "lock_box": "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB",
+        "remote_chain_name": "monad"
+      },
+      {
+        "lock_box": "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB",
+        "remote_chain_name": "plasma"
+      },
+      {
+        "lock_box": "0xcc5Ba15FA275e5407d328861C56DDCedEd1250c8",
+        "remote_chain_name": "robinhood"
+      },
+      {
+        "lock_box": "0xeC7Cb3964EdcCa7B7925A7D159e033D1fC1DD0AB",
+        "remote_chain_name": "zerog"
+      },
+      {
+        "lock_box": "0x9732d45E09e5688fa9c54555ca168c8b2A8bc022",
+        "remote_chain_name": "base"
+      }
+    ],
+    "timelock": "0xBEcd653Bd319A0E3F3C23A19A67c3d3747D286ea",
+    "token_pool": "0x3bE031BAC33897d92076cD02f1643a717EdF60A6"
+  },
+  "governance_addresses": {
+    "chainlink_mcms": "0x3C3C000000000000000000000000000000000001",
+    "emergency_brakes": "0xEB00000000000000000000000000000000000001",
+    "lido_dao_agent": "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c",
+    "deployer": "0xe528a15071e6c5af0c1ed8e6ec647ce9ec510597"
+  },
+  "imported_lanes": {
+    "abstract": {
+      "remote_pools": [
+        "0x38Ad0414B523Fa344429ff14dAC305e4fB6Ab248"
+      ],
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "2",
+          "rate": "1"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "26400000000000004",
+          "rate": "1"
+        }
+      },
+      "required_ccvs": "none"
+    },
+    "bitlayer": {
+      "remote_pools": [
+        "0xC78210649aF8A450C0f6E98107a0b614a3198359"
+      ],
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "114000000000000000000",
+          "rate": "32000000000000000"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "114000000000000000000",
+          "rate": "32000000000000000"
+        }
+      },
+      "required_ccvs": "none"
+    },
+    "ink": {
+      "remote_pools": [
+        "0x2dC99af320BC317c567f24eE95811dcbd5983DfD"
+      ],
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "2",
+          "rate": "1"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "264000000000000",
+          "rate": "1"
+        }
+      },
+      "required_ccvs": "none"
+    },
+    "jovay": {
+      "remote_pools": [
+        "0x1c2F528e3BEeFF81Bc03CC63E64dB131d18be7fA"
+      ],
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "2",
+          "rate": "1"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "220000000000000",
+          "rate": "1"
+        }
+      },
+      "required_ccvs": "none"
+    },
+    "megaeth": {
+      "remote_pools": [
+        "0x15C03488B29e27d62BAf10E30b0c474bf60E0264"
+      ],
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "2000000000000000000000",
+          "rate": "23148148140000000"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "2000000000000000000000",
+          "rate": "23148148140000000"
+        }
+      },
+      "required_ccvs": "none"
+    },
+    "monad": {
+      "remote_pools": [
+        "0x2f2E55517aac64c4066f6eB333b4Cb072eD00E8A"
+      ],
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "2000000000000000000000",
+          "rate": "23148148140000000"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "2200000000000000262144",
+          "rate": "25462962954000004"
+        }
+      },
+      "required_ccvs": "none"
+    },
+    "plasma": {
+      "remote_pools": [
+        "0xa4b1d393104a5eF340154c337009156aA0E83Bd8"
+      ],
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "2",
+          "rate": "1"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "220000000000000",
+          "rate": "1"
+        }
+      },
+      "required_ccvs": "none"
+    },
+    "robinhood": {
+      "remote_pools": [
+        "0x1c2F528e3BEeFF81Bc03CC63E64dB131d18be7fA"
+      ],
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "2200000000000000000000",
+          "rate": "25462962962962962"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "1500000000000000000000",
+          "rate": "17361111111111111"
+        }
+      },
+      "required_ccvs": "none"
+    },
+    "zerog": {
+      "remote_pools": [
+        "0xFEe991bB8695a336f5C4ab00062BEEd4b5783f4F"
+      ],
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "114000000000000000000",
+          "rate": "32000000000000000"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "114000000000000000000",
+          "rate": "32000000000000000"
+        }
+      },
+      "required_ccvs": "none"
+    }
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": true,
+      "remote_chain_name": "base"
+    },
+    {
+      "is_siloed": false,
+      "remote_chain_name": "abstract"
+    },
+    {
+      "is_siloed": true,
+      "remote_chain_name": "bitlayer"
+    },
+    {
+      "is_siloed": false,
+      "remote_chain_name": "ink"
+    },
+    {
+      "is_siloed": false,
+      "remote_chain_name": "jovay"
+    },
+    {
+      "is_siloed": false,
+      "remote_chain_name": "megaeth"
+    },
+    {
+      "is_siloed": false,
+      "remote_chain_name": "monad"
+    },
+    {
+      "is_siloed": false,
+      "remote_chain_name": "plasma"
+    },
+    {
+      "is_siloed": true,
+      "remote_chain_name": "robinhood"
+    },
+    {
+      "is_siloed": true,
+      "remote_chain_name": "zerog"
+    }
+  ]
+}

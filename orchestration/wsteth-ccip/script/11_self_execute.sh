@@ -9,7 +9,7 @@
 # no exclusivity window) and DummyMessageIdVerifier.verifyMessage checks only
 # `VERSION_TAG(0xdecafbad) ++ messageId` (DummyMessageIdVerifier.sol:52-71) — no signature, no
 # external proof. So anyone can build the proof and anyone can execute. See
-# live-dust-roundtrip-plan.md §2/§6 (Route A).
+# docs/CCV-VERIFICATION-FLOW.md for the proof requirements and executor flow.
 #
 # Usage:  script/11_self_execute.sh <l1-to-l2|l2-to-l1> <ccipSend tx hash>
 # Env:    RECORD_DIR (default config/chains), L2_CHAIN, RPC_SEPOLIA, RPC_<L2 SLUG>,
@@ -104,7 +104,7 @@ fi
 EXTRA="$(echo "${REQUIRED}" | grep -o '0x[0-9a-fA-F]\{40\}' | grep -iv "${DST_CCV#0x}" || true)"
 if [ -n "${EXTRA}" ]; then
     echo "✗ the required set also contains CCVs we cannot attest:"; echo "${EXTRA}" | sed 's/^/    /'
-    echo "  This message is deliverable by nobody. See live-dust-roundtrip-plan.md §7.2."
+    echo "  Delivery requires proofs for every required CCV. See docs/CCV-VERIFICATION-FLOW.md."
     exit 1
 fi
 

@@ -1,0 +1,274 @@
+--- upstream/BridgeableTokens.sol
++++ component/BridgeableTokens.sol
+@@ -1,7 +1,7 @@
+ // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+ // SPDX-License-Identifier: GPL-3.0
+ 
+-pragma solidity 0.8.10;
++pragma solidity 0.8.26;
+ 
+ /// @author psirex
+ /// @notice Contains the logic for validation of tokens used in the bridging process
+--- upstream/BridgingManager.sol
++++ component/BridgingManager.sol
+@@ -1,7 +1,7 @@
+ // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+ // SPDX-License-Identifier: GPL-3.0
+ 
+-pragma solidity 0.8.10;
++pragma solidity 0.8.26;
+ 
+ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+ 
+@@ -39,7 +39,7 @@
+         if (s.isInitialized) {
+             revert ErrorAlreadyInitialized();
+         }
+-        _setupRole(DEFAULT_ADMIN_ROLE, admin_);
++        _grantRole(DEFAULT_ADMIN_ROLE, admin_);
+         s.isInitialized = true;
+         emit Initialized(admin_);
+     }
+@@ -49,6 +49,13 @@
+         return _loadState().isInitialized;
+     }
+ 
++    /// @dev Marks this contract's storage as initialized without granting a role. Implementations
++    ///     call it from their constructor so that `initialize` reverts on the implementation
++    ///     itself; a proxy delegating to it has its own storage and is unaffected.
++    function _lockInitialization() internal {
++        _loadState().isInitialized = true;
++    }
++
+     /// @notice Returns whether the deposits are enabled or not
+     function isDepositsEnabled() public view returns (bool) {
+         return _loadState().isDepositsEnabled;
+--- upstream/optimism/CrossDomainEnabled.sol
++++ component/optimism/CrossDomainEnabled.sol
+@@ -1,7 +1,7 @@
+ // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+ // SPDX-License-Identifier: GPL-3.0
+ 
+-pragma solidity 0.8.10;
++pragma solidity 0.8.26;
+ 
+ import {ICrossDomainMessenger} from "./interfaces/ICrossDomainMessenger.sol";
+ 
+--- upstream/optimism/interfaces/ICrossDomainMessenger.sol
++++ component/optimism/interfaces/ICrossDomainMessenger.sol
+@@ -1,7 +1,7 @@
+ // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+ // SPDX-License-Identifier: GPL-3.0
+ 
+-pragma solidity 0.8.10;
++pragma solidity 0.8.26;
+ 
+ interface ICrossDomainMessenger {
+     function xDomainMessageSender() external view returns (address);
+--- upstream/optimism/interfaces/IL1ERC20Bridge.sol
++++ component/optimism/interfaces/IL1ERC20Bridge.sol
+@@ -1,7 +1,7 @@
+ // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+ // SPDX-License-Identifier: GPL-3.0
+ 
+-pragma solidity 0.8.10;
++pragma solidity 0.8.26;
+ 
+ /// @notice The L1 Standard bridge locks bridged tokens on the L1 side, sends deposit messages
+ ///     on the L2 side, and finalizes token withdrawals from L2.
+@@ -36,13 +36,15 @@
+     /// @param data_ Optional data to forward to L2. This data is provided
+     ///        solely as a convenience for external contracts. Aside from enforcing a maximum
+     ///        length, these contracts provide no guarantees about its content.
++    /// @dev Payable: `msg.value` pays the CCIP fee while the bridge sends through CCIP (see the
++    ///     implementation's `getCCIPFee`); it must be zero while the bridge is in LEGACY mode.
+     function depositERC20(
+         address l1Token_,
+         address l2Token_,
+         uint256 amount_,
+         uint32 l2Gas_,
+         bytes calldata data_
+-    ) external;
++    ) external payable;
+ 
+     /// @notice deposit an amount of ERC20 to a recipient's balance on L2.
+     /// @param l1Token_ Address of the L1 ERC20 we are depositing
+@@ -53,6 +55,8 @@
+     /// @param data_ Optional data to forward to L2. This data is provided
+     ///        solely as a convenience for external contracts. Aside from enforcing a maximum
+     ///        length, these contracts provide no guarantees about its content.
++    /// @dev Payable: `msg.value` pays the CCIP fee while the bridge sends through CCIP (see the
++    ///     implementation's `getCCIPFee`); it must be zero while the bridge is in LEGACY mode.
+     function depositERC20To(
+         address l1Token_,
+         address l2Token_,
+@@ -60,7 +64,7 @@
+         uint256 amount_,
+         uint32 l2Gas_,
+         bytes calldata data_
+-    ) external;
++    ) external payable;
+ 
+     /// @notice Complete a withdrawal from L2 to L1, and credit funds to the recipient's balance of the
+     /// L1 ERC20 token.
+--- upstream/optimism/interfaces/IL2ERC20Bridge.sol
++++ component/optimism/interfaces/IL2ERC20Bridge.sol
+@@ -1,7 +1,7 @@
+ // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+ // SPDX-License-Identifier: GPL-3.0
+ 
+-pragma solidity 0.8.10;
++pragma solidity 0.8.26;
+ 
+ /// @notice The L2 token bridge works with the L1 token bridge to enable ERC20 token bridging
+ ///     between L1 and L2. It acts as a minter for new tokens when it hears about
+@@ -45,12 +45,14 @@
+     /// @param data_ Optional data to forward to L1. This data is provided
+     ///     solely as a convenience for external contracts. Aside from enforcing a maximum
+     ///     length, these contracts provide no guarantees about its content.
++    /// @dev Payable: `msg.value` pays the CCIP fee while the bridge sends through CCIP (see the
++    ///     implementation's `getCCIPFee`); it must be zero while the bridge is in LEGACY mode.
+     function withdraw(
+         address l2Token_,
+         uint256 amount_,
+         uint32 l1Gas_,
+         bytes calldata data_
+-    ) external;
++    ) external payable;
+ 
+     /// @notice Initiates a withdraw of some token to a recipient's account on L1.
+     /// @param l2Token_ Address of L2 token where withdrawal is initiated.
+@@ -60,13 +62,15 @@
+     /// @param data_ Optional data to forward to L1. This data is provided
+     ///     solely as a convenience for external contracts. Aside from enforcing a maximum
+     ///     length, these contracts provide no guarantees about its content.
++    /// @dev Payable: `msg.value` pays the CCIP fee while the bridge sends through CCIP (see the
++    ///     implementation's `getCCIPFee`); it must be zero while the bridge is in LEGACY mode.
+     function withdrawTo(
+         address l2Token_,
+         address to_,
+         uint256 amount_,
+         uint32 l1Gas_,
+         bytes calldata data_
+-    ) external;
++    ) external payable;
+ 
+     /// @notice Completes a deposit from L1 to L2, and credits funds to the recipient's balance of
+     ///     this L2 token. This call will fail if it did not originate from a corresponding deposit
+--- upstream/optimism/L1ERC20TokenBridge.sol
++++ component/optimism/L1ERC20TokenBridge.sol
+@@ -1,10 +1,9 @@
+ // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+ // SPDX-License-Identifier: GPL-3.0
+ 
+-pragma solidity 0.8.10;
++pragma solidity 0.8.26;
+ 
+ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+ 
+ import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
+@@ -51,11 +50,12 @@
+         bytes calldata data_
+     )
+         external
++        payable
+         whenDepositsEnabled
+         onlySupportedL1Token(l1Token_)
+         onlySupportedL2Token(l2Token_)
+     {
+-        if (Address.isContract(msg.sender)) {
++        if (msg.sender.code.length > 0) {
+             revert ErrorSenderNotEOA();
+         }
+         _initiateERC20Deposit(msg.sender, msg.sender, amount_, l2Gas_, data_);
+@@ -71,6 +71,7 @@
+         bytes calldata data_
+     )
+         external
++        payable
+         whenDepositsEnabled
+         onlyNonZeroAccount(to_)
+         onlySupportedL1Token(l1Token_)
+@@ -88,7 +89,8 @@
+         uint256 amount_,
+         bytes calldata data_
+     )
+-        external
++        public
++        virtual
+         whenWithdrawalsEnabled
+         onlySupportedL1Token(l1Token_)
+         onlySupportedL2Token(l2Token_)
+@@ -121,7 +123,7 @@
+         uint256 amount_,
+         uint32 l2Gas_,
+         bytes calldata data_
+-    ) internal {
++    ) internal virtual {
+         IERC20(l1Token).safeTransferFrom(from_, address(this), amount_);
+ 
+         bytes memory message = abi.encodeWithSelector(
+--- upstream/optimism/L2ERC20TokenBridge.sol
++++ component/optimism/L2ERC20TokenBridge.sol
+@@ -1,11 +1,11 @@
+ // SPDX-FileCopyrightText: 2022 Lido <info@lido.fi>
+ // SPDX-License-Identifier: GPL-3.0
+ 
+-pragma solidity 0.8.10;
++pragma solidity 0.8.26;
+ 
+ import {IL1ERC20Bridge} from "./interfaces/IL1ERC20Bridge.sol";
+ import {IL2ERC20Bridge} from "./interfaces/IL2ERC20Bridge.sol";
+-import {IERC20Bridged} from "../token/interfaces/IERC20Bridged.sol";
++import {IL2MintBurnToken} from "./interfaces/IL2MintBurnToken.sol";
+ 
+ import {BridgingManager} from "../BridgingManager.sol";
+ import {BridgeableTokens} from "../BridgeableTokens.sol";
+@@ -45,7 +45,7 @@
+         uint256 amount_,
+         uint32 l1Gas_,
+         bytes calldata data_
+-    ) external whenWithdrawalsEnabled onlySupportedL2Token(l2Token_) {
++    ) external payable whenWithdrawalsEnabled onlySupportedL2Token(l2Token_) {
+         _initiateWithdrawal(msg.sender, msg.sender, amount_, l1Gas_, data_);
+     }
+ 
+@@ -56,7 +56,7 @@
+         uint256 amount_,
+         uint32 l1Gas_,
+         bytes calldata data_
+-    ) external whenWithdrawalsEnabled onlySupportedL2Token(l2Token_) {
++    ) external payable whenWithdrawalsEnabled onlySupportedL2Token(l2Token_) {
+         _initiateWithdrawal(msg.sender, to_, amount_, l1Gas_, data_);
+     }
+ 
+@@ -69,13 +69,14 @@
+         uint256 amount_,
+         bytes calldata data_
+     )
+-        external
++        public
++        virtual
+         whenDepositsEnabled
+         onlySupportedL1Token(l1Token_)
+         onlySupportedL2Token(l2Token_)
+         onlyFromCrossDomainAccount(l1TokenBridge)
+     {
+-        IERC20Bridged(l2Token_).bridgeMint(to_, amount_);
++        IL2MintBurnToken(l2Token_).mint(to_, amount_);
+         emit DepositFinalized(l1Token_, l2Token_, from_, to_, amount_, data_);
+     }
+ 
+@@ -94,8 +95,8 @@
+         uint256 amount_,
+         uint32 l1Gas_,
+         bytes calldata data_
+-    ) internal {
+-        IERC20Bridged(l2Token).bridgeBurn(from_, amount_);
++    ) internal virtual {
++        IL2MintBurnToken(l2Token).burnFrom(from_, amount_);
+ 
+         bytes memory message = abi.encodeWithSelector(
+             IL1ERC20Bridge.finalizeERC20Withdrawal.selector,

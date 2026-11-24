@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "chains": {
+    "sepolia": {
+      "lanes": {
+        "base_sepolia": {
+          "outbound": [
+            "local"
+          ],
+          "inbound": [
+            "local"
+          ]
+        }
+      },
+      "localResolver": {
+        "outbound": {
+          "base_sepolia": "dummy"
+        },
+        "inbound": {
+          "0xdecafbad": "dummy"
+        }
+      }
+    },
+    "base_sepolia": {
+      "lanes": {
+        "sepolia": {
+          "outbound": [
+            "local"
+          ],
+          "inbound": [
+            "local"
+          ]
+        }
+      },
+      "localResolver": {
+        "outbound": {
+          "sepolia": "dummy"
+        },
+        "inbound": {
+          "0xdecafbad": "dummy"
+        }
+      }
+    }
+  }
+}

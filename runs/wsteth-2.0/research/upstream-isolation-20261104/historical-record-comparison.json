@@ -1,0 +1,22 @@
+{
+  "mainnet": {
+    "same": {
+      "imported_lanes": true,
+      "remote_lanes": true,
+      "deferred_lanes": true,
+      "ccv-policy": true
+    },
+    "differences": {},
+    "limitations": "Historical 2026-11-03 and new 2026-11-04 fork pins differ; this compares recorded configuration, not equal-input execution. New addresses and dynamic balances are not equality requirements."
+  },
+  "sepolia": {
+    "same": {
+      "imported_lanes": true,
+      "remote_lanes": true,
+      "deferred_lanes": true,
+      "ccv-policy": true
+    },
+    "differences": {},
+    "limitations": "Historical 2026-11-03 and new 2026-11-04 fork pins differ; this compares recorded configuration, not equal-input execution. New addresses and dynamic balances are not equality requirements."
+  }
+}

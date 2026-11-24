@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Standalone read-only inspection of the CCV configuration for the deployed wstETH lane
-# sepolia <-> mantle_sepolia.
+# Standalone read-only inspection of the CCV configuration for a deployed wstETH lane
+# L1_CHAIN <-> L2_CHAIN (default sepolia <-> mantle_sepolia, the same selectors as _common.sh).
 #
 #   bash script/verify-ccv.sh
+#   L1_CHAIN=ethereum L2_CHAIN=base RECORD_DIR=… RPC_ETHEREUM=… RPC_BASE=… bash script/verify-ccv.sh
 #
-# Reads RECORD_DIR (defaults to the current public record), without loading .env.
+# Reads RECORD_DIR (defaults to the current public record), without loading .env. The RPC of a
+# chain is RPC_<UPPERCASED SLUG>; only the default pair has public fallbacks.
 # Read-only display; step 08 remains the authoritative pass/fail gate.
 #
 # Override an RPC from the environment if the public one is rate-limiting:
@@ -15,24 +17,33 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RECORD_DIR="${RECORD_DIR:-config/chains.live-mantle-2026-09-15}"
 [[ "$RECORD_DIR" = /* ]] || RECORD_DIR="$ROOT/$RECORD_DIR"
 command -v jq >/dev/null || { echo "jq is required"; exit 1; }
+L1_CHAIN="${L1_CHAIN:-sepolia}"
+L2_CHAIN="${L2_CHAIN:-mantle_sepolia}"
 RPC_SEPOLIA="${RPC_SEPOLIA:-https://ethereum-sepolia-rpc.publicnode.com}"
 RPC_MANTLE_SEPOLIA="${RPC_MANTLE_SEPOLIA:-https://rpc.sepolia.mantle.xyz}"
+rpc_of() {  # <chain slug>: the RPC_<UPPERCASED SLUG> variable
+    local var; var="RPC_$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')"
+    [ -n "${!var:-}" ] || { echo "✗ ${var} unset" >&2; exit 1; }
+    printf '%s' "${!var}"
+}
+L1_RPC="$(rpc_of "${L1_CHAIN}")"
+L2_RPC="$(rpc_of "${L2_CHAIN}")"
 read_field() { jq -er "$2 | select(type == \"string\" and length > 0)" "$RECORD_DIR/$1.json"; }
-L1_HOOKS="$(read_field sepolia .deployed.advanced_pool_hooks)"
-L1_RESOLVER="$(read_field sepolia .ccv.verifier_resolver)"
-L1_VERIFIER="$(read_field sepolia .ccv.message_id_verifier)"
-L1_ROUTER="$(read_field sepolia .ccip.router)"
-L1_POM="$(read_field sepolia .deployed.pool_operation_manager)"
-L1_AGENT="$(read_field sepolia .governance_addresses.lido_dao_agent)"
-L2_HOOKS="$(read_field mantle_sepolia .deployed.advanced_pool_hooks)"
-L2_RESOLVER="$(read_field mantle_sepolia .ccv.verifier_resolver)"
-L2_VERIFIER="$(read_field mantle_sepolia .ccv.message_id_verifier)"
-L2_ROUTER="$(read_field mantle_sepolia .ccip.router)"
-L2_POM="$(read_field mantle_sepolia .deployed.pool_operation_manager)"
-L2_OPEXEC="$(read_field mantle_sepolia .governance_addresses.lido_dao_agent)"
-SEPOLIA_SEL="$(read_field sepolia .ccip.chain_selector)"
-MANTLE_SEPOLIA_SEL="$(read_field mantle_sepolia .ccip.chain_selector)"
-DEPLOYER="$(read_field sepolia .governance_addresses.deployer)"
+L1_HOOKS="$(read_field "${L1_CHAIN}" .deployed.advanced_pool_hooks)"
+L1_RESOLVER="$(read_field "${L1_CHAIN}" .ccv.verifier_resolver)"
+L1_VERIFIER="$(read_field "${L1_CHAIN}" .ccv.message_id_verifier)"
+L1_ROUTER="$(read_field "${L1_CHAIN}" .ccip.router)"
+L1_TIMELOCK="$(read_field "${L1_CHAIN}" .deployed.timelock)"
+L1_AGENT="$(read_field "${L1_CHAIN}" .governance_addresses.lido_dao_agent)"
+L2_HOOKS="$(read_field "${L2_CHAIN}" .deployed.advanced_pool_hooks)"
+L2_RESOLVER="$(read_field "${L2_CHAIN}" .ccv.verifier_resolver)"
+L2_VERIFIER="$(read_field "${L2_CHAIN}" .ccv.message_id_verifier)"
+L2_ROUTER="$(read_field "${L2_CHAIN}" .ccip.router)"
+L2_TIMELOCK="$(read_field "${L2_CHAIN}" .deployed.timelock)"
+L2_OPEXEC="$(read_field "${L2_CHAIN}" .governance_addresses.lido_dao_agent)"
+L1_SEL="$(read_field "${L1_CHAIN}" .ccip.chain_selector)"
+L2_SEL="$(read_field "${L2_CHAIN}" .ccip.chain_selector)"
+DEPLOYER="$(read_field "${L1_CHAIN}" .governance_addresses.deployer)"
 
 command -v cast >/dev/null || { echo "✗ cast not found (foundry: https://getfoundry.sh)"; exit 1; }
 
@@ -87,20 +98,20 @@ side() {
           done
 }
 
-echo "lane: sepolia (${SEPOLIA_SEL}) <-> mantle_sepolia (${MANTLE_SEPOLIA_SEL})"
+echo "lane: ${L1_CHAIN} (${L1_SEL}) <-> ${L2_CHAIN} (${L2_SEL})"
 echo "record: ${RECORD_DIR}"
 
-side "L1 sepolia" "${RPC_SEPOLIA}" \
-     "${L1_HOOKS}" "${L1_RESOLVER}" "${L1_VERIFIER}" "${L1_ROUTER}" "${MANTLE_SEPOLIA_SEL}"
+side "L1 ${L1_CHAIN}" "${L1_RPC}" \
+     "${L1_HOOKS}" "${L1_RESOLVER}" "${L1_VERIFIER}" "${L1_ROUTER}" "${L2_SEL}"
 
-side "L2 mantle_sepolia" "${RPC_MANTLE_SEPOLIA}" \
-     "${L2_HOOKS}" "${L2_RESOLVER}" "${L2_VERIFIER}" "${L2_ROUTER}" "${SEPOLIA_SEL}"
+side "L2 ${L2_CHAIN}" "${L2_RPC}" \
+     "${L2_HOOKS}" "${L2_RESOLVER}" "${L2_VERIFIER}" "${L2_ROUTER}" "${L1_SEL}"
 
 cat <<LEGEND
 
 ── Expected (per config/state-mate/wsteth.yaml; asserted by script/08_verify_state.sh)
    threshold 0, CCV set 1-of-1 = the resolver, both directions, threshold sets empty
-   L1  CCV owner = POM ${L1_POM}   feeAggregator = Agent  ${L1_AGENT}
-   L2  CCV owner = POM ${L2_POM}   feeAggregator = OpExec ${L2_OPEXEC}
+   L1  CCV owner = LidoTimelock ${L1_TIMELOCK}   feeAggregator = Agent  ${L1_AGENT}
+   L2  CCV owner = LidoTimelock ${L2_TIMELOCK}   feeAggregator = OpExec ${L2_OPEXEC}
    both  allowlistAdmin = deployer ${DEPLOYER}  (residual EOA power, not rotated by the pipeline)
 LEGEND

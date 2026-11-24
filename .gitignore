@@ -15,3 +15,12 @@ __pycache__/
 /.diffyscan_cache/
 /digest/
 .env
+/.private/
+/tmp
+/.playwright-mcp/
+/runs/wsteth-2.0/rehearsals/
+/runs/wsteth-2.0/deployments/
+/targets/wsteth-base-migration-sepolia/bootstrap/out-pools/
+/targets/wsteth-base-migration-sepolia/bootstrap/cache-pools/
+/targets/wsteth-base-migration-sepolia/bootstrap/out/
+/targets/wsteth-base-migration-sepolia/bootstrap/cache/

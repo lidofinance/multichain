@@ -1,0 +1,33 @@
+{
+  "addresses": {
+    "token": "0x5659b4C62897Fa36C05780cD96c2D5c0a5602488"
+  },
+  "ccip": {
+    "chain_selector": "7937294810946806131",
+    "router": "0x6c0aA29330c58dda07faD577fF5a0280823a910c",
+    "rmn_proxy": "0xcaa6131cEe85ba2F140cBa05F6825aC60B6CEA56",
+    "token_admin_registry": "0xd999758aEB04BDa755Ae78344FFF5534947620CD",
+    "registry_module_owner": "0x1f524a11d89D68a4E4b1c8A195E91Fb1d8f0B56a"
+  },
+  "chain": {
+    "chain_id": 200901,
+    "chain_name": "bitlayer"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "ethereum"
+    }
+  ],
+  "deployed": {
+    "token_pool": "0xC78210649aF8A450C0f6E98107a0b614a3198359"
+  },
+  "imported": {
+    "source_pool": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+    "block": 26341280,
+    "selector": "7937294810946806131",
+    "internal_id": "bitcoin-mainnet-bitlayer-1",
+    "display_name": "Bitlayer",
+    "note": "spoke of a lane the hub takes over from the existing pool; not deployed by this run — only the standard remote-record fields used by the migration scripts"
+  }
+}

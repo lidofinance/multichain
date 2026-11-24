@@ -21,6 +21,8 @@ presents it. The intended repository shape and its reasoning are in
   building, testing, scripting, and verification.
 - [`orchestration/wsteth-ccip/`](./orchestration/wsteth-ccip/README.md) — the imported
   deployment scripts and recipes that coordinate those repositories.
+- [`orchestration/legacy-bridge/`](./orchestration/legacy-bridge/README.md) — a read-only report
+  of legacy Ethereum ↔ Base bridge transfers in flight and the step each one waits for.
 - [`targets/wsteth-ccip-sepolia-mantle-dev/`](./targets/wsteth-ccip-sepolia-mantle-dev/README.md)
   — Sepolia–Mantle Sepolia development configuration and state checks.
 - [`runs/wsteth-2.0/`](./runs/wsteth-2.0/README.md) — preserved historical records

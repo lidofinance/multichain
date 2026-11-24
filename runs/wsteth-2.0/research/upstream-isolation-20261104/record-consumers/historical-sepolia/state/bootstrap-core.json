@@ -1,0 +1,6 @@
+{
+  "coreCommit": "f36c1b63280c87d06acfa782bb65b6237594d571",
+  "wstETHSourceSha256": "254a8bfab14c30ac30d36fbe0174fe424798a67276abb1c52e139af28899cae0",
+  "wstETHSource": "contracts/0.6.12/WstETH.sol",
+  "getCCIPAdminPatch": false
+}

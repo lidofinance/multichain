@@ -1,0 +1,38 @@
+diff --git a/chains/evm/contracts/lido-hvmv/test/LidoTimelock.t.sol b/chains/evm/contracts/lido-hvmv/test/LidoTimelock.t.sol
+index 2210c09..43dfc20 100644
+--- a/chains/evm/contracts/lido-hvmv/test/LidoTimelock.t.sol
++++ b/chains/evm/contracts/lido-hvmv/test/LidoTimelock.t.sol
+@@ -422,7 +422,7 @@ contract LidoTimelockTest is Test {
+   function test_DoneProposalsSurviveHalt() public {
+     RBACTimelock.Call[] memory first = _setValueCalls(1);
+     bytes32 firstId = _schedule(first, bytes32(0), bytes32(0));
+-    vm.warp(block.timestamp + MIN_DELAY);
++    vm.warp(vm.getBlockTimestamp() + MIN_DELAY);
+     _execute(first, bytes32(0), bytes32(0));
+ 
+     _halt();
+@@ -431,7 +431,7 @@ contract LidoTimelockTest is Test {
+ 
+     RBACTimelock.Call[] memory second = _setValueCalls(2);
+     _schedule(second, firstId, bytes32(0));
+-    vm.warp(block.timestamp + MIN_DELAY);
++    vm.warp(vm.getBlockTimestamp() + MIN_DELAY);
+     _execute(second, firstId, bytes32(0));
+     assertEq(s_target.value(), 2);
+   }
+@@ -458,13 +458,13 @@ contract LidoTimelockTest is Test {
+     _restart();
+ 
+     _schedule(second, firstId, bytes32(0));
+-    vm.warp(block.timestamp + MIN_DELAY);
++    vm.warp(vm.getBlockTimestamp() + MIN_DELAY);
+     vm.prank(s_executor);
+     vm.expectRevert("RBACTimelock: missing dependency");
+     s_timelock.executeBatch(second, firstId, bytes32(0));
+ 
+     assertEq(_schedule(first, bytes32(0), bytes32(0)), firstId);
+-    vm.warp(block.timestamp + MIN_DELAY);
++    vm.warp(vm.getBlockTimestamp() + MIN_DELAY);
+     _execute(first, bytes32(0), bytes32(0));
+     _execute(second, firstId, bytes32(0));
+     assertEq(s_target.value(), 2);

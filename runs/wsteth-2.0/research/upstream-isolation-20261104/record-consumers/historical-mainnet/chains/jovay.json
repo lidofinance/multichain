@@ -1,0 +1,33 @@
+{
+  "addresses": {
+    "token": "0x2dC99af320BC317c567f24eE95811dcbd5983DfD"
+  },
+  "ccip": {
+    "chain_selector": "1523760397290643893",
+    "router": "0x492641F648a4986844848E0beFE66D14817bCE34",
+    "rmn_proxy": "0xf09AFe78d3c7d359b334d7cB88995751F7eC5E13",
+    "token_admin_registry": "0xA27056438FfA1f286AB197488808692F0db93F8B",
+    "registry_module_owner": "0xf4a170A36D4C656F614d44453f73308Bdb275196"
+  },
+  "chain": {
+    "chain_id": 5734951,
+    "chain_name": "jovay"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "ethereum"
+    }
+  ],
+  "deployed": {
+    "token_pool": "0x1c2F528e3BEeFF81Bc03CC63E64dB131d18be7fA"
+  },
+  "imported": {
+    "source_pool": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+    "block": 26335529,
+    "selector": "1523760397290643893",
+    "internal_id": "jovay-mainnet",
+    "display_name": "Jovay",
+    "note": "spoke of a lane the hub takes over from the existing pool; not deployed by this run — only what 2_Configure reads from a remote record"
+  }
+}

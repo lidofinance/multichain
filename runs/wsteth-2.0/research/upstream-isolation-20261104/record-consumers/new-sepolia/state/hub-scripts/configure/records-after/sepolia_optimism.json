@@ -1,0 +1,33 @@
+{
+  "addresses": {
+    "token": "0x3EfAE570Ca5359B290f3932C84197Bb2CC14E31D"
+  },
+  "ccip": {
+    "chain_selector": "5224473277236331295",
+    "router": "0x114A20A10b43D4115e5aeef7345a1A71d2a60C57",
+    "rmn_proxy": "0xb40A3109075965cc09E93719e33E748abf680dAe",
+    "token_admin_registry": "0x1d702b1FA12F347f0921C722f9D9166F00DEB67A",
+    "registry_module_owner": "0x6AfeDdaE519bA02985B4DD027b3f22298e1D828D"
+  },
+  "chain": {
+    "chain_id": 11155420,
+    "chain_name": "sepolia_optimism"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "sepolia"
+    }
+  ],
+  "deployed": {
+    "token_pool": "0x01f439568e25a53F3267e9329942E1F6BB2618C9"
+  },
+  "imported": {
+    "source_pool": "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916",
+    "block": 12062649,
+    "selector": "5224473277236331295",
+    "internal_id": "ethereum-testnet-sepolia-optimism-1",
+    "display_name": "OP Sepolia",
+    "note": "spoke of a lane the hub takes over from the existing pool; not deployed by this run — only the standard remote-record fields used by the migration scripts"
+  }
+}

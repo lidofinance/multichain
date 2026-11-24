@@ -1,0 +1,98 @@
+{
+  "addresses": {
+    "token": "0x9B5E9Aac68C6C054D2B2579bD205f25C5Dd4841f"
+  },
+  "ccip": {
+    "chain_selector": "16015286601757825753",
+    "registry_module_owner": "0xa3c796d480638d7476792230da1E2ADa86e031b0",
+    "rmn_proxy": "0xba3f6251de62dED61Ff98590cB2fDf6871FbB991",
+    "router": "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+    "token_admin_registry": "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82"
+  },
+  "ccv": {
+    "message_id_verifier": "0x0000000000000000000000000000000000000000",
+    "verifier_resolver": "0x0000000000000000000000000000000000000000"
+  },
+  "chain": {
+    "chain_id": 11155111,
+    "chain_name": "sepolia",
+    "pool_type": "SiloedLockRelease"
+  },
+  "deferred_lanes": [
+    "base_sepolia"
+  ],
+  "deployed": {
+    "advanced_pool_hooks": "0x2381292cFa3736B646277436f9edBB97448a0107",
+    "call_proxy": "0x942817af47F79AAa758BE480c4546361D4d56723",
+    "lock_boxes": [
+      {
+        "lock_box": "0x8A183AB4eB04B49065bE41035B8F011B4c0368A1",
+        "remote_chain_name": "monad"
+      },
+      {
+        "lock_box": "0xE60a6C7e56d95dDB81b2DC8445999c09F0795566",
+        "remote_chain_name": "sepolia_optimism"
+      }
+    ],
+    "timelock": "0x9D2A6fd46410a4Ae45bDD6dF9F8a9055C4656489",
+    "token_pool": "0x40d36dbc2798666a40a23e7010bb9c2DC0c8d284"
+  },
+  "governance_addresses": {
+    "chainlink_mcms": "0x3C3C000000000000000000000000000000000001",
+    "emergency_brakes": "0xEB00000000000000000000000000000000000001",
+    "lido_dao_agent": "0x349116A5970fD5ebAf46fEf095C85FF5c96cBEE0",
+    "deployer": "0xe528a15071e6c5af0c1ed8e6ec647ce9ec510597"
+  },
+  "imported_lanes": {
+    "monad": {
+      "remote_pools": [
+        "0xa0BA126e57Ffa62ea42aA1C6A6016fA8A7A16539"
+      ],
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "10000000000000000000000",
+          "rate": "1000000000000000000"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "10000000000000000000000",
+          "rate": "1000000000000000000"
+        }
+      },
+      "required_ccvs": "none"
+    },
+    "sepolia_optimism": {
+      "remote_pools": [
+        "0x01f439568e25a53F3267e9329942E1F6BB2618C9"
+      ],
+      "rate_limits": {
+        "outbound": {
+          "enabled": true,
+          "capacity": "10000000000000000000000",
+          "rate": "1000000000000000000"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "10000000000000000000000",
+          "rate": "1000000000000000000"
+        }
+      },
+      "required_ccvs": "none"
+    }
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": true,
+      "remote_chain_name": "base_sepolia"
+    },
+    {
+      "is_siloed": false,
+      "remote_chain_name": "monad"
+    },
+    {
+      "is_siloed": true,
+      "remote_chain_name": "sepolia_optimism"
+    }
+  ]
+}

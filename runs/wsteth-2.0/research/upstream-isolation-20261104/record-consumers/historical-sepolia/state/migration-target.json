@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "id": "wsteth-base-migration-sepolia",
+  "description": "Fresh full Lido and legacy lanes on Sepolia forks, followed by the shared HubPool and Base migration.",
+  "operation": "in-place-upgrade",
+  "environments": [
+    "fork"
+  ],
+  "endorsement": "not-asserted",
+  "configDirectory": "config",
+  "verification": {
+    "state": "verify-state",
+    "scenarios": "test-scenarios"
+  },
+  "orchestration": "wsteth-ccip",
+  "status": "ready",
+  "components": [
+    "ccip",
+    "governance-crosschain-bridges",
+    "wsteth-token",
+    "l2-bridge-migration",
+    "openzeppelin-contracts-5.0.2",
+    "openzeppelin-contracts-upgradeable-5.0.2",
+    "core"
+  ],
+  "networks": {
+    "l1": {
+      "slug": "sepolia",
+      "chainId": 11155111
+    },
+    "l2s": [
+      {
+        "slug": "base_sepolia",
+        "chainId": 84532
+      }
+    ]
+  },
+  "libraries": [
+    "forge-std",
+    "state-mate"
+  ],
+  "migration": {
+    "plan": "orchestration/wsteth-ccip/docs/SEPOLIA-MIGRATION-REHEARSAL.md",
+    "tokenVersion": "2",
+    "timers": {
+      "l1ActivationDelay": 3600,
+      "l2ActivationDelay": 3600,
+      "closeDelay": 86400
+    },
+    "l1": {
+      "agent": "0x349116A5970fD5ebAf46fEf095C85FF5c96cBEE0",
+      "token": "0x9B5E9Aac68C6C054D2B2579bD205f25C5Dd4841f",
+      "bridgeProxy": "0xac4684527386209f289434e84879499de45b71b9",
+      "messenger": "0xC34855F4De64F1840e5686e64278da901e261f20",
+      "registryAdministrator": "0x90d4461fba6c0ace66f68421ca6ceef2388fe99b",
+      "emergencyBrakes": "0xEB00000000000000000000000000000000000001"
+    },
+    "l2s": [
+      {
+        "slug": "base_sepolia",
+        "token": "0x1fbb35e57c6937dd7eadd3f0749d494e53666d12",
+        "executor": "0x95b032D4F90a79E9eeCDdDAEcfb3E58a19cC9480",
+        "bridgeProxy": "0x33c71c79d1a4a1d065865b6a7db87ed2fd5df86e",
+        "messenger": "0x4200000000000000000000000000000000000007",
+        "emergencyBrakes": "0xEB00000000000000000000000000000000000001"
+      }
+    ],
+    "hub": {
+      "pool": "0xd6c0b5a2ed309b3c0e93c00ef68cc861b7517916",
+      "timelock": "0x90d4461fba6c0ace66f68421ca6ceef2388fe99b",
+      "expectedLanes": [
+        "monad",
+        "sepolia_optimism"
+      ],
+      "siloRebalancerAfterCutover": "restore"
+    }
+  },
+  "bootstrap": {
+    "kind": "sepolia-migration",
+    "coreToken": "pristine",
+    "stakeWei": "2000000000000000000000",
+    "baseSeedWei": "100000000000000000000",
+    "legacyTimelockDelay": 60,
+    "lanes": [
+      {
+        "slug": "monad",
+        "rpcEnv": "RPC_MONAD_TESTNET",
+        "represents": "monad",
+        "siloed": false,
+        "amount": "1000000000000000000000",
+        "chain": {
+          "chainId": 10143,
+          "displayName": "Monad Testnet",
+          "selector": "2183018362218727504",
+          "internalId": "monad-testnet",
+          "feeTokens": [
+            "LINK",
+            "WETH",
+            "WMON",
+            "MON2"
+          ],
+          "router": "0x5aD0A67f4Da0E8665a3fbf15E4215A780407Cf33",
+          "rmn": "0xD610B8f58689de7755947C05342A2DFaC30ebD57",
+          "chainType": "evm",
+          "chainFamily": "evm",
+          "supported": true,
+          "registryModule": "0x524B83ae8208490151339c626fd0E35b964483e3",
+          "tokenAdminRegistry": "0xd3e461C55676B10634a5F81b747c324B85686Dd1",
+          "tokenPoolFactory": "0x324094DC8d9624CB4548C19C2e5582ee0C429b5e"
+        }
+      },
+      {
+        "slug": "sepolia_optimism",
+        "rpcEnv": "RPC_OPTIMISM_SEPOLIA",
+        "represents": "isolated-lane",
+        "siloed": true,
+        "amount": "10000000000000000000",
+        "chain": {
+          "chainId": 11155420,
+          "displayName": "OP Sepolia",
+          "selector": "5224473277236331295",
+          "internalId": "ethereum-testnet-sepolia-optimism-1",
+          "feeTokens": [
+            "LINK",
+            "WETH",
+            "ETH"
+          ],
+          "router": "0x114A20A10b43D4115e5aeef7345a1A71d2a60C57",
+          "rmn": "0xb40A3109075965cc09E93719e33E748abf680dAe",
+          "chainType": "evm",
+          "chainFamily": "evm",
+          "supported": true,
+          "registryModule": "0x6AfeDdaE519bA02985B4DD027b3f22298e1D828D",
+          "tokenAdminRegistry": "0x1d702b1FA12F347f0921C722f9D9166F00DEB67A",
+          "tokenPoolFactory": "0x9a854F6E0f219EA67acAef591AfB7DE3A5725956"
+        }
+      }
+    ]
+  }
+}

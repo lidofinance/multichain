@@ -1,0 +1,40 @@
+{
+  "addresses": {
+    "token": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452"
+  },
+  "ccip": {
+    "chain_selector": "15971525489660198786",
+    "registry_module_owner": "0xAFEd606Bd2CAb6983fC6F10167c98aaC2173D77f",
+    "rmn_proxy": "0xC842c69d54F83170C42C4d556B4F6B2ca53Dd3E8",
+    "router": "0x881e3A65B4d4a04dD529061dd0071cf975F58bCD",
+    "token_admin_registry": "0x6f6C373d09C07425BaAE72317863d7F6bb731e37"
+  },
+  "ccv": {
+    "message_id_verifier": "0xaF49b5193Cfb5f800575e9b271992B26AA8d9f8A",
+    "verifier_resolver": "0xA3BDef36A68a854C408a781787EE80cC98D086E4"
+  },
+  "chain": {
+    "chain_id": 8453,
+    "chain_name": "base",
+    "pool_type": "BurnMint"
+  },
+  "deployed": {
+    "advanced_pool_hooks": "0xe1c5884afDc29302d9C23bfD902321Db63B72DCd",
+    "call_proxy": "0x66d1d5b5104691F92c2181d031c4c4C453067ea0",
+    "lock_boxes": [],
+    "timelock": "0x9baFbdAe9d4FbF709dD2a126D5Cb5dDE7F004659",
+    "token_pool": "0xad430041ecaaFc73dA0c7074E8d47759E3C4447B"
+  },
+  "governance_addresses": {
+    "chainlink_mcms": "0x3C3C000000000000000000000000000000008453",
+    "emergency_brakes": "0xEB00000000000000000000000000000000008453",
+    "lido_dao_agent": "0x0E37599436974a25dDeEdF795C848d30Af46eaCF",
+    "deployer": "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "ethereum"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ import {Internal} from "@chainlink/contracts-ccip/libraries/Internal.sol";
 
 import {MockCCV} from "../mocks/MockCCV.sol";
 
-import {BridgeScenarioBase, IPom} from "./BridgeScenarioBase.sol";
+import {BridgeScenarioBase} from "./BridgeScenarioBase.sol";
 
 /// @notice Deployed-contract surfaces we read/drive (real Chainlink deployments, NOT ours).
 interface ITypeAndVersion {
@@ -49,7 +49,7 @@ interface IOffRamp20 {
 /// registered alongside the legacy 1.5/1.6 ones), the dual-CCV quorum gate can be exercised on the
 /// REAL ramp deployments — no self-owned ramp layer, no router-owner impersonation (the delta vs
 /// the CcvBridge harness). This rehearses the full CCV 2-of-2 enablement story:
-///   1. governance enables 2-of-2 via the production path (POM.directCall ->
+///   1. governance enables 2-of-2 via the production path (timelock bypass ->
 ///      hooks.applyCCVConfigUpdates), CCVs = [our deployed VersionedVerifierResolver
 ///      (-> DummyMessageIdVerifier, from the step-04/05 deploy), a second CCV];
 ///   2. a GENUINE `ccipSend` through the real Router/OnRamp 2.0 originates the message
@@ -72,6 +72,8 @@ contract RealCcvLaneTest is BridgeScenarioBase {
     bytes4 internal constant DUMMY_VERIFIER_VERSION_TAG = 0xdecafbad;
 
     bool internal laneIs20;
+    address internal initialL1Chainlink;
+    address internal initialL2Chainlink;
 
     function setUp() public {
         _setUpForksAndRecord();
@@ -108,9 +110,11 @@ contract RealCcvLaneTest is BridgeScenarioBase {
         // Second CCV per chain (test-local stand-in for a second verifier operator) + gov-enable
         // 2-of-2 through the production path.
         vm.selectFork(l1Fork);
+        initialL1Chainlink = _checkInitialPolicy(l1, "sepolia", l2Chain);
         l1.ccvB = address(new MockCCV());
         _govEnable2of2(l1);
         vm.selectFork(l2Fork);
+        initialL2Chainlink = _checkInitialPolicy(l2, l2Chain, "sepolia");
         l2.ccvB = address(new MockCCV());
         _govEnable2of2(l2);
     }
@@ -145,7 +149,7 @@ contract RealCcvLaneTest is BridgeScenarioBase {
         }
     }
 
-    /// @dev Runs on `c`'s fork. The production CCV-enablement action: the DAO (POM admin — Agent
+    /// @dev Runs on `c`'s fork. The production CCV-enablement action: the DAO (timelock admin — Agent
     /// on L1 / OpExec on L2) reconfigures the lane's hooks to require BOTH CCVs, in and out.
     function _govEnable2of2(Ctx storage c) internal {
         address[] memory both = _ccvs(c);
@@ -157,8 +161,7 @@ contract RealCcvLaneTest is BridgeScenarioBase {
             inboundCCVs: both,
             thresholdInboundCCVs: new address[](0)
         });
-        vm.prank(c.govAdmin);
-        IPom(c.pom).directCall(c.hooks, 0, abi.encodeCall(AdvancedPoolHooks.applyCCVConfigUpdates, (cfg)));
+                _bypass(c, c.hooks, abi.encodeCall(AdvancedPoolHooks.applyCCVConfigUpdates, (cfg)));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -219,6 +222,35 @@ contract RealCcvLaneTest is BridgeScenarioBase {
         vm.selectFork(l2Fork);
         assertEq(ITypeAndVersion(l2.onRamp).typeAndVersion(), "OnRamp 2.0.0", "l2 active onramp");
         assertEq(ITypeAndVersion(l2.offRamp).typeAndVersion(), "OffRamp 2.0.0", "l2 offramp");
+    }
+
+    function test_initial_policy_rejects_dummy_only_delivery_to_l2() public {
+        _initialPolicyRejectsDummyOnly(true);
+    }
+
+    function test_initial_policy_rejects_dummy_only_delivery_to_l1() public {
+        _initialPolicyRejectsDummyOnly(false);
+    }
+
+    function _initialPolicyRejectsDummyOnly(bool toL2) internal {
+        vm.skip(!laneIs20);
+        // Restore the actual bootstrap requirement. No Chainlink proof or verifier is mocked here.
+        vm.selectFork(l1Fork); l1.ccvB = initialL1Chainlink; _govEnable2of2(l1);
+        uint256 amount = 10e18;
+        deal(l1.token, l1.lockBox, amount);
+        vm.selectFork(l2Fork); l2.ccvB = initialL2Chainlink; _govEnable2of2(l2);
+        Ctx storage source = toL2 ? l1 : l2;
+        Ctx storage destination = toL2 ? l2 : l1;
+        vm.selectFork(toL2 ? l1Fork : l2Fork);
+        deal(source.token, user, amount, true);
+        (bytes32 mid, bytes memory enc) = _sendReal(source, user, amount, recipient);
+        vm.selectFork(toL2 ? l2Fork : l1Fork);
+        uint256 beforeBalance = IERC20(destination.token).balanceOf(recipient);
+        address[] memory one = new address[](1); one[0] = destination.ccvA;
+        bytes[] memory proof = new bytes[](1); proof[0] = abi.encodePacked(DUMMY_VERIFIER_VERSION_TAG, mid);
+        IOffRamp20(destination.offRamp).execute(enc, one, proof, 0);
+        assertEq(IOffRamp20(destination.offRamp).getExecutionState(mid), uint8(Internal.MessageExecutionState.FAILURE));
+        assertEq(IERC20(destination.token).balanceOf(recipient), beforeBalance, "dummy alone must not release or mint");
     }
 
     /// @notice CCV 2-of-2 round-trip on the REAL ramps: genuine ccipSend (lock) -> real OffRamp 2.0
@@ -286,5 +318,20 @@ contract RealCcvLaneTest is BridgeScenarioBase {
             "1-of-2 must record FAILURE, not SUCCESS"
         );
         assertEq(IERC20(l2.token).balanceOf(recipient), balBefore, "1-of-2 must not mint any tokens");
+    }
+    function _checkInitialPolicy(Ctx storage c, string memory chain, string memory remote) internal view returns (address) {
+        AdvancedPoolHooks.CCVConfig memory cfg = AdvancedPoolHooks(c.hooks).getCCVConfig(c.remoteSelector);
+        address expected = vm.parseJsonAddress(vm.readFile("config/ccv-policy.json"),
+            string.concat(".chains.", chain, ".lanes.", remote, ".outbound[1]"));
+        assertEq(cfg.outboundCCVs.length, 2, "bootstrap outbound must require two CCVs");
+        assertEq(cfg.inboundCCVs.length, 2, "bootstrap inbound must require two CCVs");
+        assertEq(cfg.outboundCCVs[0], c.ccvA, "bootstrap local resolver");
+        assertEq(cfg.inboundCCVs[0], c.ccvA, "bootstrap local resolver");
+        assertEq(cfg.outboundCCVs[1], expected, "bootstrap Chainlink resolver");
+        assertEq(cfg.inboundCCVs[1], expected, "bootstrap Chainlink resolver");
+        assertEq(cfg.thresholdOutboundCCVs.length, 0);
+        assertEq(cfg.thresholdInboundCCVs.length, 0);
+        assertTrue(expected != address(0) && expected != c.ccvA && expected.code.length > 0);
+        return expected;
     }
 }

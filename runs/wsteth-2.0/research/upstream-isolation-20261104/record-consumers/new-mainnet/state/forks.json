@@ -1,0 +1,28 @@
+{
+  "ethereum": {
+    "chainId": 1,
+    "block": 26341280,
+    "blockHash": "0x61d75b8a8304ff5d5ca43602438af2dbdd8813df6d975ac62dc3213fb9cc7fc5",
+    "rpcEnv": "RPC_ETHEREUM",
+    "localRpc": "http://127.0.0.1:59645",
+    "ccipAddressesChecked": {
+      "router": "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D",
+      "rmn": "0x411dE17f12D1A34ecC7F45f49844626267c75e81",
+      "tokenAdminRegistry": "0xb22764f98dD05c789929716D677382Df22C05Cb6",
+      "registryModule": "0x4855174E9479E211337832E109E7721d43A4CA64"
+    }
+  },
+  "base": {
+    "chainId": 8453,
+    "block": 53501959,
+    "blockHash": "0x62d85920134a93d85565f9ce8e48cf9bee3d47ceda89b998bdc836ce8fb8c5a7",
+    "rpcEnv": "RPC_BASE",
+    "localRpc": "http://127.0.0.1:59662",
+    "ccipAddressesChecked": {
+      "router": "0x881e3A65B4d4a04dD529061dd0071cf975F58bCD",
+      "rmn": "0xC842c69d54F83170C42C4d556B4F6B2ca53Dd3E8",
+      "tokenAdminRegistry": "0x6f6C373d09C07425BaAE72317863d7F6bb731e37",
+      "registryModule": "0xAFEd606Bd2CAb6983fC6F10167c98aaC2173D77f"
+    }
+  }
+}

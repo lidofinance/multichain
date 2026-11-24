@@ -12,7 +12,8 @@
   "../../components/core/foundry/lib/state-mate",
   "../../libs/forge-std",
   "../../components/governance-crosschain-bridges",
-  "../../components/openzeppelin-contracts-upgradeable-4x",
   "../../libs/state-mate",
-  "../../components/openzeppelin-contracts-4x"
+  "../../components/openzeppelin-contracts-5.0.2",
+  "../../components/openzeppelin-contracts-upgradeable-5.0.2",
+  "../../components/wsteth-token/lib/openzeppelin-contracts-5.3.0"
 ]

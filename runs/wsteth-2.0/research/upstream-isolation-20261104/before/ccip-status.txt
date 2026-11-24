@@ -1,0 +1,11 @@
+ M chains/evm/contracts/lido-hvmv/config/README.md
+ M chains/evm/contracts/lido-hvmv/script/deployment/1_Deploy.s.sol
+ M chains/evm/contracts/lido-hvmv/script/deployment/2_Configure.s.sol
+ M chains/evm/contracts/lido-hvmv/script/lib/ConfigParser.sol
+ M chains/evm/contracts/lido-hvmv/test/LidoTimelock.t.sol
+ M chains/evm/contracts/lido-hvmv/test/script/deployment/ConfigParser.t.sol
+?? chains/evm/contracts/lido-hvmv/script/deployment/4_ConnectLane.s.sol
+?? chains/evm/contracts/lido-hvmv/script/deployment/5_PrepareLane.s.sol
+?? chains/evm/contracts/lido-hvmv/test/script/deployment/fixtures/input_hub_deferred.json
+?? chains/evm/contracts/lido-hvmv/test/script/deployment/fixtures/invalid_deferred_imported.json
+?? chains/evm/contracts/lido-hvmv/test/script/deployment/fixtures/invalid_deferred_not_a_lane.json

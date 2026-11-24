@@ -1,0 +1,8 @@
+{
+  "l2BridgeImplementation": "0x3beC7bC627f36D6b2e08F0b7B5e364a1b82C16e4",
+  "l2TokenImplementation": "0x9E21cfB90d38dDed8847E8737a71126935Acc590",
+  "tokenDecimals": 18,
+  "tokenName": "Wrapped liquid staked Ether 2.0",
+  "tokenSymbol": "wstETH",
+  "tokenVersion": "2"
+}

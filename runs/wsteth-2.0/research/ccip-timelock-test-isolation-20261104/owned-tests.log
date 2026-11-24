@@ -1,0 +1,24 @@
+Compiling 7 files with Solc 0.8.26
+Solc 0.8.26 finished in 29.64s
+Compiler run successful!
+
+Ran 2 tests for test/hub-migration/LidoTimelockQueue.t.sol:LidoTimelockQueueTest
+[PASS] testDoneProposalRemainsAValidPredecessorAfterRestart() (gas: 457696)
+[PASS] testInvalidatedPredecessorMustBeReproposedAndExecuted() (gas: 593922)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 6.17ms (1.13ms CPU time)
+
+Ran 5 tests for test/hub-migration/HubMigration.t.sol:HubMigrationTest
+[PASS] testArtifactsDeployConfigureAndStockRecordRead() (gas: 93383372)
+Logs:
+  === Lane connection proposal ===
+  Chain: ethereum
+  Lane: base
+  Written to: tests/fixtures/hub-migration/runtime/testArtifactsDeployConfigureAndStockRecordRead/proposal.json
+
+[PASS] testFullRemotePoolSetAndDistinctLimits() (gas: 10447760)
+[PASS] testImportedLaneCannotAlsoBeDeferred() (gas: 7762271)
+[PASS] testManifestDisagreementRejected() (gas: 10286628)
+[PASS] testWrongChainRejected() (gas: 7015285)
+Suite result: ok. 5 passed; 0 failed; 0 skipped; finished in 57.93ms (101.84ms CPU time)
+
+Ran 2 test suites in 60.88ms (64.10ms CPU time): 7 tests passed, 0 failed, 0 skipped (7 total tests)

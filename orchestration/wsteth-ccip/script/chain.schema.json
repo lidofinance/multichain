@@ -1,0 +1,310 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lido.fi/wsteth-2.0/config/chains/chain.schema.json",
+  "title": "wsteth-2.0 chain config",
+  "description": "Shared per-chain format for the CCIP deploy scripts. Field provenance depends on the operation: an in-place upgrade takes the existing token and DAO principal as observed inputs; a scratch deployment records them as outputs. Lane topology and intended governance role holders are authored inputs. The lint-config recipe checks this schema and operation-specific template rules.",
+  "type": "object",
+  "required": [
+    "addresses",
+    "ccip",
+    "chain",
+    "governance_addresses",
+    "remote_lanes"
+  ],
+  "$defs": {
+    "address": {
+      "type": "string",
+      "pattern": "^0x[0-9a-fA-F]{40}$"
+    },
+    "rate_limit": {
+      "type": "object",
+      "required": [
+        "enabled",
+        "capacity",
+        "rate"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "capacity": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "rate": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        }
+      }
+    }
+  },
+  "properties": {
+    "addresses": {
+      "type": "object",
+      "required": [
+        "token"
+      ],
+      "properties": {
+        "token": {
+          "$ref": "#/$defs/address",
+          "description": "Existing token input for in-place-upgrade; generated output for scratch-deployment (address(0) in a scratch template). The hub records its core token; 1_Deploy creates the spoke token from token_deployment."
+        }
+      }
+    },
+    "ccip": {
+      "type": "object",
+      "description": "L — external CCIP facts for this chain (Chainlink-fixed). Committed; FFI-refreshable by 1_Deploy.",
+      "required": [
+        "chain_selector",
+        "router",
+        "rmn_proxy",
+        "token_admin_registry",
+        "registry_module_owner"
+      ],
+      "properties": {
+        "chain_selector": {
+          "type": "string",
+          "pattern": "^[0-9]+$",
+          "description": "L — CCIP chain selector (decimal string)."
+        },
+        "router": {
+          "$ref": "#/$defs/address"
+        },
+        "rmn_proxy": {
+          "$ref": "#/$defs/address"
+        },
+        "token_admin_registry": {
+          "$ref": "#/$defs/address"
+        },
+        "registry_module_owner": {
+          "$ref": "#/$defs/address"
+        }
+      }
+    },
+    "chain": {
+      "type": "object",
+      "description": "L — chain identity & pool kind.",
+      "required": [
+        "chain_id",
+        "chain_name",
+        "pool_type"
+      ],
+      "properties": {
+        "chain_id": {
+          "type": "integer"
+        },
+        "chain_name": {
+          "type": "string"
+        },
+        "pool_type": {
+          "enum": [
+            "SiloedLockRelease",
+            "BurnMint"
+          ],
+          "description": "L — L1 hub = SiloedLockRelease; L2 spoke = BurnMint."
+        }
+      }
+    },
+    "governance_addresses": {
+      "type": "object",
+      "description": "Intended lane role holders are authored inputs. lido_dao_agent is an existing principal for in-place-upgrade or a deployed principal for scratch-deployment. deployer is recorded from deployment CREATE receipts.",
+      "required": [
+        "emergency_brakes",
+        "chainlink_mcms",
+        "lido_dao_agent"
+      ],
+      "properties": {
+        "emergency_brakes": {
+          "$ref": "#/$defs/address",
+          "description": "D — timelock canceller + proposal-queue halter, hooks pauser."
+        },
+        "chainlink_mcms": {
+          "$ref": "#/$defs/address",
+          "description": "D — timelock proposer + canceller."
+        },
+        "lido_dao_agent": {
+          "$ref": "#/$defs/address",
+          "description": "Existing L1 Agent / L2 executor input for in-place-upgrade; generated output for scratch-deployment (zero in a scratch template)."
+        },
+        "deployer": {
+          "$ref": "#/$defs/address",
+          "description": "E — absent in a template; step 04 stamps the signer of the CREATE records (whose admin roles step 07 hands over)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "token_deployment": {
+      "type": "object",
+      "description": "D — scratch spokes only (BurnMint, addresses.token = address(0)): the wstETH token 1_Deploy deploys (ERC20BridgedPermit behind a TransparentUpgradeableProxy whose ProxyAdmin lido_dao_agent owns). version is the EIP-712 signing-domain version.",
+      "required": [
+        "name",
+        "symbol",
+        "decimals",
+        "version"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1
+        },
+        "decimals": {
+          "type": "integer"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "remote_lanes": {
+      "type": "array",
+      "description": "D — authored lane topology. Lanes that are not siloed share one lock box; each siloed lane gets its own. A target template lists the spokes of the target; the hub-inventory step appends the lanes the hub takes over from an existing pool (see imported_lanes) and lists the target spokes under deferred_lanes.",
+      "items": {
+        "type": "object",
+        "required": [
+          "is_siloed",
+          "remote_chain_name"
+        ],
+        "properties": {
+          "is_siloed": {
+            "type": "boolean"
+          },
+          "remote_chain_name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "imported_lanes": {
+      "type": "object",
+      "description": "D/L — lanes the hub takes over from an existing pool, keyed by remote_chain_name (each also in remote_lanes). Written by the hub-inventory step from the replaced pool at a pinned block; absent in a template. 2_Configure applies these remote pools and limits instead of the defaults and configures no CCVs for the lane (required_ccvs is always none).",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "remote_pools",
+          "rate_limits",
+          "required_ccvs"
+        ],
+        "properties": {
+          "remote_pools": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/address"
+            }
+          },
+          "rate_limits": {
+            "type": "object",
+            "required": [
+              "outbound",
+              "inbound"
+            ],
+            "properties": {
+              "outbound": {
+                "$ref": "#/$defs/rate_limit"
+              },
+              "inbound": {
+                "$ref": "#/$defs/rate_limit"
+              }
+            }
+          },
+          "required_ccvs": {
+            "const": "none"
+          }
+        }
+      }
+    },
+    "imported": {
+      "type": "object",
+      "description": "L — marks a spoke record the hub-inventory step wrote for a lane taken over from an existing pool: the spoke is not deployed by the run and the record carries only what 2_Configure reads (ccip, addresses.token, deployed.token_pool).",
+      "required": [
+        "source_pool",
+        "block",
+        "selector"
+      ],
+      "properties": {
+        "source_pool": {
+          "$ref": "#/$defs/address"
+        },
+        "block": {
+          "type": "integer"
+        },
+        "selector": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "internal_id": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        }
+      }
+    },
+    "deployed": {
+      "type": "object",
+      "description": "E — written by 1_Deploy; absent in a pristine template. token/token_impl/token_proxy_admin only when 1_Deploy deployed the token.",
+      "properties": {
+        "token_pool": {
+          "$ref": "#/$defs/address"
+        },
+        "advanced_pool_hooks": {
+          "$ref": "#/$defs/address"
+        },
+        "lock_boxes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "lock_box": {
+                "$ref": "#/$defs/address"
+              },
+              "remote_chain_name": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "timelock": {
+          "$ref": "#/$defs/address"
+        },
+        "call_proxy": {
+          "$ref": "#/$defs/address"
+        },
+        "token": {
+          "$ref": "#/$defs/address"
+        },
+        "token_impl": {
+          "$ref": "#/$defs/address"
+        },
+        "token_proxy_admin": {
+          "$ref": "#/$defs/address"
+        }
+      }
+    },
+    "ccv": {
+      "type": "object",
+      "description": "E — written by 1_Deploy; absent in a pristine template.",
+      "properties": {
+        "message_id_verifier": {
+          "$ref": "#/$defs/address"
+        },
+        "verifier_resolver": {
+          "$ref": "#/$defs/address"
+        }
+      }
+    },
+    "deferred_lanes": {
+      "type": "array",
+      "description": "D — lanes our ConfigureHubForMigration leaves unconfigured for the pool owner (each also in remote_lanes, none imported): their lock box is deployed, authorized and handed over, but the chain update, fee config, lock box binding, hooks CCV entry and verifier/resolver entries are applied later by a LidoTimelock proposal (our BuildHubLaneProposal builds the calls; the hub-connect-lane step replays it on a fork). Written by the hub-inventory step for the target spokes of a hub that takes over an existing pool; absent otherwise.",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    }
+  }
+}

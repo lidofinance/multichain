@@ -1,0 +1,24 @@
+# Expected infrastructure and role holders for the Sepolia / Base Sepolia fork target.
+# Checked against both chain records and the migrated bridge immutables by verify-state.
+# The L1 messenger was read from Base Sepolia OTHER_MESSENGER; changes fail verification.
+config:
+  - &emergencyBrakes "0xEB00000000000000000000000000000000000001"
+  - &chainlinkMcms "0x3C3C000000000000000000000000000000000001"
+  - &l2EmergencyBrakes "0xEB00000000000000000000000000000000000001"
+  - &l2ChainlinkMcms "0x3C3C000000000000000000000000000000000001"
+  - &haltRoleMemberCount "1"
+  - &cancellerRoleMemberCount "2"
+  - &l2CancellerRoleMemberCount "2"
+externals:
+  - &l1ChainId 11155111
+  - &l1CCIPRouter "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59"
+  - &l1TokenAdminRegistry "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82"
+  - &l1RmnProxy "0xba3f6251de62dED61Ff98590cB2fDf6871FbB991"
+  - &l1ChainSelector "16015286601757825753"
+  - &l2ChainId 84532
+  - &l2CCIPRouter "0xD3b06cEbF099CE7DA4AcCf578aaebFDBd6e88a93"
+  - &l2TokenAdminRegistry "0x736D0bBb318c1B27Ff686cd19804094E66250e17"
+  - &l2RmnProxy "0x99360767a4705f68CcCb9533195B761648d6d807"
+  - &l2ChainSelector "10344971235874465080"
+  - &l1Messenger "0xC34855F4De64F1840e5686e64278da901e261f20"
+  - &l2Messenger "0x4200000000000000000000000000000000000007"

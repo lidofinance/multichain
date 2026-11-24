@@ -1,0 +1,33 @@
+{
+  "addresses": {
+    "token": "0x481e638105407Be40c2f2E2e006DE272d05930d0"
+  },
+  "ccip": {
+    "chain_selector": "9335212494177455608",
+    "router": "0xcDca5D374e46A6DDDab50bD2D9acB8c796eC35C3",
+    "rmn_proxy": "0xAEf7A922931848d2e731D5914f428b4E851d1Ad5",
+    "token_admin_registry": "0xc23071a8AE83671f37bdA1DaDBC745a9780f632A",
+    "registry_module_owner": "0x02A4D69cFfeC00Fbf7F3B60c93e3529Dfc58894d"
+  },
+  "chain": {
+    "chain_id": 9745,
+    "chain_name": "plasma"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "ethereum"
+    }
+  ],
+  "deployed": {
+    "token_pool": "0xa4b1d393104a5eF340154c337009156aA0E83Bd8"
+  },
+  "imported": {
+    "source_pool": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+    "block": 26341280,
+    "selector": "9335212494177455608",
+    "internal_id": "plasma-mainnet",
+    "display_name": "Plasma",
+    "note": "spoke of a lane the hub takes over from the existing pool; not deployed by this run — only the standard remote-record fields used by the migration scripts"
+  }
+}

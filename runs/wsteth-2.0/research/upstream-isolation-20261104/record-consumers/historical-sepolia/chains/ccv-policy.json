@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "chains": {
+    "sepolia": {
+      "lanes": {
+        "base_sepolia": {
+          "outbound": [
+            "local"
+          ],
+          "inbound": [
+            "local"
+          ]
+        },
+        "monad": {
+          "outbound": [],
+          "inbound": []
+        },
+        "sepolia_optimism": {
+          "outbound": [],
+          "inbound": []
+        }
+      },
+      "localResolver": {
+        "outbound": {
+          "base_sepolia": "dummy",
+          "monad": "none",
+          "sepolia_optimism": "none"
+        },
+        "inbound": {
+          "0xdecafbad": "dummy"
+        }
+      }
+    },
+    "base_sepolia": {
+      "lanes": {
+        "sepolia": {
+          "outbound": [
+            "local"
+          ],
+          "inbound": [
+            "local"
+          ]
+        }
+      },
+      "localResolver": {
+        "outbound": {
+          "sepolia": "dummy"
+        },
+        "inbound": {
+          "0xdecafbad": "dummy"
+        }
+      }
+    }
+  }
+}

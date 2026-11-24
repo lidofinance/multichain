@@ -1,0 +1,9 @@
+{
+  "runId": "isolation-clean-20261104-01-mainnet",
+  "chainId": 1,
+  "inputsHash": "6538fde5f83417432b79d22bc9c271de2d558e1e9fa97a61a9c3ad29a162ac2c",
+  "sourceRevision": "07ae438b0028f14d1ccce9072e3f53b8b14e8a09",
+  "buildProvenanceSha256": "79ee7a37369d6fe0f2cce033588f69a356a3569b9b7093775de8024cae35a28e",
+  "action": "proposal",
+  "dryRun": false
+}

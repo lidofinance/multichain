@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CCIP Lane Watch</title>
 <!--
-  Deployment records and script/ccip-inventory.sh belong to
-  https://github.com/lidofinance/wsteth-ccip (the original source repository).
+  Deployment tooling lives under orchestration/wsteth-ccip/ in this repository.
 
   CCIP Lane Watch — a live inventory of the CCIP system contracts on both sides of a lane.
 
@@ -20,7 +19,7 @@
   for the ramps; RMNRemote / FeeQuoter / NonceManager and the whole 2.0 CCV stack are absent from
   the API altogether — the crawl is what finds them.
 
-  The build reads ledger.json and the active public record from wsteth-ccip main.
+  The build reads ledger.json, local catalogues and a dated testnet snapshot.
   LIVE overlays the testnet contracts that are absent from the Chainlink registry.
 
   Build with components/dashboard/scripts/build_dashboard.py; serve the generated site from any static host.
@@ -302,6 +301,10 @@ td.ovshare{white-space:nowrap; min-width:132px}
 // ─────────────────────────────────────────────────────────────────────────────
 const API = "https://docs.chain.link/api/ccip/v1";
 
+const shutdownMainnets = new Set([223, 232, 1116, 1135, 1750, 2741, 3343, 4200, 5330, 7777777, 21000000]);
+const shutdownNotice = "https://docs.chain.link/changelog/deactivating-ccip-support-for-select-chains-27e89";
+const hasShutdownNotice = (env, id) => env === "mainnet" && shutdownMainnets.has(Number(id));
+
 // Selectors precomputed with `cast sig`, so no keccak is needed in the browser.
 const SEL = {
   typeAndVersion:               "0x181f5a77",
@@ -313,6 +316,9 @@ const SEL = {
   getArmProxy:                  "0x5246492f",
   getWrappedNative:             "0xe861e907",
   getARM:                       "0x2e90aa21",
+  isRemotePool:                 "0x4c5ef0ed", // isRemotePool(uint64,bytes)
+  poolSupportsChain:            "0x8926f54f", // TokenPool.isSupportedChain(uint64)
+  isChainSupported:             "0xa48a9058",
   isCursed:                     "0x397796f7",
   getStaticConfig:              "0x06285c69",
   getDynamicConfig:             "0x7437ff9f",
@@ -394,7 +400,7 @@ const EXPLORER = {
   143:"https://monadexplorer.com/address/", 2741:"https://abscan.org/address/",
   9745:"https://plasmascan.to/address/", 16661:"https://chainscan.0g.ai/address/",
   57073:"https://explorer.inkonchain.com/address/", 200901:"https://www.btrscan.com/address/",
-  4326:"https://www.megaexplorer.xyz/address/",
+  4326:"https://www.megaexplorer.xyz/address/", 5734951:"https://explorer.jovay.io/address/",
   56:"https://bscscan.com/address/", 130:"https://uniscan.xyz/address/",
   137:"https://polygonscan.com/address/", 324:"https://explorer.zksync.io/address/",
   1135:"https://blockscout.lisk.com/address/", 1868:"https://soneium.blockscout.com/address/",
@@ -404,7 +410,7 @@ const EXPLORER = {
   84532:"https://sepolia.basescan.org/address/", 421614:"https://sepolia.arbiscan.io/address/",
 };
 
-// Build inputs: this checkout's ledger and a single upstream main revision.
+// Build inputs: this checkout's ledger, catalogues and dated testnet snapshot.
 const BUILD = JSON.parse(document.getElementById("dashboard-data").textContent);
 if (!BUILD.live) {
   document.getElementById("views").textContent = "Build the dashboard first: run just dashboard from the repository root.";
@@ -415,8 +421,24 @@ const LIDO_NETWORKS = BUILD.networks;
 const L1_WSTETH = BUILD.l1Token;
 const LDO = BUILD.ldo;
 const STETH = BUILD.steth;
+const NETWORK_TYPES = BUILD.networkTypes;
+const NETWORK_TYPE = new Map(NETWORK_TYPES.networks.map((n) => [String(n.chainId), n]));
+// Chain ID plus the catalogue's relation to Ethereum (L2 or alt-L1); an unlisted chain stays unclassified.
+// A qualifier is visible because it names where the source's own term differs from the label.
+function networkIdLine(chainId) {
+  const t = NETWORK_TYPE.get(String(chainId));
+  const title = t && [NETWORK_TYPES.types[t.type],
+    t.category && `L2BEAT category: ${t.category}.`, t.archived && `Archived by L2BEAT on ${t.archived}.`,
+    t.note && `Note: ${t.note}.`, `Classified ${NETWORK_TYPES.takenAt}.`].filter(Boolean).join(" ");
+  const type = t
+    ? `<a href="${esc(t.source)}" target="_blank" rel="noopener" title="${esc(title)}">${esc(t.type)}${
+        t.qualifier ? ` (${esc(t.qualifier)})` : ""}</a>`
+    : `<span title="Not in the dashboard's network type catalogue">type unclassified</span>`;
+  return `<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(chainId)} · ${type}</span>`;
+}
 const LIVE = BUILD.live;
 const GROUPS = {
+  legacyCcip: { label: "Legacy CCIP" },
   unclassified: { label: "Ledger deployments · support unclassified", eyebrow: "unclassified", tone: "c-mute", note: "Present in the ledger; support status and bridge metadata have not been classified." },
   supported: {
     label: "Endorsed by Lido",
@@ -434,7 +456,7 @@ const GROUPS = {
     label: "Not endorsed — deployed over CCIP",
     eyebrow: "ccip",
     tone: "c-cl",
-    note: `CCIP registry deployments; absent from the dated Lido docs snapshot.`,
+    note: `wstETH deployments from the CCIP registry. Each direction checks its source router and both wstETH pools.`,
   },
 };
 
@@ -483,13 +505,14 @@ function viewContext(view, env) {
 // Failures are removed too, so the next attempt can retry.
 const registryReads = new Map(), crawlReads = new Map(), overviewReads = new Map();
 let cacheGeneration = 0;
-function sharedRead(pending, key, read) {
+function sharedRead(pending, key, read, { defer = true } = {}) {
   if (pending.has(key)) return pending.get(key);
   const generation = cacheGeneration;
-  const promise = Promise.resolve().then(() => {
+  const start = async () => {
     if (generation !== cacheGeneration) throw Error("Cache cleared; retry the read");
     return read();
-  }).finally(() => {
+  };
+  const promise = (defer ? Promise.resolve().then(start) : start()).finally(() => {
     if (pending.get(key) === promise) pending.delete(key);
   });
   pending.set(key, promise);
@@ -498,7 +521,7 @@ function sharedRead(pending, key, read) {
 
 // ── cache ────────────────────────────────────────────────────────────────────
 // Nothing here talks to an RPC on its own. Opening a tab renders whatever the cache holds; the
-// network is touched only when a view has no cached entry at all, or when the refresh button is
+// network is touched when observations are missing or incomplete, quotes expire, or Refresh is
 // pressed. Everything a view shows — the crawled contract graph AND the live figures on top of it
 // (block, curse, message counters, balances) — is stored together with the moment it was read, and
 // that moment is what the page displays, so cached numbers can never pass themselves off as
@@ -557,7 +580,7 @@ function clearCache() {
   cacheGeneration++;
   runId++; // Pending views and supply callbacks must not publish cleared observations.
   busy = false; el("refresh").disabled = state.view === 'ledger';
-  registryReads.clear(); crawlReads.clear(); overviewReads.clear(); priceReads.clear();
+  registryReads.clear(); crawlReads.clear(); overviewReads.clear(); priceReads.clear(); supplyReads.clear();
   structCache.clear(); metaCache.clear();
   for (const env of Object.keys(registry)) delete registry[env];
   localStorage.removeItem(CACHE_KEY); localStorage.removeItem(REG_KEY);
@@ -706,9 +729,8 @@ const eq = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase();
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. Chainlink registry
 // ─────────────────────────────────────────────────────────────────────────────
-// The registry is kept like everything else: fetched once, then served from storage until the
-// refresh button asks for it again. It is ~0.7 MB for mainnet, so a failure to persist it is
-// shrugged off — the session still has it in memory.
+// Each session reuses its in-memory registry. Mainnet refreshes a previous visit's registry
+// with a bounded request. Stored or bundled data can serve when the API is unavailable.
 const REG_KEY = "ccip-lane-watch/registry/v1";
 const regDisk = () => { try { return JSON.parse(localStorage.getItem(REG_KEY) || "{}"); } catch { return {}; } };
 function regAge(env) { const d = regDisk()[env]; return d && d.at ? Date.now() - d.at : null; }
@@ -727,12 +749,14 @@ async function readRegistry(env, force) {
   if (!force && registry[env]) return registry[env];
   const baked = () => (SNAPSHOT && SNAPSHOT.registry && SNAPSHOT.registry[env]) || null;
   if (!force) {
-    const disk = regDisk()[env];
+    // On a normal mainnet page load, refresh membership before using a previous visit.
+    const disk = env === "mainnet" ? null : regDisk()[env];
     if (disk && disk.chains) { registry[env] = overlayOurs(env, disk); return registry[env]; }
     const snap = baked();
     if (snap && snap.chains) { registry[env] = overlayOurs(env, {...snap}); return registry[env]; }
   }
-  const get = (p) => fetch(`${API}/${p}`).then((r) => {
+  const signal = AbortSignal.timeout(10000);
+  const get = (p) => fetch(`${API}/${p}`, {signal}).then((r) => {
     if (!r.ok) throw new Error(`registry API ${p}: HTTP ${r.status}`);
     return r.json();
   });
@@ -745,7 +769,7 @@ async function readRegistry(env, force) {
     ]);
   } catch (e) {
     // Unreachable registry with a snapshot to fall back on is a degraded page, not a broken one.
-    const snap = baked();
+    const snap = registry[env] || regDisk()[env] || baked();
     if (!snap || !snap.chains) throw e;
     const fallback = overlayOurs(env, {...snap});
     registryFallbacks.add(fallback);
@@ -915,10 +939,11 @@ async function crawlStructure(env, chainId, peerId) {
   return res;
 }
 
-// The live half: one batched round-trip. Block height, RMN curse, per-lane message counters.
-async function probeLive(url, st, peerSel) {
-  const out = { block: null, cursed: null, counters: {}, ms: 0, liveError: null };
-  if (!url || !st.rows.length) return out;
+// Read live lane observations separately from the cached contract inventory.
+async function probeLive(url, st, peerSel, router) {
+  const out = { block: null, cursed: null, counters: {}, routeSupported: null, ms: 0, liveError: null };
+  const checkRoute = router && peerSel;
+  if (!url || (!st.rows.length && !checkRoute)) return out;
   const armProxy = st.rows.find((r) => /^(ARMProxy|RMNProxy)/.test(r.type));
   const onRamps = st.rows.filter((r) => /^(OnRamp|EVM2EVMOnRamp)/.test(r.type));
   const calls = [{ method: "eth_blockNumber", params: [] }];
@@ -929,6 +954,7 @@ async function probeLive(url, st, peerSel) {
     calls.push(call(o.addr, SEL.getExpectedNextMessageNumber + u64arg(peerSel)));
     calls.push(call(o.addr, SEL.getExpectedNextSequenceNumber + u64arg(peerSel)));
   }
+  if (checkRoute) calls.push({ method: "eth_chainId", params: [] });
   const t0 = performance.now();
   try {
     const lr = await rpc(url, calls);
@@ -941,6 +967,12 @@ async function probeLive(url, st, peerSel) {
       // string, not BigInt: this object gets JSON.stringify'd into the cache
       if (v !== null) out.counters[o.addr] = { type: o.type, ver: o.ver, next: v.toString() };
     }
+    if (checkRoute && chainMatches(lr[k], st.chainId) && out.block !== null) {
+      const query = call(router, SEL.isChainSupported + u64arg(peerSel));
+      query.params[1] = lr[0];
+      const [answer] = await rpc(url, [query]).catch(() => [null]);
+      if (/^0x0{63}[01]$/.test(answer)) out.routeSupported = answer.endsWith("1");
+    }
   } catch (e) { out.liveError = e.message; }
   out.ms = Math.round(performance.now() - t0);
   return out;
@@ -951,8 +983,9 @@ async function probeLive(url, st, peerSel) {
 // would freeze a half-read chain in place until someone hits refresh, so it is refused.
 const cacheable = (st) => !st.error && st.rows.length && !st.rows.some((r) => r.type === "unknown");
 
-// Serves the cache when there is one. Reads from the chain only when there is nothing cached for
-// this chain+peer, or when `force` (the refresh button) says to.
+// Refresh bypasses the cache. A changed router or peer invalidates its live reading.
+// Retry unknown routes after one minute when the registry supplies both inputs.
+const UNKNOWN_ROUTE_RETRY_MS = 60000;
 function crawl(env, chainId, peerId, force) {
   const url = rpcFor(chainId), reg = registry[env];
   let cached = force ? null : structCache.get(`${env}|${chainId}|${peerId || ""}`);
@@ -972,10 +1005,14 @@ async function readCrawl(env, chainId, peerId, url, reg, st) {
     ms += st.ms;
     live = null;                              // a new structure needs its own live reading
   }
-  if (!live) {
-    const peerSel = peerId && reg.chains[String(peerId)]
-      ? reg.chains[String(peerId)].selector : null;
-    live = await probeLive(url, st, peerSel);
+  const peerSel = reg.chains[String(peerId)]?.selector;
+  const router = entry?.router;
+  const retryUnknown = live && live.routeSupported == null && router && peerSel
+    && Date.now() - (live.at || 0) >= UNKNOWN_ROUTE_RETRY_MS;
+  if (!live || retryUnknown || live.router !== router || live.peerSelector !== peerSel) {
+    live = await probeLive(url, st, peerSel, router);
+    live.router = router;
+    live.peerSelector = peerSel;
     live.at = Date.now();
     ms += live.ms;
     if (generation === cacheGeneration && cacheable(st) &&
@@ -1017,7 +1054,7 @@ function buildChecks(res, entry) {
   else if (res.cursed === false) out.push({ s: "ok", t: "RMN: not cursed (isCursed = false)" });
   if (res.hidden) out.push({ s: "mute", t: `${res.hidden} address(es) hidden: token pools, plus everything that did not answer typeAndVersion — fee aggregators, admins, peer-chain ramps read out of lane configs` });
   const oursN = (res.rows || []).filter((r) => r.ours).length;
-  if (oursN) out.push({ s: "mute", t: `${oursN} testnet ${LIVE.deployedAt} contract(s) overlaid from ${LIVE.record} — not in Chainlink's registry` });
+  if (oursN) out.push({ s: "mute", t: `${oursN} testnet ${LIVE.deployedAt} contract(s) overlaid from testnet-deployment.json (linked in the footer) — not in Chainlink's registry` });
   return out;
 }
 
@@ -1111,7 +1148,14 @@ function tokensCell(tokens) {
 function laneSummary(env, a, b, ra, rb) {
   const nameOf = (id) => (registry[env].chains[String(id)] || {}).displayName || id;
   const rows = [];
-  for (const [side, res, from, to] of [["A", ra, a, b], ["B", rb, b, a]]) {
+  const directions = [];
+  for (const [res, from, to] of [[ra, a, b], [rb, b, a]]) {
+    const status = res.routeSupported;
+    const label = status === true ? "Route configured" : status === false ? "Sending disabled" : "Unknown";
+    const level = status === true ? "c-ok" : status === false ? "c-bad" : "c-warn";
+    const block = status != null ? ` · block ${esc(res.block)}` : "";
+    directions.push(`<dt>${esc(nameOf(from))} → ${esc(nameOf(to))}</dt>
+      <dd><span class="chip ${level}">${label}</span>${block}</dd>`);
     for (const r of (res.ramps || [])) {
       if (isLegacyRamp(r.ver)) continue;
       const row = (res.rows || []).find((x) => eq(x.addr, r.addr));
@@ -1137,6 +1181,10 @@ function laneSummary(env, a, b, ra, rb) {
         ? `testnet v3 · deployed ${esc(LIVE.deployedAt)} · <a href="roles.html">roles ↗</a>`
         : "both ramps of an “A_to_B” entry live on A"}</span>
     </div>
+    <div class="card-body"><h3>Source router support</h3><dl class="kv">${directions.join("")}</dl>
+      ${[a, b].filter(id => hasShutdownNotice(env, id)).map(id =>
+        `<p>${esc(nameOf(id))} · <a href="${shutdownNotice}" target="_blank" rel="noopener">Chainlink announced CCIP deactivation for Nov 30, 2026</a></p>`).join("")}
+    </div>
     <div class="card-body flush"><div class="tw"><table>
       <thead><tr><th>direction</th><th>ramp</th><th>API version</th><th>typeAndVersion</th><th>address</th><th>next msg #</th><th>lane tokens</th></tr></thead>
       <tbody>${rows.join("") || '<tr><td colspan="7" class="muted">no ≥1.6 lanes between these chains</td></tr>'}</tbody>
@@ -1149,6 +1197,10 @@ async function viewLane(a, b, force, env, context) {
   context.publish(() => {
     noteDataAge(ra.liveAt); noteDataAge(rb.liveAt);
     const worst = [ra, rb].flatMap((r) => (r.checks || []).map((c) => c.s));
+    for (const r of [ra, rb]) {
+      if (r.routeSupported === false) worst.push("bad");
+      else if (r.routeSupported == null) worst.push("warn");
+    }
     tabStatus.set(`lane-${a}-${b}`, worst.includes("bad") || ra.error || rb.error ? "bad" : worst.includes("warn") ? "warn" : "ok");
     views.innerHTML = laneSummary(env, a, b, ra, rb) + `<div class="grid2">${sidePanel(ra)}${sidePanel(rb)}</div>`;
   });
@@ -1176,6 +1228,8 @@ function ldoRows(networks) {
   return rows; // One destination token is counted once even if wstETH has several rows.
 }
 
+// Start immediately so supplies join their endpoint's batch with other reads of the same turn.
+const supplyReads = new Map();
 async function destinationSupply(row, force, namespace) {
   const generation = cacheGeneration;
   const url = rpcFor(row.chainId);
@@ -1183,17 +1237,20 @@ async function destinationSupply(row, force, namespace) {
   const key = `${namespace}-supply|${row.key}`;
   const cached = force ? null : metaCache.get(key);
   if (cached?.url === url) return { v: ovBig(cached.supply), at: cached.at, err: null };
-  try {
-    const r = await rpcRead(url, [{ method: "eth_chainId", params: [] },
-      call(row.token, SEL.decimals), call(row.token, SEL.totalSupply)]);
-    if (!chainMatches(r[0], row.chainId)) throw Error("RPC chain does not match this network");
-    if (strictUint(r[1]) !== BigInt(row.decimals)) throw Error("token decimals unavailable or mismatched");
-    const raw = strictUint(r[2]);
-    if (raw === null) throw Error("supply unavailable");
-    const v = scaleAmount(raw, row.decimals), at = Date.now();
-    if (generation === cacheGeneration) { metaCache.set(key, { url, at, supply: v.toString() }); saveCache(); }
-    return { v, at, err: null };
-  } catch (e) { return { v: null, at: null, err: e.message }; }
+  const read = async () => {
+    try {
+      const r = await rpcRead(url, [{ method: "eth_chainId", params: [] },
+        call(row.token, SEL.decimals), call(row.token, SEL.totalSupply)]);
+      if (!chainMatches(r[0], row.chainId)) throw Error("RPC chain does not match this network");
+      if (strictUint(r[1]) !== BigInt(row.decimals)) throw Error("token decimals unavailable or mismatched");
+      const raw = strictUint(r[2]);
+      if (raw === null) throw Error("supply unavailable");
+      const v = scaleAmount(raw, row.decimals), at = Date.now();
+      if (generation === cacheGeneration) { metaCache.set(key, { url, at, supply: v.toString() }); saveCache(); }
+      return { v, at, err: null };
+    } catch (e) { return { v: null, at: null, err: e.message }; }
+  };
+  return sharedRead(supplyReads, JSON.stringify([key, url]), read, { defer: false });
 }
 
 const ldoSupply = (row, force) => destinationSupply(row, force, 'ldo');
@@ -1342,7 +1399,7 @@ function ldoCard() {
     <div class="card-body flush"><div class="tw"><table>
       <thead><tr><th>network</th><th>LDO bridged?</th><th>bridge / source</th><th>LDO token</th><th style="text-align:right">amount on network</th></tr></thead>
       <tbody data-ldo-rows>${known.map((r) => `<tr>
-        <td class="t-name">${esc(r.name)}<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(r.chainId)}</span></td>
+        <td class="t-name">${esc(r.name)}${networkIdLine(r.chainId)}</td>
         <td data-ldo-status="${esc(r.key)}">${bridgeSupplyStatus(r)}</td>
         <td>${esc(r.bridge)}<br><a href="${esc(r.source)}" target="_blank" rel="noopener">Token source</a></td>
         <td>${addrCell(r.chainId, r.token, short(r.token))}</td>
@@ -1467,7 +1524,7 @@ function stethCard() {
       <thead><tr><th>network</th><th>stETH bridged?</th><th>bridge / source</th><th>stETH token</th>
         <th>stETH per wstETH</th><th>rate measured on L1</th><th>rate updated on L2</th><th style="text-align:right">amount on network</th></tr></thead>
       <tbody data-steth-rows>${rows.map((r) => `<tr>
-        <td class="t-name">${esc(r.name)}<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(r.chainId)}</span></td>
+        <td class="t-name">${esc(r.name)}${networkIdLine(r.chainId)}</td>
         <td data-steth-status="${esc(r.key)}">${bridgeSupplyStatus(r)}</td>
         <td>${esc(r.bridge)}<br><a href="${esc(r.source)}" target="_blank" rel="noopener">Token source</a></td>
         <td>${addrCell(r.chainId, r.token, short(r.token))}</td>
@@ -1516,11 +1573,17 @@ function overviewRows() {
     if (rows.some((r) => r.key === rowKey(id, info.tokenAddress))) continue;
     rows.push({
       chainId: id, name: info.chainName, group: "ccip", bridge: "CCIP burn/mint",
-      token: info.tokenAddress, escrow: null, escrowLabel: null,
+      token: info.tokenAddress, pool: info.poolAddress, escrow: null, escrowLabel: null,
       selector: (chains[id] || {}).selector || null,
       src: { token: "ccip registry", escrow: null },
       key: rowKey(id, info.tokenAddress),
     });
+  }
+  for (const archived of BUILD.legacyCcip.networks) {
+    const key = rowKey(archived.chainId, archived.token);
+    const current = rows.find(r => r.key === key);
+    if (!current) rows.push({ ...archived, key, group: "legacyCcip" });
+    else if (current.group === "ccip" && eq(current.pool, archived.pool)) current.group = "legacyCcip";
   }
   return rows;
 }
@@ -1531,26 +1594,37 @@ function overviewL1(rows, force) {
   const url = rpcFor(1);
   const hub = registry.mainnet?.tokens?.wstETH?.["1"]?.poolAddress;
   const key = JSON.stringify([url, hub, rows.map(({key, escrow, group, selector}) => [key, escrow, group, selector])]);
-  let cached = force ? null : metaCache.get(OV_KEY);
-  if (cached && (cached.inputs !== key || cached.stethSupply == null)) cached = null;
+  let cached = metaCache.get(OV_KEY);
+  if (cached && cached.inputs !== key) cached = null;
+  const useCache = !force && !!cached && !cached.err
+    && overviewComplete({ ...cached, pool: { ...cached.pool, addr: hub } });
   return Promise.all([
-    sharedRead(overviewReads, JSON.stringify([key, !!cached]), () => readOverviewL1(rows, url, hub, key, cached)),
+    sharedRead(overviewReads, JSON.stringify([key, useCache]), () => readOverviewL1(rows, url, hub, key, cached, useCache)),
     stethPrice(force), ldoPrice(force),
   ]).then(([out, stethQuote, ldoQuote]) => ({ ...out, stethQuote, ldoQuote }));
 }
-async function readOverviewL1(rows, url, hub, inputs, c) {
+// Ethereum totalSupply() denominators, each its own {v, at, err} observation read by the same
+// protocol as a destination supply. A failed total retries only itself and never holds up the overview.
+const L1_TOTALS = { stETH: STETH.l1Token, LDO: LDO.l1Token };
+function l1TotalSupply(symbol, force) {
+  const token = L1_TOTALS[symbol];
+  const row = { chainId: 1, token, decimals: 18, key: token.toLowerCase() };
+  return destinationSupply(row, force, "l1-total")
+    .then((t) => t.err ? { ...t, err: `Ethereum ${symbol} totalSupply: ${t.err}` } : t);
+}
+async function readOverviewL1(rows, url, hub, inputs, c, useCache) {
   const generation = cacheGeneration;
-  const out = { url, at: null, err: null, rate: null, supply: null, stethSupply: null, stethSupplyError: null,
+  const out = { url, at: null, err: null, rate: null, supply: null,
                 stethQuote: null, ldoQuote: null, escrow: {}, silo: {}, pool: { addr: hub || null, held: null, unsiloed: null } };
   if (!url) { out.err = "no RPC configured for Ethereum"; return out; }
 
+  // Matching cached values also back a fresh read. Failed subcalls must not erase earlier answers.
   if (c) {
     out.at = c.at; out.rate = ovBig(c.rate); out.supply = ovBig(c.supply);
-    out.stethSupply = ovBig(c.stethSupply);
     for (const [k, v] of Object.entries(c.escrow)) out.escrow[k] = ovBig(v);
     for (const [k, v] of Object.entries(c.silo)) out.silo[k] = { siloed: v.siloed, available: ovBig(v.available) };
     out.pool.held = ovBig(c.pool.held); out.pool.unsiloed = ovBig(c.pool.unsiloed);
-    return out;
+    if (useCache) return out;
   }
 
   const escrows = rows.filter((r) => r.escrow);
@@ -1569,35 +1643,34 @@ async function readOverviewL1(rows, url, hub, inputs, c) {
     }
   }
 
-  // Append the stETH denominator checks without coupling them to escrow reads.
-  calls.push({ method: "eth_chainId", params: [] },
-    call(STETH.l1Token, SEL.decimals), call(STETH.l1Token, SEL.totalSupply));
   try {
     const r = await rpcRead(url, calls);
+    let retained = false;
+    const merge = (fresh, previous) => {
+      if (fresh !== null) return fresh;
+      out.err = "Some Ethereum overview calls returned no answer";
+      if (previous != null) retained = true;
+      return previous ?? null;
+    };
     let k = 0;
-    out.supply = decUint(r[k++]);
-    out.rate = decUint(r[k++]);
-    for (const e of escrows) out.escrow[e.key] = decUint(r[k++]);
+    out.supply = merge(decUint(r[k++]), out.supply);
+    out.rate = merge(decUint(r[k++]), out.rate);
+    for (const e of escrows) out.escrow[e.key] = merge(decUint(r[k++]), out.escrow[e.key]);
     if (out.pool.addr) {
-      out.pool.held = decUint(r[k++]);
-      out.pool.unsiloed = decUint(r[k++]);
+      out.pool.held = merge(decUint(r[k++]), out.pool.held);
+      out.pool.unsiloed = merge(decUint(r[k++]), out.pool.unsiloed);
       for (const s of spokes) {
-        const siloed = decBool(r[k++]), available = decUint(r[k++]);
+        const siloed = merge(decBool(r[k++]), out.silo[s.key]?.siloed);
+        const available = merge(decUint(r[k++]), out.silo[s.key]?.available);
         out.silo[s.key] = { siloed, available };
       }
     }
-    if (!chainMatches(r[k++], 1)) out.stethSupplyError = "Ethereum chain ID unavailable or mismatched";
-    else if (strictUint(r[k]) !== 18n) out.stethSupplyError = "stETH decimals unavailable or mismatched";
-    else {
-      out.stethSupply = strictUint(r[k + 1]);
-      if (out.stethSupply === null) out.stethSupplyError = "Ethereum stETH supply unavailable";
-    }
-    out.at = Date.now();
-    // Keep valid observations visible, but retry an incomplete batch on the next load.
-    if (generation === cacheGeneration && out.stethSupply !== null) {
+    // The batch has one timestamp: keep its oldest observation time when answers were retained.
+    out.at = retained ? c.at : Date.now();
+    // Persisted even when incomplete, so its valid values reach reloads and the offline snapshot.
+    if (generation === cacheGeneration) {
       metaCache.set(OV_KEY, {
-        inputs, url, at: out.at, rate: ovStr(out.rate), supply: ovStr(out.supply),
-        stethSupply: ovStr(out.stethSupply),
+        inputs, url, at: out.at, err: out.err, rate: ovStr(out.rate), supply: ovStr(out.supply),
         escrow: Object.fromEntries(Object.entries(out.escrow).map(([a, b]) => [a, ovStr(b)])),
         silo: Object.fromEntries(Object.entries(out.silo).map(([a, b]) => [a, { siloed: b.siloed, available: ovStr(b.available) }])),
         pool: { held: ovStr(out.pool.held), unsiloed: ovStr(out.pool.unsiloed) },
@@ -1607,10 +1680,15 @@ async function readOverviewL1(rows, url, hub, inputs, c) {
   } catch (e) { out.err = e.message; }
   return out;
 }
+// Every value the batch asked for was answered.
+const overviewComplete = (out) => [out.supply, out.rate, ...Object.values(out.escrow),
+  ...(out.pool.addr ? [out.pool.held, out.pool.unsiloed] : []),
+  ...Object.values(out.silo).flatMap((s) => [s.siloed, s.available])].every((v) => v != null);
 
 // One network's own wstETH supply. Cached next to everything else, keyed by the RPC that
 // produced it so pointing a chain at a different endpoint drops the old figure.
 async function overviewSupply(row, force) {
+  if (row.group === "legacyCcip") return destinationSupply({ ...row, decimals: 18 }, force, "legacy-ccip");
   const generation = cacheGeneration;
   const url = rpcFor(row.chainId);
   if (!url) return { v: null, at: null, err: "no RPC" };
@@ -1630,7 +1708,7 @@ async function overviewSupply(row, force) {
 
 // ── overview: numbers ────────────────────────────────────────────────────────
 // Live view state. The current view context also guards background fills.
-const ov = { rows: [], l1: null, registryError: null, supply: new Map() };
+const ov = { routes: new Map(), rows: [], l1: null, registryError: null, supply: new Map(), totals: new Map() };
 
 const ovUsd = (amount) => {
   if (amount === null || !ov.l1 || ov.l1.rate === null) return null;
@@ -1713,16 +1791,22 @@ function ovL1Cell(row, s) {
 // scroll position and hover, 24 times over.
 const minuteTime = (at) => new Date(at).toISOString().slice(0, 16).replace("T", " ") + " UTC";
 const differsFromBoard = (at) => at != null && dataAt != null && Math.abs(at - dataAt) > 120000;
-function readTime(at) {
+function readTime(at, tag = "div") {
   if (!differsFromBoard(at)) return "";
-  return `<div class="muted" style="font-size:var(--fs-xs)">read <time datetime="${esc(new Date(at).toISOString())}">${esc(minuteTime(at))}</time></div>`;
+  return `<${tag} class="muted" style="font-size:var(--fs-xs)">read <time datetime="${esc(new Date(at).toISOString())}">${esc(minuteTime(at))}</time></${tag}>`;
 }
 
 function ovUpdateStatus() {
   const t = ovTotals();
-  tabStatus.set("overview", t.read === ov.rows.length && !ov.registryError && registry.mainnet && ov.l1 && !ov.l1.err
-    && ov.l1.stethSupply != null
-    && ov.rows.every((r) => { const b = ovBacking(r); return b.kind === "pooled" || b.v !== null; })
+  const routeStatuses = ov.rows.filter(r => r.group === "ccip").map(r => ov.routes.get(r.key));
+  if (routeStatuses.includes("bad")) {
+    tabStatus.set("overview", "bad");
+    return;
+  }
+  tabStatus.set("overview", routeStatuses.every(status => status === "ok") && t.read === ov.rows.length && !ov.registryError && registry.mainnet && ov.l1 && !ov.l1.err
+    && overviewComplete(ov.l1)
+    && Object.keys(L1_TOTALS).every((s) => ov.totals.get(s)?.v != null)
+    && ov.rows.filter(r => r.group !== "legacyCcip").every((r) => { const b = ovBacking(r); return b.kind === "pooled" || b.v !== null; })
     && ldo.rows.every((r) => !r.token || ldo.supply.get(r.key)?.v != null)
     && !ldoPriceError(ldo.quote)
     && steth.rows.every((r) => steth.supply.get(r.key)?.v != null
@@ -1742,7 +1826,7 @@ function ovPaintNumbers() {
       else if (s.v === null) amt.innerHTML = `<span class="chip c-warn">${esc(s.err || "unread")}</span>`;
       else {
         const usd = ovUsd(s.v);
-        amt.innerHTML = `<b>${fmtUnits(s.v, dec, 2)}</b>${
+        amt.innerHTML = `<b>${fmtUnits(s.v, dec, r.group === "legacyCcip" ? 6 : 2)}</b>${
           usd === null ? "" : `<div class="muted" style="font-size:var(--fs-xs)">$${fmtUnits(usd, dec, 0)}</div>`}`;
       }
     }
@@ -1788,17 +1872,19 @@ function summaryUsd(value) {
   return `$${tenths / 10n}${tenths % 10n ? '.' + tenths % 10n : ''}${suffix}`;
 }
 
-function summaryToken(symbol, model, denominator, usdValue, denominatorError) {
+// denominator: the Ethereum total as a {v, err} observation, or undefined while it is still being read.
+function summaryToken(symbol, model, denominator, usdValue) {
   const { sum, read, pending, total } = summarySupply(model.rows, model.supply);
   const partial = read < total;
   const title = `${symbol} outstanding on listed destination tokens; ${read}/${total} deployments read. `
-    + (denominator === undefined ? '' : `% = destination supply / Ethereum ${symbol} totalSupply. `)
-    + (denominatorError ? `${denominatorError}. ` : '')
+    + `% = destination supply / Ethereum ${symbol} totalSupply. `
+    + (denominator?.err ? `${denominator.err}. ` : '')
     + 'Reads may be from different blocks; this is not a backing check.';
   let value = read ? `<b>${formatAmount(sum)}</b>` : pending ? 'loading…' : 'unavailable';
-  if (read && denominator !== undefined) {
-    const pct = ovPct(sum, denominator);
-    value += ` · ${pct === null ? '% unavailable' : sum > 0n && pct === 0 ? '&lt;0.01%' : pct.toFixed(2) + '%'}`;
+  if (read) {
+    const pct = denominator && ovPct(sum, denominator.v);
+    value += ` · ${!denominator ? '% loading…' : pct === null ? '% unavailable'
+      : sum > 0n && pct === 0 ? '&lt;0.01%' : pct.toFixed(2) + '%'}`;
   }
   if (read && usdValue) {
     const usd = usdValue(sum);
@@ -1809,24 +1895,30 @@ function summaryToken(symbol, model, denominator, usdValue, denominatorError) {
   return `<span class="chip ${tone}" title="${esc(title)}">${symbol} ${value}</span>`;
 }
 
+// A total is its own observation, so a read time that differs from the board's is shown beside it.
+function totalText(t) {
+  const time = t?.at ? readTime(t.at, 'span') : '';
+  return `<b>${!t ? 'loading…' : t.v === null ? 'unavailable' : formatAmount(t.v)}</b>${time && ' ' + time}`;
+}
 function ovPaintSummary() {
   const tot = document.querySelector('[data-ov-total]');
   if (!tot) return;
   tot.innerHTML = `<span class="muted" style="font-size:var(--fs-sm)">Bridged</span>`
-    + summaryToken('wstETH', ov, ov.l1?.supply ?? null, ovUsd)
-    + summaryToken('stETH', steth, ov.l1?.stethSupply ?? null, undefined, ov.l1?.stethSupplyError || ov.l1?.err)
-    + summaryToken('LDO', ldo, undefined, ldoUsd);
+    + summaryToken('wstETH', ov, ov.l1 && { v: ov.l1.supply, err: ov.l1.err }, ovUsd)
+    + summaryToken('stETH', steth, ov.totals.get('stETH'))
+    + summaryToken('LDO', ldo, ov.totals.get('LDO'), ldoUsd);
   const counts = document.querySelector('[data-ov-networks]');
   if (!counts) return;
   const count = rows => new Set(rows.map(r => String(r.chainId))).size;
-  const labels = { supported: 'endorsed', legacy: 'deendorsed', ccip: 'CCIP', unclassified: 'unclassified' };
+  const labels = { supported: 'endorsed', legacy: 'deendorsed', ccip: 'CCIP', legacyCcip: 'Legacy CCIP', unclassified: 'unclassified' };
   counts.innerHTML = `<span><b>${count(ov.rows)}</b> networks</span>`
     + Object.entries(labels).map(([group, label]) => {
       const n = count(ov.rows.filter(r => r.group === group));
       return n || group !== 'unclassified' ? `<span><b>${n}</b> ${label}</span>` : '';
     }).join('')
     + (ov.registryError || !registry.mainnet ? '<span class="chip c-warn">CCIP registry unavailable</span>' : '')
-    + `<span style="margin-left:auto" title="Total stETH supply on Ethereum, including stETH held in the wstETH wrapper and bridge backing. Wrapped and bridged amounts are already included in this total.">Total stETH <b>${ov.l1?.stethSupply == null ? 'unavailable' : formatAmount(ov.l1.stethSupply)}</b></span>`;
+    + `<span style="margin-left:auto" title="Total stETH supply on Ethereum, including stETH held in the wstETH wrapper and bridge backing. Wrapped and bridged amounts are already included in this total.${esc(ov.totals.get('stETH')?.err ? ' ' + ov.totals.get('stETH').err : '')}">Total stETH ${totalText(ov.totals.get('stETH'))}</span>`
+    + `<span title="Total LDO supply: totalSupply() of the Ethereum LDO token. LDO locked on Ethereum behind bridged representations is included; bridged LDO above is not additional supply. Not a backing check.${esc(ov.totals.get('LDO')?.err ? ' ' + ov.totals.get('LDO').err : '')}">Total LDO ${totalText(ov.totals.get('LDO'))}</span>`;
 }
 
 // ── overview: render ─────────────────────────────────────────────────────────
@@ -1850,15 +1942,106 @@ function overviewNetworkName(row) {
     : esc(row.name);
 }
 
+// The bytes argument contains the ABI-encoded EVM address (32 bytes).
+const remotePoolCall = (selector, address) => SEL.isRemotePool + u64arg(selector) + u64arg(64)
+  + u64arg(32) + addrArg(address);
+
+function legacyCcipCard(rows) {
+  const archive = BUILD.legacyCcip;
+  const body = archive.networks.map(r => {
+    const key = rowKey(r.chainId, r.token);
+    const legacy = rows.some(row => row.key === key && row.group === "legacyCcip");
+    return `<tr><td class="t-name">${esc(r.name)}${networkIdLine(r.chainId)}</td>
+      <td>${addrCell(r.chainId, r.token, short(r.token))}</td><td>${addrCell(r.chainId, r.pool, short(r.pool))}</td>
+      <td data-legacy-code="${esc(r.chainId)}">Checking…</td><td data-legacy-peer="${esc(r.chainId)}">Checking…</td>
+      <td class="ovnum" ${legacy ? `data-ov-amt="${esc(key)}"` : ""}>${legacy ? "Loading…" : "See current token row"}</td></tr>`;
+  }).join("");
+  return `<section class="card" id="legacy-ccip"><div class="card-head"><h2>Legacy CCIP</h2></div><div class="card-body">
+    These wstETH pools were recorded at <a href="${esc(archive.inventoryUrl)}" target="_blank" rel="noopener">Ethereum block ${esc(archive.inventoryBlock)}</a>.
+    The Ethereum pool removed all four peers in <a href="https://etherscan.io/tx/${esc(archive.removalTx)}#eventlog" target="_blank" rel="noopener">block ${esc(archive.removalBlock)}</a>.</div>
+    <div class="card-body flush"><div class="tw"><table><thead><tr><th>Network</th><th>wstETH token</th><th>Former pool</th>
+    <th>Bytecode on network</th><th>Peer in former Ethereum pool</th><th>On network</th></tr></thead><tbody>${body}</tbody></table></div></div></section>`;
+}
+
+async function readLegacyEvidence(row, ethereum) {
+  const id = ethereum ? "1" : row.chainId, url = rpcFor(id);
+  if (!url) return "Unknown";
+  try {
+    const [chain, block] = await rpcRead(url, [{method: "eth_chainId", params: []}, {method: "eth_blockNumber", params: []}]);
+    if (!chainMatches(chain, id) || !/^0x[0-9a-f]+$/i.test(block)) return "Unknown";
+    let status;
+    if (ethereum) {
+      const query = call(BUILD.legacyCcip.hub, remotePoolCall(row.selector, row.pool));
+      query.params[1] = block;
+      const [result] = await rpcRead(url, [query]);
+      status = /^0x0{63}[01]$/.test(result) ? (result.endsWith("1") ? "Registered" : "Removed") : "Unknown";
+    } else {
+      const codes = await rpcRead(url, [row.token, row.pool].map(address => ({method: "eth_getCode", params: [address, block]})));
+      const labels = codes.map(value => /^0x(?:[0-9a-f]{2})+$/i.test(value) ? "present" : value === "0x" ? "absent" : "unknown");
+      status = `Token ${labels[0]} · pool ${labels[1]}`;
+    }
+    return `${status} · block ${BigInt(block)}`;
+  } catch { return "Unknown"; }
+}
+
+async function overviewRouteSide(chainId, router, pool, peerSelector, peerPool) {
+  const url = rpcFor(chainId);
+  const unknown = { router: null, pool: null, remote: null, block: null };
+  if (!url || !peerSelector || (!router && !pool)) return unknown;
+  try {
+    const [chain, block] = await rpcRead(url, [
+      { method: "eth_chainId", params: [] }, { method: "eth_blockNumber", params: [] },
+    ]);
+    if (!chainMatches(chain, chainId) || !/^0x[0-9a-f]+$/i.test(block)) return unknown;
+    const arg = u64arg(peerSelector);
+    const checks = [[router, SEL.isChainSupported + arg], [pool, SEL.poolSupportsChain + arg],
+      [peerPool ? pool : null, peerPool && remotePoolCall(peerSelector, peerPool)]];
+    const calls = checks.filter(([address]) => address).map(([address, data]) =>
+      ({ method: "eth_call", params: [{ to: address, data }, block] }));
+    const answers = await rpcRead(url, calls);
+    const [routerOk, poolOk, remote] = checks.map(([address]) => {
+      const answer = address && answers.shift();
+      return /^0x0{63}[01]$/.test(answer) ? answer.endsWith("1") : null;
+    });
+    return { router: routerOk, pool: poolOk, remote, block: BigInt(block).toString() };
+  } catch { return unknown; }
+}
+
+function overviewRouteDirection(direction, source, dest) {
+  let label = "Unknown", status = "warn";
+  if (source.router === false) { label = "Router disabled"; status = "bad"; }
+  else if (source.pool === false || dest.pool === false) { label = "Pool disabled"; status = "bad"; }
+  else if (dest.remote === false) { label = "Peer pool unregistered"; status = "bad"; }
+  else if (source.router && source.pool && dest.pool && dest.remote) { label = "Configured"; status = "ok"; }
+  const html = `<div title="Source block ${esc(source.block || "unknown")} · destination block ${esc(dest.block || "unknown")}">${direction} <span class="chip c-${status}">${label}</span></div>`;
+  return {html, status};
+}
+
+async function overviewRoute(row) {
+  const reg = registry.mainnet;
+  const eth = reg?.chains?.["1"], spoke = reg?.chains?.[row.chainId];
+  const hub = reg?.tokens?.wstETH?.["1"]?.poolAddress;
+  const [hubSide, spokeSide] = await Promise.all([
+    overviewRouteSide("1", eth?.router, hub, spoke?.selector, row.pool),
+    overviewRouteSide(row.chainId, spoke?.router, row.pool, eth?.selector, hub),
+  ]);
+  const from = overviewRouteDirection("From Ethereum", hubSide, spokeSide);
+  const to = overviewRouteDirection("To Ethereum", spokeSide, hubSide);
+  const statuses = [from.status, to.status];
+  return {html: from.html + to.html, status: statuses.includes("bad") ? "bad" : statuses.includes("warn") ? "warn" : "ok"};
+}
+
 const OV_COLS = {
-  name:   { th: "network", td: (r) => `<td class="t-name">${overviewNetworkName(r)}<br><span class="muted mono" style="font-size:var(--fs-xs)">${esc(r.chainId)}</span></td>` },
+  name:   { th: "network", td: (r) => `<td class="t-name">${overviewNetworkName(r)}${networkIdLine(r.chainId)}</td>` },
+  route: { th: "wstETH route", td: r => `<td><div data-ov-route="${esc(r.key)}">Checking…</div>${hasShutdownNotice("mainnet", r.chainId)
+    ? `<a href="${shutdownNotice}" target="_blank" rel="noopener">CCIP deactivation · Nov 30, 2026</a>` : ""}</td>` },
   model:  { th: "L1 liquidity model", td: (r) => `<td>${ovLiquidityModel(r)}</td>` },
   via:    { th: "how it gets there", td: (r) => `<td class="t-via" style="white-space:normal; max-width:190px">${esc(r.bridge)}</td>` },
   token:  { th: "network token", td: (r) => `<td>${addrCell(r.chainId, r.token, short(r.token))} ${ovSrcChip(r.src.token)}</td>` },
   holder: { th: "L1 holder", td: (r) => `<td>${ovL1HolderCell(r)}</td>` },
 };
 const ovColOrder = (group) => (group === "ccip"
-  ? ["name", "model", "via", "token", "holder"]
+  ? ["name", "route", "model", "via", "token", "holder"]
   : ["name", "via", "token", "holder", "model"]).map((k) => OV_COLS[k]);
 
 function ovGroupCard(group, rows) {
@@ -1895,14 +2078,25 @@ async function viewOverview(force, context) {
   try { await loadRegistry("mainnet", force); }
   catch (e) { registryError = e.message; } // Sourced token and ledger reads can proceed independently.
   if (!context.isCurrent()) return;
+  if (!registryError && registryFallbacks.has(registry.mainnet)) {
+    const at = registry.mainnet.at;
+    registryError = at ? `Registry snapshot from ${minuteTime(at)}.` : "Snapshot date unknown.";
+  }
   const rows = overviewRows();
-  const l1 = await overviewL1(rows, force);
+  // The totals start after overviewL1 queues its deferred read, so rpcRead sends them in the same
+  // Ethereum batch; they are painted on arrival, not awaited.
+  const l1Read = overviewL1(rows, force);
+  const totals = Object.keys(L1_TOTALS).map((symbol) => [symbol, l1TotalSupply(symbol, force)]);
+  const l1 = await l1Read;
   if (!context.publish(() => renderOverview(rows, l1, registryError))) return;
 
   // Phase two: each completion publishes through the same generation guard.
   const paint = (update, at, render) => context.commit(() => {
     update(); noteDataAge(at); render(); renderTabs(); tickStamp();
   });
+  for (const [symbol, read] of totals) {
+    read.then((t) => paint(() => ov.totals.set(symbol, t), t.at, () => { ovUpdateStatus(); ovPaintSummary(); }));
+  }
   for (const row of steth.rows) {
     stethSupply(row, force).then((s) =>
       paint(() => steth.supply.set(row.key, s), s.at, stethPaintNumbers));
@@ -1913,7 +2107,24 @@ async function viewOverview(force, context) {
     ldoSupply(row, force).then((s) =>
       paint(() => ldo.supply.set(row.key, s), s.at, ldoPaintNumbers));
   }
+  for (const row of BUILD.legacyCcip.networks) {
+    for (const [column, ethereum] of [["code", false], ["peer", true]]) {
+      readLegacyEvidence(row, ethereum).then(status => context.commit(() => {
+        const cell = document.querySelector(`[data-legacy-${column}="${row.chainId}"]`);
+        if (cell) cell.textContent = status;
+      }));
+    }
+  }
   for (const row of ov.rows) {
+    if (row.group === "ccip") {
+      overviewRoute(row).then(route => context.commit(() => {
+        ov.routes.set(row.key, route.status);
+        ovUpdateStatus();
+        renderTabs();
+        const cell = document.querySelector(`[data-ov-route="${row.key}"]`);
+        if (cell) cell.innerHTML = route.html;
+      }));
+    }
     overviewSupply(row, force).then((s) =>
       paint(() => ov.supply.set(row.key, s), s.at, ovPaintNumbers));
   }
@@ -1921,6 +2132,7 @@ async function viewOverview(force, context) {
 
 function renderOverview(rows, l1, registryError) {
   ov.registryError = registryError;
+  ov.routes.clear();
   ov.rows = rows;
   ldo.rows = ldoRows(rows);
   ldo.supply = new Map();
@@ -1931,6 +2143,7 @@ function renderOverview(rows, l1, registryError) {
   ov.l1 = l1;
   steth.quote = ov.l1.stethQuote || {err: ov.l1.err || "USD price unavailable", at: null};
   ldo.quote = ov.l1.ldoQuote || {err: ov.l1.err || "USD price unavailable", at: null};
+  ov.totals = new Map();
   noteDataAge(ov.l1.at);
   ovUpdateStatus();
 
@@ -1999,6 +2212,7 @@ function renderOverview(rows, l1, registryError) {
     </section>
 
     ${ovGroupCard("legacy", ov.rows.filter((r) => r.group === "legacy"))}
+    ${legacyCcipCard(rows)}
     ${ov.rows.some((r) => r.group === "unclassified") ? ovGroupCard("unclassified", ov.rows.filter((r) => r.group === "unclassified")) : ""}
 
     <section class="card">
@@ -2169,7 +2383,7 @@ function viewSettings(preserveDrafts = false) {
       <button class="btn" data-lanedel="${i}">remove</button></div>`).join("");
   const chainOpts = Object.entries(reg.chains)
     .sort((x, y) => x[1].displayName.localeCompare(y[1].displayName))
-    .map(([id, c]) => `<option value="${esc(id)}">${esc(c.displayName)} · ${esc(id)}</option>`).join("");
+    .map(([id, c]) => `<option value="${esc(id)}">${esc(c.displayName)} · ${esc(id)}${hasShutdownNotice(state.env, id) ? " · CCIP deactivation Nov 30, 2026" : ""}</option>`).join("");
   const markup = `
     <section class="card">
       <div class="card-head"><span class="eyebrow">Live · mainnet lanes</span></div>

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "chains": {
+    "ethereum": {
+      "lanes": {
+        "base": {
+          "outbound": [
+            "local"
+          ],
+          "inbound": [
+            "local"
+          ]
+        }
+      },
+      "localResolver": {
+        "outbound": {
+          "base": "dummy"
+        },
+        "inbound": {
+          "0xdecafbad": "dummy"
+        }
+      }
+    },
+    "base": {
+      "lanes": {
+        "ethereum": {
+          "outbound": [
+            "local"
+          ],
+          "inbound": [
+            "local"
+          ]
+        }
+      },
+      "localResolver": {
+        "outbound": {
+          "ethereum": "dummy"
+        },
+        "inbound": {
+          "0xdecafbad": "dummy"
+        }
+      }
+    }
+  }
+}

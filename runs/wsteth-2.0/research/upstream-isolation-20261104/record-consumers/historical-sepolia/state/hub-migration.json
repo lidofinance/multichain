@@ -1,0 +1,391 @@
+{
+  "schemaVersion": 3,
+  "run": "migration-lines-20261103-10-sepolia",
+  "chain": "sepolia",
+  "token": "0x9B5E9Aac68C6C054D2B2579bD205f25C5Dd4841f",
+  "registry": "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82",
+  "oldPool": "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916",
+  "newHub": "0x40d36dbc2798666a40a23e7010bb9c2DC0c8d284",
+  "lidoTimelock": "0x9D2A6fd46410a4Ae45bDD6dF9F8a9055C4656489",
+  "chainlinkTimelock": "0x90d4461fba6c0ace66f68421ca6ceef2388fe99b",
+  "lockBoxes": {
+    "sepolia_optimism": "0xE60a6C7e56d95dDB81b2DC8445999c09F0795566",
+    "shared": "0x8A183AB4eB04B49065bE41035B8F011B4c0368A1"
+  },
+  "baseLockBox": "0x0000000000000000000000000000000000000000",
+  "baseLockBoxDeployed": false,
+  "legacyEscrow": "0xac4684527386209f289434e84879499de45b71b9",
+  "lockBoxGroups": {
+    "shared": {
+      "lanes": [
+        "monad"
+      ],
+      "amount": "1000000000000000000000"
+    },
+    "sepolia_optimism": {
+      "lanes": [
+        "sepolia_optimism"
+      ],
+      "amount": "10000000000000000000"
+    }
+  },
+  "siloRebalancersAfter": {
+    "sepolia_optimism": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+  },
+  "hubAtCutover": {
+    "supportedChains": [
+      "2183018362218727504",
+      "5224473277236331295"
+    ],
+    "deferredLane": "base_sepolia",
+    "deferredLaneSelector": "10344971235874465080",
+    "note": "the hub the batch bound served exactly the old pool lanes; the pair lane is connected by step 05c (hub-connect-lane)"
+  },
+  "proposals": [
+    {
+      "name": "pause",
+      "id": "0xbe9095c45f8d70b7a419c02289b6cd9c8f139aaeff9dc7e221e7901751fba28e",
+      "timelock": "0x90d4461fba6c0ace66f68421ca6ceef2388fe99b",
+      "predecessor": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "salt": "0x865016e1a08b21058ca58c32cab36a4f6087bf56ac991a2d184e968402c7500e",
+      "delay": 60,
+      "proposer": "0x3C3c000000000000000000000000000000000001",
+      "scheduledTx": "0x3d303ebef7ddc002b080f351127cb300dba888281a346e1d2eff038794520c1b",
+      "scheduledAtBlock": 12056946,
+      "executor": "0xd31bb568B417123Dbb6A09014B3337Dde0Eea7A1",
+      "executedBy": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+      "executedTx": "0x5dd313c43a6a92e601f0997f48b164ccea3ff52a38f5183cf1476d60ce52117f",
+      "executedAtBlock": 12056948,
+      "calls": [
+        {
+          "target": "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916",
+          "value": "0",
+          "data": "0x962d4020000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000001e4ba3a26233c85000000000000000000000000000000000000000000000000048810ec3e431431f00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000021e19e0c9bab24000000000000000000000000000000000000000000000000000000de0b6b3a7640000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000021e19e0c9bab24000000000000000000000000000000000000000000000000000000de0b6b3a7640000",
+          "decoded": "SiloedLockReleaseTokenPool.setChainRateLimiterConfigs([2183018362218727504,5224473277236331295], outbound [(true,2,1),(true,2,1)], inbound [(true,10000000000000000000000,1000000000000000000),(true,10000000000000000000000,1000000000000000000)])"
+        }
+      ]
+    },
+    {
+      "name": "cutover",
+      "id": "0x7fda99101e5f18f44b6ec65f1f6ac1d1f794425abe57e2da71ab4a4ebb0e111f",
+      "timelock": "0x90d4461fba6c0ace66f68421ca6ceef2388fe99b",
+      "predecessor": "0xbe9095c45f8d70b7a419c02289b6cd9c8f139aaeff9dc7e221e7901751fba28e",
+      "salt": "0x1cc391f8ecc2de0c8f0a09d3eb772e59e570550d2da5f4009bed1b3db97dd1cc",
+      "delay": 60,
+      "proposer": "0x3C3c000000000000000000000000000000000001",
+      "scheduledTx": "0xbf96a2540cf119ce5c919beae3aa2bce40c3abe348bd9d2fb1e9d7f318943836",
+      "scheduledAtBlock": 12056950,
+      "executor": "0xd31bb568B417123Dbb6A09014B3337Dde0Eea7A1",
+      "executedBy": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+      "executedTx": "0xe96361e0d1895bbc7ce2f81748bafc9cea57327158f60b3f88c60a9d39cda017",
+      "executedAtBlock": 12056952,
+      "calls": [
+        {
+          "target": "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916",
+          "value": "0",
+          "data": "0x0a861f2a00000000000000000000000000000000000000000000003635c9adc5dea00000",
+          "decoded": "SiloedLockReleaseTokenPool.withdrawLiquidity(1000000000000000000000) — unsiloed bucket to the timelock"
+        },
+        {
+          "target": "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916",
+          "value": "0",
+          "data": "0x6600f92c00000000000000000000000000000000000000000000000048810ec3e431431f00000000000000000000000090d4461fba6c0ace66f68421ca6ceef2388fe99b",
+          "decoded": "setSiloRebalancer(5224473277236331295 sepolia_optimism, timelock) — the silo's rebalancer is 0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+        },
+        {
+          "target": "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916",
+          "value": "0",
+          "data": "0xce3c752800000000000000000000000000000000000000000000000048810ec3e431431f0000000000000000000000000000000000000000000000008ac7230489e80000",
+          "decoded": "withdrawSiloedLiquidity(5224473277236331295 sepolia_optimism, 10000000000000000000) — silo to the timelock"
+        },
+        {
+          "target": "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916",
+          "value": "0",
+          "data": "0x6600f92c00000000000000000000000000000000000000000000000048810ec3e431431f000000000000000000000000e528a15071e6c5af0c1ed8e6ec647ce9ec510597",
+          "decoded": "setSiloRebalancer(5224473277236331295 sepolia_optimism, 0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597) — previous rebalancer restored (siloRebalancerAfterCutover=restore)"
+        },
+        {
+          "target": "0x9B5E9Aac68C6C054D2B2579bD205f25C5Dd4841f",
+          "value": "0",
+          "data": "0xa9059cbb000000000000000000000000e60a6c7e56d95ddb81b2dc8445999c09f07955660000000000000000000000000000000000000000000000008ac7230489e80000",
+          "decoded": "wstETH.transfer(0xE60a6C7e56d95dDB81b2DC8445999c09F0795566 = lockbox sepolia_optimism [sepolia_optimism], 10000000000000000000)"
+        },
+        {
+          "target": "0x9B5E9Aac68C6C054D2B2579bD205f25C5Dd4841f",
+          "value": "0",
+          "data": "0xa9059cbb0000000000000000000000008a183ab4eb04b49065be41035b8f011b4c0368a100000000000000000000000000000000000000000000003635c9adc5dea00000",
+          "decoded": "wstETH.transfer(0x8A183AB4eB04B49065bE41035B8F011B4c0368A1 = lockbox shared [monad], 1000000000000000000000)"
+        },
+        {
+          "target": "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82",
+          "value": "0",
+          "data": "0x4e847fc70000000000000000000000009b5e9aac68c6c054d2b2579bd205f25c5dd4841f00000000000000000000000040d36dbc2798666a40a23e7010bb9c2dc0c8d284",
+          "decoded": "TokenAdminRegistry.setPool(0x9B5E9Aac68C6C054D2B2579bD205f25C5Dd4841f, 0x40d36dbc2798666a40a23e7010bb9c2DC0c8d284) — the new hub serves every lane from here"
+        },
+        {
+          "target": "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82",
+          "value": "0",
+          "data": "0xddadfa8e0000000000000000000000009b5e9aac68c6c054d2b2579bd205f25c5dd4841f0000000000000000000000009d2a6fd46410a4ae45bdd6df9f8a9055c4656489",
+          "decoded": "TokenAdminRegistry.transferAdminRole(0x9B5E9Aac68C6C054D2B2579bD205f25C5Dd4841f, 0x9D2A6fd46410a4Ae45bDD6dF9F8a9055C4656489) — pending for the LidoTimelock"
+        }
+      ]
+    }
+  ],
+  "snapshots": {
+    "before": {
+      "block": 12056945,
+      "timestamp": 1793724223,
+      "oldPool": {
+        "balance": "1010000000000000000000",
+        "unsiloedLiquidity": "1000000000000000000000",
+        "silos": {
+          "sepolia_optimism": {
+            "balance": "10000000000000000000",
+            "rebalancer": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+          }
+        }
+      },
+      "chainlinkTimelock": "0",
+      "lockBoxes": {
+        "sepolia_optimism": "0",
+        "shared": "0"
+      },
+      "baseLockBox": "0",
+      "baseLockBoxDeployed": false,
+      "legacyEscrow": "100000000000000000000",
+      "registry": {
+        "administrator": "0x90d4461fbA6c0Ace66f68421CA6ceEF2388FE99b",
+        "pendingAdministrator": "0x0000000000000000000000000000000000000000",
+        "pool": "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916"
+      }
+    },
+    "after": {
+      "block": 12056952,
+      "timestamp": 1793724350,
+      "oldPool": {
+        "balance": "0",
+        "unsiloedLiquidity": "0",
+        "silos": {
+          "sepolia_optimism": {
+            "balance": "0",
+            "rebalancer": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597"
+          }
+        }
+      },
+      "chainlinkTimelock": "0",
+      "lockBoxes": {
+        "sepolia_optimism": "10000000000000000000",
+        "shared": "1000000000000000000000"
+      },
+      "baseLockBox": "0",
+      "baseLockBoxDeployed": false,
+      "legacyEscrow": "100000000000000000000",
+      "registry": {
+        "administrator": "0x90d4461fbA6c0Ace66f68421CA6ceEF2388FE99b",
+        "pendingAdministrator": "0x9D2A6fd46410a4Ae45bDD6dF9F8a9055C4656489",
+        "pool": "0x40d36dbc2798666a40a23e7010bb9c2DC0c8d284"
+      }
+    }
+  },
+  "pauseCheck": {
+    "monad": "reverted",
+    "sepolia_optimism": "reverted"
+  },
+  "pauseCheckSender": "0x82ae0b16627dfa96c5512b47dc4cf8ca40ab9b4e",
+  "laneCount": 2,
+  "lanes": [
+    {
+      "slug": "monad",
+      "selector": "2183018362218727504",
+      "siloed": false,
+      "lockBoxGroup": "shared",
+      "lockBox": "0x8A183AB4eB04B49065bE41035B8F011B4c0368A1",
+      "groupAmount": "1000000000000000000000",
+      "remotePool": "0xa0BA126e57Ffa62ea42aA1C6A6016fA8A7A16539",
+      "remoteToken": "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB",
+      "inboundCapacity": "10000000000000000000000",
+      "outboundCapacity": "10000000000000000000000",
+      "onRamp": "0x8dcf17f298c881A547D91ca4aA3C2AD7568C6777"
+    },
+    {
+      "slug": "sepolia_optimism",
+      "selector": "5224473277236331295",
+      "siloed": true,
+      "lockBoxGroup": "sepolia_optimism",
+      "lockBox": "0xE60a6C7e56d95dDB81b2DC8445999c09F0795566",
+      "groupAmount": "10000000000000000000",
+      "remotePool": "0x01f439568e25a53F3267e9329942E1F6BB2618C9",
+      "remoteToken": "0x3EfAE570Ca5359B290f3932C84197Bb2CC14E31D",
+      "inboundCapacity": "10000000000000000000000",
+      "outboundCapacity": "10000000000000000000000",
+      "onRamp": "0x8dcf17f298c881A547D91ca4aA3C2AD7568C6777"
+    }
+  ],
+  "impersonated": [
+    "Chainlink timelock proposer 0x3C3c000000000000000000000000000000000001 (scheduleBatch; on mainnet an MCMS proposal)"
+  ],
+  "unverified": [
+    "spoke pools: addition of the new hub as remote pool and the outbound pause on each spoke (no spoke forks in this target)",
+    "CCIP queue spoke -> Ethereum assumed empty: the fork is frozen; mainnet needs the drain window before the batch",
+    "DON delivery after the cutover (impersonated OffRamp in the scenario tests only)",
+    "MCMS signing of the two proposals; the executor was called by the deployer key through the CallProxy",
+    "lanes whose ccipSend could not be quoted (pauseCheck = unquotable)"
+  ],
+  "manifest": {
+    "schemaVersion": 1,
+    "target": {
+      "pool": "0xd6c0b5a2ed309b3c0e93c00ef68cc861b7517916",
+      "timelock": "0x90d4461fba6c0ace66f68421ca6ceef2388fe99b",
+      "expectedLanes": [
+        "monad",
+        "sepolia_optimism"
+      ],
+      "siloRebalancerAfterCutover": "restore"
+    },
+    "readAt": {
+      "chainId": 11155111,
+      "block": 12056941,
+      "blockHash": "0xa0413f14a1e84f83924b63c9336ebcc7bfa715fc6d66a1d1471d64cec3ec9409",
+      "timestamp": 1793724212,
+      "rpc": "http://127.0.0.1:64532",
+      "registryApiEnvironment": "testnet"
+    },
+    "token": "0x9B5E9Aac68C6C054D2B2579bD205f25C5Dd4841f",
+    "router": "0x0BF3dE8c5D3e8A2B34D2BEeB17ABfCeBaf363A59",
+    "registry": {
+      "address": "0x95F29FEE11c5C55d26cCcf1DB6772DE953B37B82",
+      "administrator": "0x90d4461fbA6c0Ace66f68421CA6ceEF2388FE99b",
+      "pendingAdministrator": "0x0000000000000000000000000000000000000000",
+      "pool": "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916"
+    },
+    "oldPool": {
+      "address": "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916",
+      "typeAndVersion": "SiloedLockReleaseTokenPool 1.6.0",
+      "owner": "0x90d4461fbA6c0Ace66f68421CA6ceEF2388FE99b",
+      "rebalancer": "0x90d4461fbA6c0Ace66f68421CA6ceEF2388FE99b",
+      "rateLimitAdmin": "0x0000000000000000000000000000000000000000",
+      "balance": "1010000000000000000000",
+      "unsiloedLiquidity": "1000000000000000000000",
+      "siloedTotal": "10000000000000000000",
+      "unaccounted": "0"
+    },
+    "chainlinkTimelock": {
+      "address": "0x90d4461fba6c0ace66f68421ca6ceef2388fe99b",
+      "minDelay": 60,
+      "blockedSelectorCount": 0,
+      "roles": {
+        "ADMIN_ROLE": {
+          "hash": "0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775",
+          "members": [
+            "0x3C3c000000000000000000000000000000000001"
+          ]
+        },
+        "PROPOSER_ROLE": {
+          "hash": "0xb09aa5aeb3702cfd50b6b62bc4532604938f21248a27a1d5ca736082b6819cc1",
+          "members": [
+            "0x3C3c000000000000000000000000000000000001"
+          ]
+        },
+        "EXECUTOR_ROLE": {
+          "hash": "0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63",
+          "members": [
+            "0xd31bb568B417123Dbb6A09014B3337Dde0Eea7A1"
+          ]
+        },
+        "CANCELLER_ROLE": {
+          "hash": "0xfd643c72710c63c0180259aba6b2d05451e3591a24e58b62239378085726f783",
+          "members": [
+            "0x3C3c000000000000000000000000000000000001"
+          ]
+        },
+        "BYPASSER_ROLE": {
+          "hash": "0xa1b2b8005de234c4b8ce8cd0be058239056e0d54f6097825b5117101469d5a8d",
+          "members": []
+        }
+      }
+    },
+    "lanes": [
+      {
+        "slug": "monad",
+        "selector": "2183018362218727504",
+        "chainId": 10143,
+        "internalId": "monad-testnet",
+        "displayName": "Monad Testnet",
+        "siloed": false,
+        "rebalancer": "0x90d4461fbA6c0Ace66f68421CA6ceEF2388FE99b",
+        "siloBalance": "0",
+        "availableTokens": "1000000000000000000000",
+        "remoteToken": "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB",
+        "remotePools": [
+          "0xa0BA126e57Ffa62ea42aA1C6A6016fA8A7A16539"
+        ],
+        "outbound": {
+          "enabled": true,
+          "capacity": "10000000000000000000000",
+          "rate": "1000000000000000000"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "10000000000000000000000",
+          "rate": "1000000000000000000"
+        },
+        "onRamp": "0x8dcf17f298c881A547D91ca4aA3C2AD7568C6777",
+        "lockBoxGroup": "shared",
+        "registry": {
+          "router": "0x5aD0A67f4Da0E8665a3fbf15E4215A780407Cf33",
+          "rmn_proxy": "0xD610B8f58689de7755947C05342A2DFaC30ebD57",
+          "token_admin_registry": "0xd3e461C55676B10634a5F81b747c324B85686Dd1",
+          "registry_module_owner": "0x524B83ae8208490151339c626fd0E35b964483e3"
+        }
+      },
+      {
+        "slug": "sepolia_optimism",
+        "selector": "5224473277236331295",
+        "chainId": 11155420,
+        "internalId": "ethereum-testnet-sepolia-optimism-1",
+        "displayName": "OP Sepolia",
+        "siloed": true,
+        "rebalancer": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+        "siloBalance": "10000000000000000000",
+        "availableTokens": "10000000000000000000",
+        "remoteToken": "0x3EfAE570Ca5359B290f3932C84197Bb2CC14E31D",
+        "remotePools": [
+          "0x01f439568e25a53F3267e9329942E1F6BB2618C9"
+        ],
+        "outbound": {
+          "enabled": true,
+          "capacity": "10000000000000000000000",
+          "rate": "1000000000000000000"
+        },
+        "inbound": {
+          "enabled": true,
+          "capacity": "10000000000000000000000",
+          "rate": "1000000000000000000"
+        },
+        "onRamp": "0x8dcf17f298c881A547D91ca4aA3C2AD7568C6777",
+        "lockBoxGroup": "sepolia_optimism",
+        "registry": {
+          "router": "0x114A20A10b43D4115e5aeef7345a1A71d2a60C57",
+          "rmn_proxy": "0xb40A3109075965cc09E93719e33E748abf680dAe",
+          "token_admin_registry": "0x1d702b1FA12F347f0921C722f9D9166F00DEB67A",
+          "registry_module_owner": "0x6AfeDdaE519bA02985B4DD027b3f22298e1D828D"
+        }
+      }
+    ],
+    "lockBoxGroups": {
+      "shared": {
+        "lanes": [
+          "monad"
+        ],
+        "amount": "1000000000000000000000"
+      },
+      "sepolia_optimism": {
+        "lanes": [
+          "sepolia_optimism"
+        ],
+        "amount": "10000000000000000000"
+      }
+    },
+    "siloRebalancerAfterCutover": "restore"
+  }
+}

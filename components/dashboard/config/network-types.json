@@ -1,0 +1,34 @@
+{
+  "takenAt": "2026-10-07",
+  "types": {
+    "L2": "Listed by L2BEAT as a Layer 2 hosted on Ethereum. L2BEAT's category is given per network; its stage is not reflected here. This label makes no security or maturity claim.",
+    "alt-L1": "Not an Ethereum L2: the network's own documentation describes independent consensus, or settlement on a chain other than Ethereum (an L2 of another chain carries a visible qualifier). This label makes no security claim."
+  },
+  "networks": [
+    { "chainId": 10, "name": "Optimism", "type": "L2", "source": "https://l2beat.com/layer2s/projects/op-mainnet", "category": "Optimistic Rollup" },
+    { "chainId": 56, "name": "BNB Chain", "type": "alt-L1", "source": "https://docs.bnbchain.org/bnb-smart-chain/introduction/", "note": "Proof of Staked Authority validator set" },
+    { "chainId": 130, "name": "Unichain", "type": "L2", "source": "https://l2beat.com/layer2s/projects/unichain", "category": "Optimistic Rollup" },
+    { "chainId": 137, "name": "Polygon PoS", "type": "L2", "source": "https://l2beat.com/layer2s/projects/polygon-pos", "category": "Other", "note": "Ethereum checkpoints, own PoS validator set" },
+    { "chainId": 143, "name": "Monad", "type": "alt-L1", "source": "https://docs.monad.xyz/", "note": "MonadBFT consensus" },
+    { "chainId": 324, "name": "ZKsync Era", "type": "L2", "source": "https://l2beat.com/layer2s/projects/zksync-era", "category": "ZK Rollup" },
+    { "chainId": 1135, "name": "Lisk", "type": "L2", "source": "https://l2beat.com/layer2s/projects/lisk", "category": "Other" },
+    { "chainId": 1868, "name": "Soneium", "type": "L2", "source": "https://l2beat.com/layer2s/projects/soneium", "category": "Other" },
+    { "chainId": 1923, "name": "Swellchain", "type": "L2", "source": "https://l2beat.com/layer2s/projects/swell", "category": "Other", "archived": "2026-08-05" },
+    { "chainId": 2741, "name": "Abstract", "type": "L2", "source": "https://l2beat.com/layer2s/projects/abstract", "category": "ZK Rollup" },
+    { "chainId": 4326, "name": "MegaETH", "type": "L2", "source": "https://l2beat.com/layer2s/projects/megaeth", "category": "Other" },
+    { "chainId": 4663, "name": "Robinhood Chain", "type": "L2", "source": "https://l2beat.com/layer2s/projects/robinhood", "category": "Other" },
+    { "chainId": 5000, "name": "Mantle", "type": "L2", "source": "https://l2beat.com/layer2s/projects/mantle", "category": "ZK Rollup" },
+    { "chainId": 8453, "name": "Base", "type": "L2", "source": "https://l2beat.com/layer2s/projects/base", "category": "Optimistic Rollup" },
+    { "chainId": 9745, "name": "Plasma", "type": "alt-L1", "source": "https://docs.plasma.to/docs/plasma-chain/architecture/system-overview", "note": "PlasmaBFT consensus" },
+    { "chainId": 16661, "name": "0G", "type": "alt-L1", "source": "https://docs.0g.ai/concepts/chain", "note": "CometBFT-based proof-of-stake consensus" },
+    { "chainId": 34443, "name": "Mode", "type": "L2", "source": "https://l2beat.com/layer2s/projects/mode", "category": "Other" },
+    { "chainId": 42161, "name": "Arbitrum One", "type": "L2", "source": "https://l2beat.com/layer2s/projects/arbitrum", "category": "Optimistic Rollup" },
+    { "chainId": 42220, "name": "Celo", "type": "L2", "source": "https://l2beat.com/layer2s/projects/celo", "category": "Optimium" },
+    { "chainId": 48900, "name": "Zircuit", "type": "L2", "source": "https://l2beat.com/layer2s/projects/zircuit", "category": "Other" },
+    { "chainId": 57073, "name": "Ink", "type": "L2", "source": "https://l2beat.com/layer2s/projects/ink", "category": "Optimistic Rollup" },
+    { "chainId": 59144, "name": "Linea", "type": "L2", "source": "https://l2beat.com/layer2s/projects/linea", "category": "ZK Rollup" },
+    { "chainId": 200901, "name": "Bitlayer", "type": "alt-L1", "source": "https://docs.bitlayer.org/docs/Learn/Bitlayer%20Rollup/overview/", "qualifier": "Bitcoin L2", "note": "Own PoS block production, settles on Bitcoin rather than Ethereum" },
+    { "chainId": 534352, "name": "Scroll", "type": "L2", "source": "https://l2beat.com/layer2s/projects/scroll", "category": "ZK Rollup" },
+    { "chainId": 5734951, "name": "Jovay", "type": "L2", "source": "https://l2beat.com/layer2s/projects/jovay", "category": "Other", "archived": "2026-05-27" }
+  ]
+}

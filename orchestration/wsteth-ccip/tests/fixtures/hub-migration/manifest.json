@@ -1,0 +1,84 @@
+{
+  "readAt": {
+    "chainId": 1
+  },
+  "token": "0x000000000000000000000000000000000000000e",
+  "registry": {
+    "address": "0x000000000000000000000000000000000000000c"
+  },
+  "lanes": [
+    {
+      "slug": "shared_a",
+      "selector": "102",
+      "remoteToken": "0x0000000000000000000000000000000000000014",
+      "remotePools": [
+        "0x000000000000000000000000000000000000001e"
+      ],
+      "siloed": false,
+      "outbound": {
+        "enabled": true,
+        "capacity": "1000",
+        "rate": "10"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "2000",
+        "rate": "20"
+      }
+    },
+    {
+      "slug": "shared_b",
+      "selector": "103",
+      "remoteToken": "0x0000000000000000000000000000000000000015",
+      "remotePools": [
+        "0x000000000000000000000000000000000000001f"
+      ],
+      "siloed": false,
+      "outbound": {
+        "enabled": true,
+        "capacity": "1100",
+        "rate": "11"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "2100",
+        "rate": "21"
+      }
+    },
+    {
+      "slug": "isolated",
+      "selector": "104",
+      "remoteToken": "0x0000000000000000000000000000000000000016",
+      "remotePools": [
+        "0x0000000000000000000000000000000000000020",
+        "0x0000000000000000000000000000000000000084"
+      ],
+      "siloed": true,
+      "outbound": {
+        "enabled": true,
+        "capacity": "1200",
+        "rate": "12"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "2200",
+        "rate": "22"
+      }
+    }
+  ],
+  "lockBoxGroups": {
+    "shared": {
+      "lanes": [
+        "shared_a",
+        "shared_b"
+      ],
+      "amount": "0"
+    },
+    "isolated": {
+      "lanes": [
+        "isolated"
+      ],
+      "amount": "0"
+    }
+  }
+}

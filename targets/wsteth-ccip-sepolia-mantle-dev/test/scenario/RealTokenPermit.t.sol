@@ -132,7 +132,7 @@ contract RealTokenPermitTest is BridgeScenarioBase {
             )
         );
         assertEq(token.DOMAIN_SEPARATOR(), expected, "advertised domain != verified domain");
-        assertEq(token.getContractVersion(), 2, "contract version");
+        assertEq(token.getContractVersion(), 3, "contract version");
     }
 
     /// @notice The legacy `bridge` mint/burn authority is gone from the DEPLOYED bytecode

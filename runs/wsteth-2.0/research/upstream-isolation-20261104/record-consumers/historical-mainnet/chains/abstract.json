@@ -1,0 +1,33 @@
+{
+  "addresses": {
+    "token": "0x313F663E79ef202251a28F0252c254842D5ABC6a"
+  },
+  "ccip": {
+    "chain_selector": "3577778157919314504",
+    "router": "0x09521B0B5BB2d4406124c0207Cf551829B45f84d",
+    "rmn_proxy": "0x2edAc8B8928c4e1Ed559e619b6A8a4aaCe9Ef18A",
+    "token_admin_registry": "0x7EEdf2DBC74924Cb1f23fC8845CD35bF18b697de",
+    "registry_module_owner": "0xB79791184973589c38e114D43Eb8E4588C283A18"
+  },
+  "chain": {
+    "chain_id": 2741,
+    "chain_name": "abstract"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "ethereum"
+    }
+  ],
+  "deployed": {
+    "token_pool": "0x38Ad0414B523Fa344429ff14dAC305e4fB6Ab248"
+  },
+  "imported": {
+    "source_pool": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+    "block": 26335529,
+    "selector": "3577778157919314504",
+    "internal_id": "abstract-mainnet",
+    "display_name": "Abstract",
+    "note": "spoke of a lane the hub takes over from the existing pool; not deployed by this run — only what 2_Configure reads from a remote record"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "addresses": {
+    "token": "0xcC05f2eb27f592D3FFF3BCF40A1E86c015CDc7aB"
+  },
+  "ccip": {
+    "chain_selector": "2183018362218727504",
+    "router": "0x5aD0A67f4Da0E8665a3fbf15E4215A780407Cf33",
+    "rmn_proxy": "0xD610B8f58689de7755947C05342A2DFaC30ebD57",
+    "token_admin_registry": "0xd3e461C55676B10634a5F81b747c324B85686Dd1",
+    "registry_module_owner": "0x524B83ae8208490151339c626fd0E35b964483e3"
+  },
+  "chain": {
+    "chain_id": 10143,
+    "chain_name": "monad"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "sepolia"
+    }
+  ],
+  "deployed": {
+    "token_pool": "0xa0BA126e57Ffa62ea42aA1C6A6016fA8A7A16539"
+  },
+  "imported": {
+    "source_pool": "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916",
+    "block": 12062649,
+    "selector": "2183018362218727504",
+    "internal_id": "monad-testnet",
+    "display_name": "Monad Testnet",
+    "note": "spoke of a lane the hub takes over from the existing pool; not deployed by this run — only the standard remote-record fields used by the migration scripts"
+  }
+}

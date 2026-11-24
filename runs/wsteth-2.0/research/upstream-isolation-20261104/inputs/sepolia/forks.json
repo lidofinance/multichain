@@ -1,0 +1,26 @@
+{
+  "sepolia": {
+    "chainId": 11155111,
+    "block": 12062250,
+    "blockHash": "0x4b5e871885d0e2335e0413601cb397ce203b207052d6fe98b36c9e967760573c",
+    "rpcEnv": "RPC_SEPOLIA"
+  },
+  "base_sepolia": {
+    "chainId": 84532,
+    "block": 54356990,
+    "blockHash": "0xa32c88a0841a7ff1cfaae7a356c4da222f55d13e35911ce393d04ef49ffa9979",
+    "rpcEnv": "RPC_BASE_SEPOLIA"
+  },
+  "monad": {
+    "chainId": 10143,
+    "block": 76908746,
+    "blockHash": "0x614afefbacc8e88b7eb87e863f26f4a696db01be1a402d9b45b314e27a85928c",
+    "rpcEnv": "RPC_MONAD_TESTNET"
+  },
+  "sepolia_optimism": {
+    "chainId": 11155420,
+    "block": 50995363,
+    "blockHash": "0x599c2f0b24e3a22017c8faa0597ac98b2819b3a7c95431b1902aa8ba95fc3c48",
+    "rpcEnv": "RPC_OPTIMISM_SEPOLIA"
+  }
+}

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2024 Lido <info@lido.fi>
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity 0.8.10;
+pragma solidity 0.8.26;
 
 /// @dev A copy of UnstructuredStorage.sol library from Lido on Ethereum protocol.
 ///      https://github.com/lidofinance/lido-dao/blob/master/contracts/0.8.9/lib/UnstructuredStorage.sol

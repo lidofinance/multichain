@@ -1,0 +1,32 @@
+{
+  "chainId": 11155111,
+  "wstETH": "0x9B5E9Aac68C6C054D2B2579bD205f25C5Dd4841f",
+  "stETH": "0x6088c14532f267D46B29e91C41790F01D05e1176",
+  "lidoLocator": "0xc6674668B3Cb457AB642128Ae0136Ca411F7250b",
+  "agent": "0x349116A5970fD5ebAf46fEf095C85FF5c96cBEE0",
+  "voting": "0xEE0179364587C30193a42e85B4Ada8278B9A476d",
+  "dg": {
+    "dualGovernance": "0xD08Fdd0476d1E7045Bfa1Fc32AC1919013fD8883",
+    "adminExecutor": "0x594d8b4db21864E11461c3545DD3C3bCde64e0f7",
+    "timelock": "0xba3d2705C23D50139fBdd81d478BdF462A915fA0",
+    "resealManager": "0xeDC60169EC75Fb4edF2F86466698d8dB44BB980E"
+  },
+  "legacyBridge": "0xac4684527386209f289434e84879499de45b71b9",
+  "legacyBridgeImplementation": "0x898A55EB873eE5a3A8F675Da72A237Ea58179930",
+  "messenger": "0xC34855F4De64F1840e5686e64278da901e261f20",
+  "escrowAtInput": "100000000000000000000",
+  "emergencyBrakes": "0xEB00000000000000000000000000000000000001",
+  "timelock": "0x9D2A6fd46410a4Ae45bDD6dF9F8a9055C4656489",
+  "callProxy": "0x942817af47F79AAa758BE480c4546361D4d56723",
+  "registryPoolBefore": "0xd6c0b5A2eD309B3C0E93C00ef68cc861b7517916",
+  "registryAdministratorBefore": "0x90d4461fba6c0ace66f68421ca6ceef2388fe99b",
+  "hubCutover": {
+    "pauseProposal": "0x9b7bff63ac575c3762eaf6c64129fe45037c7352af147592672cd890f7e909fb",
+    "cutoverProposal": "0x3daa0906b12c666be03e7ab68a77d459281c05b7f4363adc771f04628e61c735"
+  },
+  "hubLaneConnect": {
+    "lane": "base_sepolia",
+    "proposal": "0xabdbca018c285b7c264ee98fdb1cc51033e950a3e1fee5b3d7e4ffd626666ee2"
+  },
+  "migrationBridgeImplementation": "0x5aC4E3baB0Ab795eA44791Dc13d32997295B4B1E"
+}

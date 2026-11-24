@@ -1,0 +1,16 @@
+{
+  "ethereum": {
+    "chainId": 1,
+    "block": 26335529,
+    "blockHash": "0x5437afa5ab566a0c9c285c95461cde61f721d820a448a528a77ec118a0fee35b",
+    "rpcEnv": "RPC_ETHEREUM",
+    "localRpc": "http://127.0.0.1:63193"
+  },
+  "base": {
+    "chainId": 8453,
+    "block": 53467322,
+    "blockHash": "0xdd3babc5e8d71fe3d0a0f24402dae012f73c0d32f203366198cdc4d5257091a6",
+    "rpcEnv": "RPC_BASE",
+    "localRpc": "http://127.0.0.1:63201"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "SiloedLockReleaseTokenPool": {
+    "bytecode": true,
+    "deployedBytecode": true
+  },
+  "VersionedVerifierResolver": {
+    "bytecode": true,
+    "deployedBytecode": true
+  },
+  "BurnMintTokenPool": {
+    "bytecode": true,
+    "deployedBytecode": true
+  },
+  "ERC20LockBox": {
+    "bytecode": true,
+    "deployedBytecode": true
+  },
+  "PausableAdvancedPoolHooks": {
+    "bytecode": true,
+    "deployedBytecode": true
+  },
+  "TransparentUpgradeableProxy": {
+    "bytecode": true,
+    "deployedBytecode": true
+  },
+  "ProxyAdmin": {
+    "bytecode": true,
+    "deployedBytecode": true
+  },
+  "ERC20BridgedPermit": {
+    "bytecode": true,
+    "deployedBytecode": true
+  },
+  "CallProxy": {
+    "bytecode": true,
+    "deployedBytecode": true
+  },
+  "LidoTimelock": {
+    "bytecode": true,
+    "deployedBytecode": true
+  },
+  "DummyMessageIdVerifier": {
+    "bytecode": true,
+    "deployedBytecode": true
+  }
+}

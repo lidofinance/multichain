@@ -1,13 +1,30 @@
 [profile.default]
 src = "contracts"
 test = "test"
-solc = "0.8.10"
-evm_version = "london"
+# Shared compiler settings for the token, TransparentUpgradeableProxy and ProxyAdmin.
+# OpenZeppelin 5.0.2 upgradeable requires >=0.8.20; the 5.3.0 Transparent proxy requires >=0.8.22.
+# `paris` keeps PUSH0 out of the bytecode so the artifacts deploy on any post-Merge L2.
+solc = "0.8.26"
+evm_version = "paris"
 optimizer = true
-optimizer_runs = 200
-libs = ["..", "../../libs"]
+optimizer_runs = 80000
+via_ir = true
+bytecode_hash = "none"
+libs = ["lib", "..", "../../libs"]
+# Only the remappings below reach the compiler. Auto-detected ones would pull every sibling
+# component's node_modules into `settings.remappings` of the compiler metadata.
+auto_detect_remappings = false
+# Token implementation: OZ 5.0.2 (contracts + upgradeable), the edition Chainlink's
+# BurnMintERC20Transparent is built against. Both are public pinned submodules.
+# Proxy: OZ 5.3.0 TransparentUpgradeableProxy + ProxyAdmin, the deployable artifacts AND the ones the
+# test instantiates. That submodule lives INSIDE this root (lib/) on purpose: the two files import
+# each other, Foundry resolves the cycle through canonical paths, and for a checkout outside the root
+# that is the machine's absolute path, which would end up in the compiler metadata. Inside
+# the root the source names are `lib/openzeppelin-contracts-5.3.0/contracts/...` on every machine.
+# All four remappings enter the proxy's compiler metadata too; its hash is omitted from bytecode.
 remappings = [
   "forge-std/=../../libs/forge-std/src/",
-  "@openzeppelin/contracts/=../openzeppelin-contracts-4x/contracts/",
-  "@openzeppelin/contracts-upgradeable/=../openzeppelin-contracts-upgradeable-4x/contracts/",
+  "@openzeppelin/contracts/=../openzeppelin-contracts-5.0.2/contracts/",
+  "@openzeppelin/contracts-upgradeable/=../openzeppelin-contracts-upgradeable-5.0.2/contracts/",
+  "openzeppelin-contracts-5.3.0/=lib/openzeppelin-contracts-5.3.0/",
 ]

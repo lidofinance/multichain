@@ -1,0 +1,40 @@
+[profile.default]
+src = "contracts"
+test = "test"
+# Same compiler baseline as components/wsteth-token: OpenZeppelin 5.0.2 needs >=0.8.20; `paris`
+# keeps PUSH0 out of the bytecode so the L2 implementation deploys on any post-Merge chain.
+solc = "0.8.26"
+evm_version = "paris"
+optimizer = true
+optimizer_runs = 80000
+bytecode_hash = "none"
+libs = ["..", "../../libs"]
+# Only the remappings below reach the compiler and its metadata.
+auto_detect_remappings = false
+remappings = [
+  "forge-std/=../../libs/forge-std/src/",
+  "@openzeppelin/contracts/=../openzeppelin-contracts-5.0.2/contracts/",
+  "@openzeppelin/contracts@5.3.0/=../wsteth-token/lib/openzeppelin-contracts-5.3.0/contracts/",
+  "@chainlink/contracts-ccip/=../ccip/chains/evm/node_modules/@chainlink/contracts-ccip/contracts/",
+  "@chainlink/policy-management/=../ccip/chains/evm/contracts/vendor/policy-management/",
+]
+
+# Fork smoke tests against the live Base and Ethereum proxies: network access, slow, and they
+# import the token component, so they get their own directory and profile (the extra remappings
+# never reach the default profile's compiler metadata):
+#   FOUNDRY_PROFILE=fork forge test --root components/l2-bridge-migration -vv
+# BASE_RPC / ETH_RPC override the public endpoints.
+[profile.fork]
+test = "test-fork"
+evm_version = "cancun"
+# The token component builds with via_ir (see its foundry.toml); the fork test needs it too.
+via_ir = true
+remappings = [
+  "forge-std/=../../libs/forge-std/src/",
+  "@openzeppelin/contracts/=../openzeppelin-contracts-5.0.2/contracts/",
+  "@openzeppelin/contracts@5.3.0/=../wsteth-token/lib/openzeppelin-contracts-5.3.0/contracts/",
+  "@openzeppelin/contracts-upgradeable/=../openzeppelin-contracts-upgradeable-5.0.2/contracts/",
+  "@chainlink/contracts-ccip/=../ccip/chains/evm/node_modules/@chainlink/contracts-ccip/contracts/",
+  "@chainlink/policy-management/=../ccip/chains/evm/contracts/vendor/policy-management/",
+  "wsteth-token/=../wsteth-token/",
+]

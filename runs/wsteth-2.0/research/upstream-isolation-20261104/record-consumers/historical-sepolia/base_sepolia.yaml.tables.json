@@ -1,0 +1,128 @@
+[
+  {
+    "side": "l1",
+    "chain": "sepolia",
+    "target": "0x40d36dbc2798666a40a23e7010bb9c2DC0c8d284",
+    "getter": "getAllLockBoxConfigs",
+    "result": [
+      [
+        "10344971235874465080",
+        "0x6A3861C13816d7585143d8746e71d92D2aB37d03"
+      ],
+      [
+        "2183018362218727504",
+        "0x8A183AB4eB04B49065bE41035B8F011B4c0368A1"
+      ],
+      [
+        "5224473277236331295",
+        "0xE60a6C7e56d95dDB81b2DC8445999c09F0795566"
+      ]
+    ]
+  },
+  {
+    "side": "l1",
+    "chain": "sepolia",
+    "target": "0x40d36dbc2798666a40a23e7010bb9c2DC0c8d284",
+    "getter": "getSupportedChains",
+    "result": [
+      "10344971235874465080",
+      "2183018362218727504",
+      "5224473277236331295"
+    ]
+  },
+  {
+    "side": "l1",
+    "chain": "sepolia",
+    "target": "0x2381292cFa3736B646277436f9edBB97448a0107",
+    "getter": "getAllCCVConfigs",
+    "result": [
+      [
+        "10344971235874465080",
+        [
+          "0xDAe04B31181a0Dd419BBa5C2E7cA54feB6B1ab8a"
+        ],
+        [],
+        [
+          "0xDAe04B31181a0Dd419BBa5C2E7cA54feB6B1ab8a"
+        ],
+        []
+      ]
+    ]
+  },
+  {
+    "side": "l1",
+    "chain": "sepolia",
+    "target": "0xDAe04B31181a0Dd419BBa5C2E7cA54feB6B1ab8a",
+    "getter": "getAllOutboundImplementations",
+    "result": [
+      [
+        "10344971235874465080",
+        "0x62f0Fca9a5d2EF9d714dd95cd10410955498Eaf2"
+      ]
+    ]
+  },
+  {
+    "side": "l1",
+    "chain": "sepolia",
+    "target": "0xDAe04B31181a0Dd419BBa5C2E7cA54feB6B1ab8a",
+    "getter": "getAllInboundImplementations",
+    "result": [
+      [
+        "0xdecafbad",
+        "0x62f0Fca9a5d2EF9d714dd95cd10410955498Eaf2"
+      ]
+    ]
+  },
+  {
+    "side": "l2",
+    "chain": "base_sepolia",
+    "target": "0x8feC64801c4d0755Ad6F76B1655E29e665DFCf07",
+    "getter": "getSupportedChains",
+    "result": [
+      "16015286601757825753"
+    ]
+  },
+  {
+    "side": "l2",
+    "chain": "base_sepolia",
+    "target": "0xCdCd079A1cf6c45F58CC0AAF3FC3fddEf9dBA4E7",
+    "getter": "getAllCCVConfigs",
+    "result": [
+      [
+        "16015286601757825753",
+        [
+          "0xEad3bec7B7c36139cAf5dD3b650FdE84cdbAcB0F"
+        ],
+        [],
+        [
+          "0xEad3bec7B7c36139cAf5dD3b650FdE84cdbAcB0F"
+        ],
+        []
+      ]
+    ]
+  },
+  {
+    "side": "l2",
+    "chain": "base_sepolia",
+    "target": "0xEad3bec7B7c36139cAf5dD3b650FdE84cdbAcB0F",
+    "getter": "getAllOutboundImplementations",
+    "result": [
+      [
+        "16015286601757825753",
+        "0x8373D2ED6996dd5F2e60b057160C0589967a4500"
+      ]
+    ]
+  },
+  {
+    "side": "l2",
+    "chain": "base_sepolia",
+    "target": "0xEad3bec7B7c36139cAf5dD3b650FdE84cdbAcB0F",
+    "getter": "getAllInboundImplementations",
+    "result": [
+      [
+        "0xdecafbad",
+        "0x8373D2ED6996dd5F2e60b057160C0589967a4500"
+      ]
+    ]
+  }
+]

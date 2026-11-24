@@ -1,8 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "wsteth-ccip-sepolia-mantle-dev",
-  "description": "Scratch Lido core and Dual Governance on Sepolia, with a CCIP wstETH development leaf on Mantle Sepolia.",
+  "description": "Sepolia siloed hub with independent Mantle Sepolia and Base Sepolia lockboxes.",
   "operation": "scratch-deployment",
+  "accessProfile": "config/access-profile.json",
   "environments": [
     "fork",
     "testnet"
@@ -26,17 +27,25 @@
     "core",
     "governance-crosschain-bridges",
     "wsteth-token",
-    "openzeppelin-contracts-upgradeable-4x"
+    "openzeppelin-contracts-5.0.2",
+    "openzeppelin-contracts-upgradeable-5.0.2",
+    "wsteth-token/lib/openzeppelin-contracts-5.3.0"
   ],
   "networks": {
     "l1": {
       "slug": "sepolia",
       "chainId": 11155111
     },
-    "l2": {
-      "slug": "mantle_sepolia",
-      "chainId": 5003
-    }
+    "l2s": [
+      {
+        "slug": "mantle_sepolia",
+        "chainId": 5003
+      },
+      {
+        "slug": "base_sepolia",
+        "chainId": 84532
+      }
+    ]
   },
   "libraries": [
     "forge-std",

@@ -1,0 +1,28 @@
+{
+  "addresses": {
+    "token": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+  },
+  "ccip": {
+    "chain_selector": "5009297550715157269",
+    "registry_module_owner": "0x4855174E9479E211337832E109E7721d43A4CA64",
+    "rmn_proxy": "0x411dE17f12D1A34ecC7F45f49844626267c75e81",
+    "router": "0x80226fc0Ee2b096224EeAc085Bb9a8cba1146f7D",
+    "token_admin_registry": "0xb22764f98dD05c789929716D677382Df22C05Cb6"
+  },
+  "chain": {
+    "chain_id": 1,
+    "chain_name": "ethereum",
+    "pool_type": "SiloedLockRelease"
+  },
+  "governance_addresses": {
+    "chainlink_mcms": "0x3C3C000000000000000000000000000000000001",
+    "emergency_brakes": "0xEB00000000000000000000000000000000000001",
+    "lido_dao_agent": "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": true,
+      "remote_chain_name": "base"
+    }
+  ]
+}

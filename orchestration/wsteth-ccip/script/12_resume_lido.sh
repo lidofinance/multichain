@@ -7,7 +7,6 @@
 # off: isStopped=true, isStakingPaused=true, wstETH totalSupply=0, and RESUME_ROLE sits
 # with the AGENT, reachable only via Dual Governance. Lido.resume()
 # (../../components/core/contracts/0.4.24/Lido.sol:527-532) does both _resume() and _resumeStaking().
-# See live-dust-roundtrip-plan.md §4.0.
 #
 # Encoding follows the canonical DG helpers:
 #   CallsScriptBuilder            (dual-governance/scripts/utils/CallsScriptBuilder.sol)
@@ -24,6 +23,16 @@
 #   status  — where the vote / DG proposal currently stands
 #   advance — do whatever the next ready step is (executeVote / schedule / execute)
 set -euo pipefail
+
+if [ -n "${WSTETH_ACCESS_PROFILE:-}" ]; then
+    HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PLAN="state/resume-lido.plan.json"
+    case "${1:-build}" in
+        build) exec node "${HERE}/testnet/operations.cjs" resume-plan "${PLAN}" ;;
+        submit|advance|status) exec node "${HERE}/testnet/governance.cjs" "$1" "${PLAN}" ;;
+        *) echo 'usage: build|submit|advance|status'; exit 1 ;;
+    esac
+fi
 
 L1_RPC="${RPC_SEPOLIA:?set RPC_SEPOLIA}"
 MODE="${1:-build}"

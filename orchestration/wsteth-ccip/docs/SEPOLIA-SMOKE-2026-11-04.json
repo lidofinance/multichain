@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "runId": "public-20261104-fresh-01",
+  "status": "roundtrips-passed",
+  "checkedAt": "2026-11-04T22:45:25.534Z",
+  "amountPerLane": "1000000000000000",
+  "amountPerLaneWstETH": "0.001",
+  "actor": "0xE528a15071E6C5aF0C1ed8e6Ec647Ce9EC510597",
+  "journal": "runs/wsteth-2.0/deployments/public-20261104-fresh-01/smoke/roundtrip-01.json",
+  "script": "orchestration/wsteth-ccip/smoke/bridge.cjs",
+  "confirmedTransactions": 13,
+  "revertedTransactions": 0,
+  "verification": {
+    "execution": "Permissionless OffRamp.execute using real Chainlink attestations and the current Dummy envelope",
+    "authenticatingProviders": 1,
+    "nethermindVerified": false,
+    "policyChanges": false,
+    "impersonation": false,
+    "allExecutionStates": "SUCCESS",
+    "receiptAndTokenTransferChecked": true,
+    "exactBalancesAndSupplyChecked": true,
+    "bothLockboxesRestored": true
+  },
+  "legs": {
+    "deposit-base_sepolia": {
+      "source": "sepolia",
+      "destination": "base_sepolia",
+      "sourceTransaction": "0x0308bbfed3e605eb70c1c43aeac25061a66ba546f7e97e65b9c5f9ebcc5d83d5",
+      "sourceBlock": 12065292,
+      "messageId": "0x03f69a77f168c6f6319efc3a1b3d5a3512d95414170a0c20227229739d4835a5",
+      "status": "delivered",
+      "destinationTransaction": "0xbca3fb748f55ff6a3707ca1c72120f3954d30ba0f5c952089e789f6f0933344d",
+      "destinationBlock": 54546537,
+      "executionState": 2,
+      "attestationFetchedAt": "2026-11-04T22:26:15.129Z"
+    },
+    "deposit-mantle_sepolia": {
+      "source": "sepolia",
+      "destination": "mantle_sepolia",
+      "sourceTransaction": "0x2d390fee19aeaba6b16ff1a1c8a1e1ea76ce98339f59bd49045141f740a5aea4",
+      "sourceBlock": 12065294,
+      "messageId": "0x832eef6cbba076bcca77082e577edbb2422858fd0f13900ebb97090b40eabd63",
+      "status": "delivered",
+      "destinationTransaction": "0x97df3b1b04fe9fa67a794ae7489559d3b41de4941db13e405f5bd663b7e3742d",
+      "destinationBlock": 46143256,
+      "executionState": 2,
+      "attestationFetchedAt": "2026-11-04T22:26:20.940Z"
+    },
+    "withdraw-base_sepolia": {
+      "source": "base_sepolia",
+      "destination": "sepolia",
+      "sourceTransaction": "0xb7df81d6cdabaeb3d4a8543da2a58a4d96c9c689652d9726aab1b774bbe394fd",
+      "sourceBlock": 54546669,
+      "messageId": "0x4fe44c77eb55562f695801989e3f07cb5812d08ca9fa0c50436c688d0b292e73",
+      "status": "delivered",
+      "destinationTransaction": "0x8ff6f63a0540a806cbbad822901d9fe36f17657c1d0faa3d204ac69c09651ad8",
+      "destinationBlock": 12065471,
+      "executionState": 2,
+      "attestationFetchedAt": "2026-11-04T22:45:09.487Z"
+    },
+    "withdraw-mantle_sepolia": {
+      "source": "mantle_sepolia",
+      "destination": "sepolia",
+      "sourceTransaction": "0xd839d18bd9c56dafa3ee508d67bba6213bd8928655e0f870a60da04629d65ec6",
+      "sourceBlock": 46143273,
+      "messageId": "0x425b45f61ba0a3f3ce809f0292f19ed8011a6d2cce76de98c95c060002f78729",
+      "status": "delivered",
+      "destinationTransaction": "0xa3ee2cdf664ab0e0c79e63ac76619dd8718f418a39ac053b2766ed91e4eea019",
+      "destinationBlock": 12065472,
+      "executionState": 2,
+      "attestationFetchedAt": "2026-11-04T22:45:14.481Z"
+    }
+  },
+  "baseline": {
+    "sepolia": {
+      "block": 12065290,
+      "blockHash": "0xc8d0e546baabbf1ed681ea2aa3109a98e27bfdb3cdeef713ef766283fb5f2d15",
+      "balance": "2000000000001000",
+      "totalSupply": "2000000000001000",
+      "nativeBalance": "5245544781279285117",
+      "lockboxes": {
+        "base_sepolia": "0",
+        "mantle_sepolia": "0"
+      }
+    },
+    "base_sepolia": {
+      "block": 54541138,
+      "blockHash": "0x5efb1852dc21c1d22c103d28616189c86b6f090ac041c414d54823a7d551f7a1",
+      "balance": "0",
+      "totalSupply": "0",
+      "nativeBalance": "1999725963214485717"
+    },
+    "mantle_sepolia": {
+      "block": 46142711,
+      "blockHash": "0x7481f75cadfd157c57f730b264de1fb7bdd3a8328795007f393e75b6f8c36a98",
+      "balance": "0",
+      "totalSupply": "0",
+      "nativeBalance": "977696970727691575695"
+    }
+  },
+  "finalBalances": {
+    "sepolia": {
+      "block": 12065472,
+      "blockHash": "0x671d0d423b3e3d60651e1e7862d2fae3a10d24c16a70efa1394eb5611d7116d8",
+      "balance": "2000000000001000",
+      "totalSupply": "2000000000001000",
+      "nativeBalance": "5245222335612935453",
+      "lockboxes": {
+        "base_sepolia": "0",
+        "mantle_sepolia": "0"
+      }
+    },
+    "base_sepolia": {
+      "block": 54552281,
+      "blockHash": "0x38ee009714accef4c6352f18f47867a6929733881aa93e3661135afd744e8bdd",
+      "balance": "0",
+      "totalSupply": "0",
+      "nativeBalance": "1998400946918187447"
+    },
+    "mantle_sepolia": {
+      "block": 46143826,
+      "blockHash": "0x5da5ea8f637399815e1c9b759c4a705bee9b6ef26f1ec66ae8598a5e3ab8c82a",
+      "balance": "0",
+      "totalSupply": "0",
+      "nativeBalance": "975728143377139311296"
+    }
+  },
+  "scriptTests": {
+    "passed": 8,
+    "failed": 0
+  },
+  "executionNote": "One read-only RPC CALL_EXCEPTION interrupted observation. Resumed the same journal; no duplicate transfers and no reverted transactions."
+}

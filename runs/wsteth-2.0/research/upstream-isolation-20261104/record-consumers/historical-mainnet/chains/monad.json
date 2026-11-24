@@ -1,0 +1,33 @@
+{
+  "addresses": {
+    "token": "0x10Aeaf63194db8d453d4D85a06E5eFE1dd0b5417"
+  },
+  "ccip": {
+    "chain_selector": "8481857512324358265",
+    "router": "0x33566fE5976AAa420F3d5C64996641Fc3858CaDB",
+    "rmn_proxy": "0x99dFCa5d88f4D9C023531F4403966b8d61562AcD",
+    "token_admin_registry": "0x11ACd984DD680363117B310f6ebdf78fD6c0195f",
+    "registry_module_owner": "0xB71513B6c80Adf35B43eACC24DA7A08A806a7f2C"
+  },
+  "chain": {
+    "chain_id": 143,
+    "chain_name": "monad"
+  },
+  "remote_lanes": [
+    {
+      "is_siloed": false,
+      "remote_chain_name": "ethereum"
+    }
+  ],
+  "deployed": {
+    "token_pool": "0x2f2E55517aac64c4066f6eB333b4Cb072eD00E8A"
+  },
+  "imported": {
+    "source_pool": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+    "block": 26335529,
+    "selector": "8481857512324358265",
+    "internal_id": "monad-mainnet",
+    "display_name": "Monad",
+    "note": "spoke of a lane the hub takes over from the existing pool; not deployed by this run — only what 2_Configure reads from a remote record"
+  }
+}

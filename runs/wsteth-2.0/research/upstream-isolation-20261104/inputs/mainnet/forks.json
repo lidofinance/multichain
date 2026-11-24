@@ -1,0 +1,14 @@
+{
+  "ethereum": {
+    "chainId": 1,
+    "block": 26341280,
+    "blockHash": "0x61d75b8a8304ff5d5ca43602438af2dbdd8813df6d975ac62dc3213fb9cc7fc5",
+    "rpcEnv": "RPC_ETHEREUM"
+  },
+  "base": {
+    "chainId": 8453,
+    "block": 53501959,
+    "blockHash": "0x62d85920134a93d85565f9ce8e48cf9bee3d47ceda89b998bdc836ce8fb8c5a7",
+    "rpcEnv": "RPC_BASE"
+  }
+}

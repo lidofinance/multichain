@@ -44,7 +44,7 @@ directly, which is stricter (it checks the value, not just presence) and costs n
 
 - `ccip/0001-unseat-guardian.patch` stopped seating `GUARDIAN_ROLE`. On **2026-09-02** the
   `lido-proposals` branch removed the role, its initializer field, and its deployment grant entirely,
-  so the patch was deleted. The current POM base is both simpler and stronger: there is no dormant
+  so the patch was deleted. The current timelock base is both simpler and stronger: there is no dormant
   role that a later grant can reactivate.
 - `lido-l2-with-steth/0001-drop-bridge-mint-burn.patch` removed the
 legacy `bridge` mint/burn authority from `ERC20Bridged`, so the L2 wstETH mints and burns only through
@@ -62,14 +62,15 @@ driver can no longer report it. Three layers, deliberately ordered cheapest-firs
    `ERC20Bridged` inheriting `IERC20Bridged`). A source tripwire — preflight has to run before any
    build. Scoped to those two files on purpose: `ERC20RebasableBridged.sol` keeps its own
    `onlyBridge` legitimately, so a `contracts/token/`-wide grep false-positives.
-2. `script/03_l2_token.sh` asserts the **compiled ABI** carries no `bridge*` selector, before it
-   deploys. This is the authoritative pre-deploy check, and unlike a grep it is spelling-independent:
-   storage instead of immutable, or a renamed modifier, still shows up as a selector.
-3. Step 03 then asserts `bridge()` is absent **on the deployed token** — the only check that speaks
-   about the bytecode that actually reached the chain.
+2. `components/wsteth-token/test` covers the token's ABI and authority model where the token lives;
+   the ccip component compiles the same sources (`@lido/wsteth-token`, kept equal to the working tree
+   by `script/sync-ccip-packages.sh`) and deploys them in `1_Deploy`.
+3. The scenario tests (`RealTokenPermit`) assert the legacy `bridge` authority is absent **on the
+   deployed token** — the only check that speaks about the bytecode that actually reached the chain.
 
 A `git submodule update` that snaps the base back to `main`, or a re-pin onto any branch without the
-removal, trips all three. None of them is pinned to a commit SHA, so a legitimate re-pin does not.
+removal, trips the source and the deployed-bytecode checks. Neither is pinned to a commit SHA, so a
+legitimate re-pin does not.
 
 ## Usage
 
@@ -82,14 +83,14 @@ just patch-submodules-revert   # restore pristine upstream submodules
 Applied automatically by `just init`, `just init-thirdparty`, and by step 01, whose build bakes a
 patch into what it deploys (`script/01_l1_core_dg.sh`, `core/0001` → wstETH bytecode). The set is
 also *verified* read-only by
-step 00 (`script/00_preflight.sh`), which fails the go/no-go if a patch is missing. Step 03 no longer
-applies patches — the L2 token base needs none — but it does assert the pin's effect (above).
+step 00 (`script/00_preflight.sh`), which fails the go/no-go if a patch is missing. The L2 token
+needs no patch; the component deploys it as maintained.
 
 The deploy steps also assert these effects ON-CHAIN after the deploy, which is the check that actually
 matters: applying a patch to a working tree — or pinning a submodule branch — proves nothing about the
-bytecode that reached the chain. Step 01 reads `getCCIPAdmin()` off the deployed wstETH; step 03
-requires `bridge()` to be absent and `getContractVersion() == 2` on the deployed L2 token; Claim A and
-the fork upgrade rehearsal check the current POM role model and UUPS implementation.
+bytecode that reached the chain. Step 01 reads `getCCIPAdmin()` off the deployed wstETH; the
+scenario tests require `bridge()` to be absent on the deployed L2 token and exercise its permit
+domain; Claim A checks the timelock role model and the token's proxy administration.
 
 Idempotency works by probing both directions with `git apply --check`: a patch that reverse-applies
 cleanly is already present. `apply` and `revert` are all-or-nothing: every patch is classified before
@@ -141,8 +142,8 @@ repository root so the pin check uses the intended revision.
 `0001` exists because CCIP's `TokenAdminRegistry` can only be self-registered into through one of
 the conventions `RegistryModuleOwnerCustom` recognises — `getCCIPAdmin()`, `owner()`, or
 AccessControl's `DEFAULT_ADMIN_ROLE` — and the canonical `WstETH` exposes none of them. Adding the
-hook to the throwaway testnet core lets step 07 register against the real Chainlink TAR with no
-impersonation and no Chainlink involvement.
+hook to the throwaway testnet core lets the component's `3_SetPoolAndTransferOwnership` (step 07)
+register against the real Chainlink TAR with no impersonation and no Chainlink involvement.
 
 Canonical mainnet wstETH is immutable and cannot gain this hook. There, seating the first TAR
 administrator requires the TAR owner (Chainlink) to call `proposeAdministrator` directly — an
@@ -159,3 +160,11 @@ CCIP handover regression suites live under the target's `test/unit`, and its fre
 rehearsal uses the same explicit-path loading hooks as the real scripts. The primary CCIP patch contains only deployment
 scripts. A separate patch carries deployment-script regression tests and full-flow assertions;
 operator documentation remains in this repository.
+
+## Retired on 2026-10-22: `ccip/0001`, `ccip/0002`
+
+`components/ccip` moved to branch `lido-2.0-expiry` (LidoTimelock + CallProxy replace the
+the earlier manager). Both ccip patches were cut against that era's commit `501bdc3` and neither
+applies to nor is present in the new tree, so `00_patch_submodules.sh` would abort on them. They
+are kept for review under `docs/retired-patches/ccip/`; the new branch carries its own registry
+hand-over logic in `3_SetPoolAndTransferOwnership.s.sol`.

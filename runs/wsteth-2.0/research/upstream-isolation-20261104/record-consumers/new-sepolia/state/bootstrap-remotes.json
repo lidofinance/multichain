@@ -1,0 +1,39 @@
+{
+  "hub": "0x40d36dbc2798666a40a23e7010bb9c2DC0c8d284",
+  "transactions": [
+    {
+      "chain": "monad",
+      "hash": "0x9ac964b435bb4fd7bec66a82e60a14e4ea77999c6dc9c3c8e5bc2015cc162f5f",
+      "sender": "0x3C3C000000000000000000000000000000000001",
+      "target": "0xa0ba126e57ffa62ea42aa1c6a6016fa8a7a16539",
+      "action": "addRemotePool(uint64,bytes)",
+      "block": 76908758
+    },
+    {
+      "chain": "monad",
+      "hash": "0x4108126a4f41988bd130187f51246340c36146a43b6a7bc87ba411e7db875c1c",
+      "sender": "0x3C3C000000000000000000000000000000000001",
+      "target": "0xa0ba126e57ffa62ea42aa1c6a6016fa8a7a16539",
+      "action": "removeRemotePool(uint64,bytes)",
+      "block": 76908759
+    },
+    {
+      "chain": "sepolia_optimism",
+      "hash": "0xe2e320fa9d0bf1e41b2b236673ec4d76b3e1f20ffdeaf21309f1095456677b1c",
+      "sender": "0x3C3C000000000000000000000000000000000001",
+      "target": "0x01f439568e25a53f3267e9329942e1f6bb2618c9",
+      "action": "addRemotePool(uint64,bytes)",
+      "block": 50995375
+    },
+    {
+      "chain": "sepolia_optimism",
+      "hash": "0x3c110e766242b513ad01954a51802928485df5ec55d669e92ba5f63aed1dc2f5",
+      "sender": "0x3C3C000000000000000000000000000000000001",
+      "target": "0x01f439568e25a53f3267e9329942e1f6bb2618c9",
+      "action": "removeRemotePool(uint64,bytes)",
+      "block": 50995376
+    }
+  ],
+  "pendingMessages": 0,
+  "scope": "Fresh bootstrap has no in-flight CCIP messages; real queue drain is outside this simulation."
+}

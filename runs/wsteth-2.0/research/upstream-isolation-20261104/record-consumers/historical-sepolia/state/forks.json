@@ -1,0 +1,30 @@
+{
+  "sepolia": {
+    "chainId": 11155111,
+    "block": 12056542,
+    "blockHash": "0x447c9c2d1eb09ae6388a7fa1f3356d535c42bff6617dd5ed764143c4c6f2c520",
+    "rpcEnv": "RPC_SEPOLIA",
+    "localRpc": "http://127.0.0.1:64532"
+  },
+  "base_sepolia": {
+    "chainId": 84532,
+    "block": 54011110,
+    "blockHash": "0x12e52837f2020f94fdb8aa710d1fa37e75ebcb01cb51d0517751966b6ab992d9",
+    "rpcEnv": "RPC_BASE_SEPOLIA",
+    "localRpc": "http://127.0.0.1:64539"
+  },
+  "monad": {
+    "chainId": 10143,
+    "block": 76684195,
+    "blockHash": "0xb23dec3d849921f2ca76c3c5eeac6fd4b43e486b77103ebd3de7657c275bb2cd",
+    "rpcEnv": "RPC_MONAD_TESTNET",
+    "localRpc": "http://127.0.0.1:64547"
+  },
+  "sepolia_optimism": {
+    "chainId": 11155420,
+    "block": 50960778,
+    "blockHash": "0x3c28b7784bcfcd65c51e7818e4f3052c3a44becd387245c86d5629894868afd7",
+    "rpcEnv": "RPC_OPTIMISM_SEPOLIA",
+    "localRpc": "http://127.0.0.1:64569"
+  }
+}

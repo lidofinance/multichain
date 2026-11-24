@@ -1,0 +1,23 @@
+{
+  "chainId": 1,
+  "wstETH": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+  "agent": "0x3e40D73EB977Dc6a537aF587D48316feE66E9C8c",
+  "legacyBridge": "0x9de443AdC5A411E83F1878Ef24C3F52C61571e72",
+  "legacyBridgeImplementation": "0x313819736457910aC1Dd21a712a37f3d7595645A",
+  "messenger": "0x866E82a600A1414e583f7F13623F1aC5d58b0Afa",
+  "escrowAtInput": "24993345394090633491151",
+  "emergencyBrakes": "0x73b047fe6337183A454c5217241D780a932777bD",
+  "timelock": "0xBEcd653Bd319A0E3F3C23A19A67c3d3747D286ea",
+  "callProxy": "0x3743B93618Be8BdA4ad146d97fF3DC7CA471867B",
+  "registryPoolBefore": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+  "registryAdministratorBefore": "0x44835bBBA9D40DEDa9b64858095EcFB2693c9449",
+  "hubCutover": {
+    "pauseProposal": "0x98e30c008e9257c15ec2933cb0c7000eb8bfe941ed8906bba3734436b6994a3f",
+    "cutoverProposal": "0xa2beb120752e20ef136bbd6f42fd9a8687476ee32ca7b79612edc77a632ed1ca"
+  },
+  "hubLaneConnect": {
+    "lane": "base",
+    "proposal": "0x0663b7208b1d6c61eaf499c16a955450be9e83b3c5a26393f8600b408228e5fe"
+  },
+  "migrationBridgeImplementation": "0xc04D92182c085d736345b769DcBb78769dF8038B"
+}

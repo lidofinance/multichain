@@ -1,0 +1,49 @@
+{
+  "lanes": {
+    "monad": {
+      "pools": [
+        "0xa0ba126e57ffa62ea42aa1c6a6016fa8a7a16539"
+      ],
+      "token": "0x000000000000000000000000cc05f2eb27f592d3fff3bcf40a1e86c015cdc7ab",
+      "box": "0x8a183ab4eb04b49065be41035b8f011b4c0368a1",
+      "outbound": {
+        "enabled": true,
+        "capacity": "10000000000000000000000",
+        "rate": "1000000000000000000"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "10000000000000000000000",
+        "rate": "1000000000000000000"
+      },
+      "owner": "0x9d2a6fd46410a4ae45bdd6df9f8a9055c4656489"
+    },
+    "sepolia_optimism": {
+      "pools": [
+        "0x01f439568e25a53f3267e9329942e1f6bb2618c9"
+      ],
+      "token": "0x0000000000000000000000003efae570ca5359b290f3932c84197bb2cc14e31d",
+      "box": "0xe60a6c7e56d95ddb81b2dc8445999c09f0795566",
+      "outbound": {
+        "enabled": true,
+        "capacity": "10000000000000000000000",
+        "rate": "1000000000000000000"
+      },
+      "inbound": {
+        "enabled": true,
+        "capacity": "10000000000000000000000",
+        "rate": "1000000000000000000"
+      },
+      "owner": "0x9d2a6fd46410a4ae45bdd6df9f8a9055c4656489"
+    }
+  },
+  "balances": {
+    "0x8a183ab4eb04b49065be41035b8f011b4c0368a1": "1000000000000000000000",
+    "0xe60a6c7e56d95ddb81b2dc8445999c09f0795566": "10000000000000000000"
+  },
+  "registry": [
+    "0x9D2A6fd46410a4Ae45bDD6dF9F8a9055C4656489",
+    "0x0000000000000000000000000000000000000000",
+    "0x40d36dbc2798666a40a23e7010bb9c2DC0c8d284"
+  ]
+}

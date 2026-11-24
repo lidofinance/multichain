@@ -3,12 +3,10 @@ pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
+import {LockBoxRecords} from "./LockBoxRecords.sol";
 
 import {OnRamp} from "@chainlink/contracts-ccip/onRamp/OnRamp.sol";
-
-interface IPom {
-    function directCall(address target, uint256 value, bytes calldata data) external payable;
-}
+import {ILidoTimelock} from "@ccip-lido/interfaces/ILidoTimelock.sol";
 
 /// @notice PausableAdvancedPoolHooks.pauseCrossChainTransfers() — used type-safely (encodeCall) so a typo is a compile
 /// error rather than a wrong selector that silently no-ops the negative test.
@@ -39,11 +37,15 @@ abstract contract BridgeScenarioBase is Test {
         address token;
         address pool;
         address hooks;
-        address pom;
+        address timelock; // LidoTimelock: owner of pool, hooks, lockboxes and the CCV stack
+        address callProxy; // the timelock's only executor; anyone executes a ready proposal through it
         address tar;
         address router;
         address arm; // RMN ARMProxy (.ccip.rmn_proxy); CcvBridge replaces it with its mock
-        address govAdmin; // POM DEFAULT_ADMIN_ROLE holder: Agent (L1) / OpExec (L2)
+        address govAdmin; // timelock ADMIN_ROLE holder (bypass): Agent (L1) / OpExec (L2)
+        address mcms; // timelock PROPOSER_ROLE + CANCELLER_ROLE (.governance_addresses.chainlink_mcms)
+        address emergencyBrakes; // timelock CANCELLER + PROPOSAL_QUEUE_HALT, hooks pause (.governance_addresses.emergency_brakes)
+        address deployer; // the signer of the deployment, every role revoked (.governance_addresses.deployer)
         address lockBox; // SiloedLockRelease only (L1)
         uint64 selector;
         uint64 remoteSelector;
@@ -116,7 +118,7 @@ abstract contract BridgeScenarioBase is Test {
 
         string memory s = vm.readFile(string.concat(dir, "/sepolia.json"));
         _loadCommon(l1, s);
-        l1.lockBox = vm.parseJsonAddress(s, ".deployed.lock_boxes[0].lock_box"); // siloed pool only
+        l1.lockBox = LockBoxRecords.find(vm, s, l2Chain);
 
         _loadCommon(l2, vm.readFile(string.concat(dir, "/", l2Chain, ".json")));
 
@@ -128,14 +130,21 @@ abstract contract BridgeScenarioBase is Test {
 
     /// @dev Loads the per-chain CCIP config fields shared by both chains from a config JSON.
     function _loadCommon(Ctx storage c, string memory s) internal {
+        // A token the component's 1_Deploy deployed (scratch spokes) is recorded under .deployed.token;
+        // an existing token is the .addresses.token input.
         c.token = vm.parseJsonAddress(s, ".addresses.token");
+        if (c.token == address(0)) c.token = vm.parseJsonAddress(s, ".deployed.token");
         c.pool = vm.parseJsonAddress(s, ".deployed.token_pool");
         c.hooks = vm.parseJsonAddress(s, ".deployed.advanced_pool_hooks");
-        c.pom = vm.parseJsonAddress(s, ".deployed.pool_operation_manager");
+        c.timelock = vm.parseJsonAddress(s, ".deployed.timelock");
+        c.callProxy = vm.parseJsonAddress(s, ".deployed.call_proxy");
         c.tar = vm.parseJsonAddress(s, ".ccip.token_admin_registry");
         c.router = vm.parseJsonAddress(s, ".ccip.router");
         c.arm = vm.parseJsonAddress(s, ".ccip.rmn_proxy");
         c.govAdmin = vm.parseJsonAddress(s, ".governance_addresses.lido_dao_agent");
+        c.mcms = vm.parseJsonAddress(s, ".governance_addresses.chainlink_mcms");
+        c.emergencyBrakes = vm.parseJsonAddress(s, ".governance_addresses.emergency_brakes");
+        c.deployer = vm.parseJsonAddress(s, ".governance_addresses.deployer");
         c.selector = uint64(vm.parseJsonUint(s, ".ccip.chain_selector"));
     }
 
@@ -148,7 +157,8 @@ abstract contract BridgeScenarioBase is Test {
         _requireCode(l1.token, "l1 token");
         _requireCode(l1.pool, "l1 pool");
         _requireCode(l1.hooks, "l1 hooks");
-        _requireCode(l1.pom, "l1 POM");
+        _requireCode(l1.timelock, "l1 timelock");
+        _requireCode(l1.callProxy, "l1 CallProxy");
         _requireCode(l1.router, "l1 router");
         _requireCode(l1.lockBox, "l1 lockBox");
         _assertDeployedExtraL1();
@@ -157,9 +167,20 @@ abstract contract BridgeScenarioBase is Test {
         _requireCode(l2.token, "l2 token");
         _requireCode(l2.pool, "l2 pool");
         _requireCode(l2.hooks, "l2 hooks");
-        _requireCode(l2.pom, "l2 POM");
+        _requireCode(l2.timelock, "l2 timelock");
+        _requireCode(l2.callProxy, "l2 CallProxy");
         _requireCode(l2.router, "l2 router");
         _assertDeployedExtraL2();
+    }
+
+    /// @dev The DAO's immediate path: the timelock admin (Agent on L1 / OpExec on L2) executes
+    /// `target.call(data)` through the timelock's bypass, as governance would. Runs on the
+    /// currently selected fork.
+    function _bypass(Ctx storage c, address target, bytes memory data) internal {
+        ILidoTimelock.Call[] memory calls = new ILidoTimelock.Call[](1);
+        calls[0] = ILidoTimelock.Call({target: target, value: 0, data: data});
+        vm.prank(c.govAdmin);
+        ILidoTimelock(c.timelock).bypasserExecuteBatch(calls);
     }
 
     /// @dev Harness-specific preconditions, run with the respective fork selected.

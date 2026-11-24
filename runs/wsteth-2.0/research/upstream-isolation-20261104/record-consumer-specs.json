@@ -1,0 +1,18 @@
+{
+  "new-mainnet": {
+    "source": "/tmp/wsteth-upstream-isolation-20261104/runs/wsteth-2.0/workspaces/isolation-clean-20261104-01-mainnet/deployments/fork/ethereum-base/2026-11-04_13-15-47/chains",
+    "target": "wsteth-base-migration-mainnet"
+  },
+  "new-sepolia": {
+    "source": "/tmp/wsteth-upstream-isolation-20261104/runs/wsteth-2.0/workspaces/isolation-clean-20261104-01-sepolia/deployments/fork/sepolia-base_sepolia/2026-11-04_13-20-46/chains",
+    "target": "wsteth-base-migration-sepolia"
+  },
+  "historical-mainnet": {
+    "source": "/Users/arwer/projects/lido/multichain/runs/wsteth-2.0/workspaces/migration-lines-20261103-10-mainnet/deployments/fork/ethereum-base/2026-11-03_17-41-29/chains",
+    "target": "wsteth-base-migration-mainnet"
+  },
+  "historical-sepolia": {
+    "source": "/Users/arwer/projects/lido/multichain/runs/wsteth-2.0/workspaces/migration-lines-20261103-10-sepolia/deployments/fork/sepolia-base_sepolia/2026-11-03_17-45-02/chains",
+    "target": "wsteth-base-migration-sepolia"
+  }
+}
