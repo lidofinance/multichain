@@ -182,6 +182,33 @@ Resolver dispatch updates and hooks updates preserve token and pool addresses.
 
 There are two arrangements; choose with Nethermind when its implementation exists.
 
+On 18 November 2026 the Sepolia deployment switched to Nethermind’s resolver. One DAO vote updated
+the hooks on Sepolia, Mantle Sepolia and Base Sepolia. [Execution record](NETHERMIND-CCV-SWITCH-2026-11-18.md)
+
+Use `just wsteth ccv-switch <command>` with the active run. The default starting policy is
+`config/ccv-policy.json` in that run. The default desired policy is `ccv-policy.nethermind.json`
+in its target inputs.
+
+| Command | What the operator can check or do |
+| --- | --- |
+| `plan` | Review the caller, timelock, hooks or resolver, and arguments for each call. |
+| `precheck` | Compare each chain with the two policies, check provider dispatch and quote fees. If an update is pending, simulate each governance call from its required caller. |
+| `run` | Submit one vote covering the affected chains, wait for governance delays and L2 delivery, execute the updates and verify the resulting policy. Use `--votes per-chain` for separate votes. |
+| `verify` | Read the desired resolver and hooks configuration, quote source-chain fees and compare the recorded invariants when the run has a baseline. |
+
+Resume an interrupted run with the same `--name`. The operation journal in `state/ccv-switch/<name>`
+supplies the policies and vote mode. To reverse a completed switch, set `forward_journal` to its journal path
+and use a new operation name.
+
+```sh
+just wsteth ccv-switch run --name rollback --before "$forward_journal/after.json" --after "$forward_journal/before.json"
+```
+
+The switch leaves the lanes open and retains the dummy inbound version. On owned forks,
+`run --probe-send` exercises the source side of each lane and `--revert` restores the snapshots
+after the command. To confirm provider signing and destination delivery, check both attestations and
+the destination execution state for the same public-testnet message.
+
 For replacement behind our resolver, the implementation must expose the CCIP 2.0
 `ICrossChainVerifierV1` entry points (including fee quoting, forwarding and message
 verification), and the first four proof bytes must match the configured inbound

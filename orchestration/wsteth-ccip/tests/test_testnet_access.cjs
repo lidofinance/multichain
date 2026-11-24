@@ -162,3 +162,121 @@ test('deployment output strips credentials across stream chunks and preserves re
   assert(!text.includes(key));assert(!text.includes(other));assert(!text.includes('private synthetic phrase'));
   assert(text.includes('receipt='+hash));assert.equal((text.match(/REDACTED/g)||[]).length,3);
 });
+test('omnibus carries the Sepolia call and one message per L2 in a single vote',async()=>{
+  const E=C.ethers,dir=fs.mkdtempSync(path.join(os.tmpdir(),'access-omnibus-'));
+  const a=id=>actors[id].address;
+  const l2={mantle_sepolia:{executor:a('oracle_1'),l1Messenger:a('oracle_2')},base_sepolia:{executor:a('oracle_3'),l1Messenger:a('dsm_guardian_1')}};
+  const l2Messenger='0x4200000000000000000000000000000000000007';
+  for(const [chain,v] of Object.entries(l2)) C.write(path.join(dir,'state',chain+'.json'),{opExec:v.executor});
+  const l1={agent:a('reserve_0'),dg:{dualGovernance:a('dg_reseal')}};
+  const provider={getCode:async()=>'0x6000',getBlockNumber:async()=>7};
+  const rt={run:dir,meta:{id:'unit'},l1,providers:{sepolia:provider,mantle_sepolia:provider,base_sepolia:provider},
+    read:async(chain,address,sig)=>sig.startsWith('OVM_L2')?l2Messenger:sig.startsWith('OTHER_MESSENGER')?l2[chain].l1Messenger:l1.agent};
+  const call=(n)=>C.call(a('deployer'),'foo(uint256)',[n]);
+  const calls={sepolia:[call(1)],mantle_sepolia:[call(2)],base_sepolia:[call(3)]};
+  try {
+    const plan=await G.build(rt,'omnibus','sepolia',calls,'test');
+    assert.deepEqual(plan.relays.map(r=>r.chain),['mantle_sepolia','base_sepolia']);
+    const proposal=new E.Interface(G.DG).decodeFunctionData('submitProposal','0x'+plan.voteScript.slice(58));
+    assert.equal(proposal[0].length,1);assert.equal(proposal[0][0].target,l1.agent);
+    const script=new E.Interface(['function forward(bytes)']).decodeFunctionData('forward',proposal[0][0].payload)[0];
+    const send=chain=>C.call(l2[chain].l1Messenger,'sendMessage(address,bytes,uint32)',[l2[chain].executor,
+      new E.Interface(G.OP).encodeFunctionData('queue',[[calls[chain][0].to],[0],[''],[calls[chain][0].data],[false]]),5000000]);
+    assert.equal(script,C.callsScript([calls.sepolia[0],send('mantle_sepolia'),send('base_sepolia')]));
+    await assert.rejects(G.build(rt,'omnibus','sepolia',{sepolia:[]},'test'),/non-empty call list/);
+    await assert.rejects(G.build(rt,'omnibus','sepolia',{unknown:[call(1)]},'test'),/non-empty call list/);
+    await assert.rejects(G.build(rt,'omnibus','base_sepolia',calls,'test'),/Route\/chain mismatch/);
+  } finally {fs.rmSync(dir,{recursive:true});}
+});
+test('omnibus executes each delivered L2 message without waiting for the others',async()=>{
+  const E=C.ethers,dir=fs.mkdtempSync(path.join(os.tmpdir(),'access-omnibus-relay-'));
+  const file=path.join(dir,'state.json'),queue=new E.Interface(G.OP).encodeFunctionData('queue',[[actors.deployer.address],[0],[''],['0x'],[false]]);
+  const relay=(chain,executor)=>({chain,executor,l2Messenger:actors.reserve_0.address,l1Messenger:actors.dg_reseal.address,queue,fromBlock:1});
+  const plan={runId:'unit',route:'omnibus',chain:'sepolia',relays:[relay('mantle_sepolia',actors.oracle_1.address),relay('base_sepolia',actors.oracle_2.address)]};
+  C.write(file,{planHash:E.keccak256(E.toUtf8Bytes(JSON.stringify(plan))),phase:'relays-pending',receipts:[],transactions:{},
+    relays:{mantle_sepolia:{phase:'relay-pending',messageHash:E.id('m')},base_sepolia:{phase:'relay-pending',messageHash:E.id('b')}}});
+  const delivered=new Set([E.id('b')]),executed=[];
+  const rt={meta:{id:'unit'},wallets:{deployer:actors.deployer},forks:{mantle_sepolia:false,base_sepolia:false},providers:{mantle_sepolia:{},base_sepolia:{}},
+    l1:{voting:actors.dao_voter.address,dg:{}},waitUntil:async()=>true,
+    contract:(chain)=>({successfulMessages:async hash=>delivered.has(hash),filters:{ActionsSetQueued:()=>({})},
+      queryFilter:async()=>[{args:Object.assign([chain==='base_sepolia'?4n:9n,[actors.deployer.address],[0n],[''],['0x'],[false],1000n],
+        {id:chain==='base_sepolia'?4n:9n,executionTime:1000n})}]}),
+    send:async(chain,actor,c,broadcast,attempt)=>{
+      assert.equal(actor,'deployer');executed.push([chain,c.to,c.data]);
+      attempt(0);broadcast(E.id('execute-'+chain));return {hash:E.id('execute-'+chain),status:1};
+    }};
+  try {
+    let state=await G.advance(rt,plan,file);
+    assert.equal(state.phase,'relays-pending');
+    assert.deepEqual([state.relays.mantle_sepolia.phase,state.relays.base_sepolia.phase],['relay-pending','done']);
+    assert.deepEqual(executed,[['base_sepolia',actors.oracle_2.address,C.call(actors.oracle_2.address,'execute(uint256)',[4]).data]]);
+    delivered.add(E.id('m'));
+    state=await G.advance(rt,plan,file);
+    assert.equal(state.phase,'done');assert.equal(state.relays.mantle_sepolia.actionId,'9');
+    assert.equal(executed.length,2); // The already executed Base action is not sent again.
+    assert.deepEqual(executed[1].slice(0,2),['mantle_sepolia',actors.oracle_1.address]);
+  } finally {fs.rmSync(dir,{recursive:true});}
+});
+
+const Switch=require('../script/testnet/ccv-switch.cjs');
+
+test('switch resumes the bound vote mode, including journals created before mode binding',t=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'ccv-votes-'));
+  t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+  const omitted=Switch.parse(['run']).votes;
+  assert.equal(Switch.bindVoteMode(dir,'per-chain'),'per-chain');
+  assert.equal(Switch.bindVoteMode(dir,omitted),'per-chain');
+  assert.throws(()=>Switch.bindVoteMode(dir,'one'),/already binds/);
+
+  const legacy=path.join(dir,'legacy');
+  C.write(path.join(legacy,'switch-sepolia.plan.json'),{route:'agent'});
+  assert.throws(()=>Switch.bindVoteMode(legacy,'one'),/already binds/);
+  assert.equal(Switch.bindVoteMode(legacy,omitted),'per-chain');
+
+  const omnibus=path.join(dir,'omnibus');
+  C.write(path.join(omnibus,'switch.plan.json'),{route:'omnibus'});
+  assert.equal(Switch.bindVoteMode(omnibus,omitted),'one');
+  const mixed=path.join(dir,'mixed');
+  C.write(path.join(mixed,'op.plan.json'),{route:'omnibus'});
+  C.write(path.join(mixed,'op-base.plan.json'),{route:'l2'});
+  assert.throws(()=>Switch.bindVoteMode(mixed,omitted),/Conflicting/);
+});
+
+test('reverse switch swaps the journalled policies and reuses them on retry',t=>{
+  const run=fs.mkdtempSync(path.join(os.tmpdir(),'ccv-reverse-'));
+  t.after(()=>fs.rmSync(run,{recursive:true,force:true}));
+  C.write(path.join(run,'config/ccv-policy.json'),{policy:'old'});
+  C.write(path.join(run,'inputs/target/config/ccv-policy.nethermind.json'),{policy:'new'});
+  const forward=Switch.inputs({run},Switch.parse(['run']));
+  const reverse=Switch.inputs({run},Switch.parse(['run','--name','reverse','--before',forward.after,'--after',forward.before]));
+  assert.deepEqual(C.read(reverse.before),{policy:'new'});
+  assert.deepEqual(C.read(reverse.after),{policy:'old'});
+  assert.deepEqual(Switch.inputs({run},Switch.parse(['run','--name','reverse'])),reverse);
+  assert.throws(()=>Switch.inputs({run},Switch.parse(['run','--name','reverse','--before',forward.before])),/different policy/);
+});
+
+test('a completed single-chain switch passes precheck without a vote journal',async()=>{
+  const config={deployed:{advanced_pool_hooks:'hooks'},ccv:{verifier_resolver:'local'}};
+  const spec={lanes:[],inbound:[],outbound:[],external:[]};
+  const desired={...spec,lanes:[['123',['resolver'],[],['resolver'],[]]]};
+  const rt={records:{sepolia:config,base_sepolia:config},
+    read:async(chain,address)=>chain==='sepolia'&&address==='hooks'?desired.lanes:[]};
+  const result=await Switch.precheck(rt,{},{
+    before:{sepolia:spec,base_sepolia:spec},after:{sepolia:desired,base_sepolia:spec}
+  });
+  assert.equal(result.applied,true);
+});
+
+test('fork restoration attempts every snapshot after an RPC error or false result',async()=>{
+  const calls=[];
+  const provider=(result)=>({send:async(method,[id])=>{
+    assert.equal(method,'evm_revert');
+    calls.push(id);
+    if(result instanceof Error) throw result;
+    return result;
+  }});
+  const providers={sepolia:provider(new Error('RPC unavailable')),base:provider(false),mantle:provider(true)};
+  assert.deepEqual(await Switch.restoreForks(providers,{sepolia:'a',base:'b',mantle:'c'}),
+    {sepolia:false,base:false,mantle:true});
+  assert.deepEqual(calls,['a','b','c']);
+});

@@ -106,9 +106,34 @@ async function runtime() {
   rt.close=()=>Object.values(providers).forEach(p=>p.destroy());
   return rt;
 }
+// The Agent's message to one L2 executor: the queued action set and the L1 call that sends it.
+async function relayFor(rt,chain,calls) {
+  const state=C.read(path.join(rt.run,'state',chain+'.json'));
+  const messenger=await rt.read(chain,state.opExec,'OVM_L2_CROSS_DOMAIN_MESSENGER() view returns(address)');
+  const l1messenger=await rt.read(chain,messenger,MESSENGER[0].slice(9));
+  if(await rt.providers.sepolia.getCode(l1messenger)==='0x') throw new Error('L1 messenger has no code');
+  if(!equal(await rt.read(chain,state.opExec,'getEthereumGovernanceExecutor() view returns(address)'),rt.l1.agent)) throw new Error('Executor does not trust current Agent');
+  const queue=new E.Interface(OP).encodeFunctionData('queue',[calls.map(c=>c.to),calls.map(c=>c.value||0),calls.map(()=>''),calls.map(c=>c.data),calls.map(()=>false)]);
+  return {relay:{l1Messenger:l1messenger,l2Messenger:messenger,executor:state.opExec,queue,
+    fromBlock:await rt.providers[chain].getBlockNumber()},
+    l1call:C.call(l1messenger,'sendMessage(address,bytes,uint32)',[state.opExec,queue,5000000])};
+}
 async function build(rt,route,chain,calls,description) {
-  if(!['agent','voting','admin-executor','l2','ccip'].includes(route) || !rt.providers[chain]) throw new Error('Invalid governance route');
-  if((['agent','voting','admin-executor'].includes(route) && chain!=='sepolia') || (route==='l2'&&chain==='sepolia')) throw new Error('Route/chain mismatch');
+  if(!['agent','voting','admin-executor','l2','ccip','omnibus'].includes(route) || !rt.providers[chain]) throw new Error('Invalid governance route');
+  if((['agent','voting','admin-executor','omnibus'].includes(route) && chain!=='sepolia') || (route==='l2'&&chain==='sepolia')) throw new Error('Route/chain mismatch');
+  if(route==='omnibus') {
+    // One vote: the Agent acts on Sepolia and messages every listed L2. `calls` maps a chain to its calls.
+    const chains=calls && !Array.isArray(calls) && typeof calls==='object' ? Object.keys(calls) : [];
+    if(!chains.length || chains.some(c=>!rt.providers[c] || !Array.isArray(calls[c]) || !calls[c].length)) throw new Error('Omnibus needs a non-empty call list per known chain');
+    const l1calls=[...(calls.sepolia||[])], relays=[];
+    for(const l2 of chains.filter(c=>c!=='sepolia')) {
+      const {relay,l1call}=await relayFor(rt,l2,calls[l2]);
+      relays.push({chain:l2,...relay}); l1calls.push(l1call);
+    }
+    const forward=new E.Interface(['function forward(bytes)']).encodeFunctionData('forward',[C.callsScript(l1calls)]);
+    return {schemaVersion:1,runId:rt.meta.id,route,chain,calls,description,relays,
+      voteScript:C.callsScript([C.call(rt.l1.dg.dualGovernance,DG[0].slice(9),[[[rt.l1.agent,0,forward]],description])])};
+  }
   if(!calls.length) throw new Error('Empty action list');
   const plan={schemaVersion:1,runId:rt.meta.id,route,chain,calls,description};
   if(route==='ccip') {
@@ -118,15 +143,8 @@ async function build(rt,route,chain,calls,description) {
   } else {
     let l1calls=calls;
     if(route==='l2') {
-      const state=C.read(path.join(rt.run,'state',chain+'.json'));
-      const messenger=await rt.read(chain,state.opExec,'OVM_L2_CROSS_DOMAIN_MESSENGER() view returns(address)');
-      const l1messenger=await rt.read(chain,messenger,MESSENGER[0].slice(9));
-      if(await rt.providers.sepolia.getCode(l1messenger)==='0x') throw new Error('L1 messenger has no code');
-      if(!equal(await rt.read(chain,state.opExec,'getEthereumGovernanceExecutor() view returns(address)'),rt.l1.agent)) throw new Error('Executor does not trust current Agent');
-      const queue=new E.Interface(OP).encodeFunctionData('queue',[calls.map(c=>c.to),calls.map(c=>c.value||0),calls.map(()=>''),calls.map(c=>c.data),calls.map(()=>false)]);
-      plan.relay={l1Messenger:l1messenger,l2Messenger:messenger,executor:state.opExec,queue,
-        fromBlock:await rt.providers[chain].getBlockNumber()};
-      l1calls=[C.call(l1messenger,'sendMessage(address,bytes,uint32)',[state.opExec,queue,5000000])];
+      const {relay,l1call}=await relayFor(rt,chain,calls);
+      plan.relay=relay; l1calls=[l1call];
     }
     const externalCalls=route==='admin-executor' ? calls.map(c=>[c.to,c.value||0,c.data]) :
       [[rt.l1.agent,0,new E.Interface(['function forward(bytes)']).encodeFunctionData('forward',[C.callsScript(l1calls)])]];
@@ -134,6 +152,51 @@ async function build(rt,route,chain,calls,description) {
     plan.voteScript=C.callsScript(voteCalls);
   }
   return plan;
+}
+// The exact message the Agent sent to this relay's executor in the DG execution receipt.
+function sentMessage(rt,receipt,relay) {
+  const messenger=rt.contract('sepolia',relay.l1Messenger,MESSENGER);
+  const matches=events(receipt,messenger,'SentMessage').filter(e=>equal(e.args.target,relay.executor)&&equal(e.args.sender,rt.l1.agent)&&e.args.message===relay.queue);
+  if(matches.length!==1) throw new Error('Expected exact Agent governance message');
+  return matches[0].args;
+}
+// Carries one relay from 'relay-pending' through 'l2-queued' to 'done'. `s` holds that relay's
+// progress: the operation state itself on the single-L2 route, a per-chain entry on the omnibus.
+// Returns false while the public network has not delivered the message yet.
+async function deliver(rt,chain,relay,s,send,save) {
+  if(s.phase==='relay-pending') {
+    const messenger=rt.contract(chain,relay.l2Messenger,MESSENGER);
+    if(!await messenger.successfulMessages(s.messageHash)) {
+      if(!rt.forks[chain]) return false; // Public relaying is performed by the network, never impersonated.
+      const alias=E.getAddress(E.toBeHex((BigInt(relay.l1Messenger)+0x1111000000000000000000000000000000001111n)%(1n<<160n),20));
+      const provider=rt.providers[chain];
+      await provider.send('anvil_setBalance',[alias,E.toBeHex(E.parseEther('10'))]);
+      await provider.send('anvil_impersonateAccount',[alias]);
+      try {
+        const tx=await provider.send('eth_sendTransaction',[{from:alias,to:relay.l2Messenger,data:s.relayData,gas:E.toBeHex(10000000)}]);
+        const receipt=await receiptFor(provider,tx);
+        if(receipt.status!==1) throw new Error('Canonical messenger relay reverted');
+        (s.receipts||(s.receipts=[])).push({chain,hash:tx,from:alias,transportSimulation:true});save();
+      } finally {await provider.send('anvil_stopImpersonatingAccount',[alias]);}
+      if(!await messenger.successfulMessages(s.messageHash)) throw new Error('Messenger did not deliver governance message');
+    }
+    const op=rt.contract(chain,relay.executor,OP);
+    const logs=await op.queryFilter(op.filters.ActionsSetQueued(),relay.fromBlock,'latest');
+    const matches=logs.filter(e=>new E.Interface(OP).encodeFunctionData('queue',[
+      [...e.args[1]],[...e.args[2]],[...e.args[3]],[...e.args[4]],[...e.args[5]]])===relay.queue);
+    // A public RPC may report the delivery before it serves the event; wait instead of failing.
+    if(!matches.length&&!rt.forks[chain]) return false;
+    if(matches.length!==1) throw new Error('Expected one matching L2 action set');
+    s.actionId=matches[0].args.id.toString();s.readyAt=matches[0].args.executionTime.toString();
+    s.phase='l2-queued';save();
+  }
+  if(s.phase==='l2-queued') {
+    // BridgeExecutorBase accepts execution at executionTime, including zero-delay queues.
+    if(!await rt.waitUntil(chain,BigInt(s.readyAt))) return false;
+    await send(chain,'deployer',C.call(relay.executor,'execute(uint256)',[s.actionId]));
+    s.phase='done';save();
+  }
+  return s.phase==='done';
 }
 async function advance(rt,plan,file) {
   if(plan.runId!==rt.meta.id) throw new Error('Plan belongs to a different run');
@@ -211,44 +274,28 @@ async function advance(rt,plan,file) {
     if(!await rt.waitUntil('sepolia',d.scheduledAt+await tl.getAfterScheduleDelay()+1n)) return state;
     if(d.status!==3n && !await tl.canExecute(state.proposalId)) throw new Error('DG execution blocked; inspect emergency state');
     const receipt=await send('sepolia','deployer',C.call(tl.target,'execute(uint256)',[state.proposalId]));
-    if(plan.route!=='l2') {state.phase='done';save();return state;}
-    const messenger=rt.contract('sepolia',plan.relay.l1Messenger,MESSENGER);
-    const matches=events(receipt,messenger,'SentMessage').filter(e=>equal(e.args.target,plan.relay.executor)&&equal(e.args.sender,rt.l1.agent)&&e.args.message===plan.relay.queue);
-    if(matches.length!==1) throw new Error('Expected exact Agent governance message');
-    const e=matches[0].args;
-    state.relayData=relayData(plan.chain,e);
-    state.messageHash=E.keccak256(state.relayData);state.phase='relay-pending';save();
-  }
-  if(state.phase==='relay-pending') {
-    const messenger=rt.contract(plan.chain,plan.relay.l2Messenger,MESSENGER);
-    if(!await messenger.successfulMessages(state.messageHash)) {
-      if(!rt.forks[plan.chain]) return state; // Public relaying is performed by the network, never impersonated.
-      const alias=E.getAddress(E.toBeHex((BigInt(plan.relay.l1Messenger)+0x1111000000000000000000000000000000001111n)%(1n<<160n),20));
-      const provider=rt.providers[plan.chain];
-      await provider.send('anvil_setBalance',[alias,E.toBeHex(E.parseEther('10'))]);
-      await provider.send('anvil_impersonateAccount',[alias]);
-      try {
-        const tx=await provider.send('eth_sendTransaction',[{from:alias,to:plan.relay.l2Messenger,data:state.relayData,gas:E.toBeHex(10000000)}]);
-        const receipt=await receiptFor(provider,tx);
-        if(receipt.status!==1) throw new Error('Canonical messenger relay reverted');
-        state.receipts.push({chain:plan.chain,hash:tx,from:alias,transportSimulation:true});save();
-      } finally {await provider.send('anvil_stopImpersonatingAccount',[alias]);}
-      if(!await messenger.successfulMessages(state.messageHash)) throw new Error('Messenger did not deliver governance message');
+    if(plan.route==='omnibus') {
+      // Every L2 message leaves in this one receipt; each is then delivered and executed on its own chain.
+      state.relays={};
+      for(const relay of plan.relays) {
+        const data=relayData(relay.chain,sentMessage(rt,receipt,relay));
+        state.relays[relay.chain]={phase:'relay-pending',relayData:data,messageHash:E.keccak256(data)};
+      }
+      state.phase='relays-pending';save();
+    } else if(plan.route!=='l2') {state.phase='done';save();return state;}
+    else {
+      state.relayData=relayData(plan.chain,sentMessage(rt,receipt,plan.relay));
+      state.messageHash=E.keccak256(state.relayData);state.phase='relay-pending';save();
     }
-    const op=rt.contract(plan.chain,plan.relay.executor,OP);
-    const logs=await op.queryFilter(op.filters.ActionsSetQueued(),plan.relay.fromBlock,'latest');
-    const matches=logs.filter(e=>new E.Interface(OP).encodeFunctionData('queue',[
-      [...e.args[1]],[...e.args[2]],[...e.args[3]],[...e.args[4]],[...e.args[5]]])===plan.relay.queue);
-    if(matches.length!==1) throw new Error('Expected one matching L2 action set');
-    state.actionId=matches[0].args.id.toString();state.readyAt=matches[0].args.executionTime.toString();
-    state.phase='l2-queued';save();
   }
-  if(state.phase==='l2-queued') {
-    // BridgeExecutorBase accepts execution at executionTime, including zero-delay queues.
-    if(!await rt.waitUntil(plan.chain,BigInt(state.readyAt))) return state;
-    await send(plan.chain,'deployer',C.call(plan.relay.executor,'execute(uint256)',[state.actionId]));
-    state.phase='done';save();
+  if(state.phase==='relays-pending') {
+    // Attempt every chain on each pass: one slow L2 must not hold back another.
+    let done=true;
+    for(const relay of plan.relays) done=await deliver(rt,relay.chain,relay,state.relays[relay.chain],send,save)&&done;
+    if(done) {state.phase='done';save();}
+    return state;
   }
+  if(['relay-pending','l2-queued'].includes(state.phase)) await deliver(rt,plan.chain,plan.relay,state,send,save);
   return state;
 }
 async function execute(rt,plan,name) {
@@ -265,7 +312,7 @@ async function execute(rt,plan,name) {
   while(true) {
     const state=await advance(rt,plan,stateFile);
     if(state.phase==='done') return state;
-    if(Date.now()>deadline) throw new Error('Operation remains pending; use governance advance '+planFile);
+    if(Date.now()>deadline) throw new Error('Operation remains pending; resume the original command with the same operation name. Journal: '+stateFile);
     await new Promise(resolve=>setTimeout(resolve,3000));
   }
 }
@@ -287,4 +334,4 @@ async function main(args) {
 if(require.main===module) main(process.argv.slice(2)).catch(e=>{
   console.error('Governance failed: '+(e.code||e.message));process.exitCode=1;
 });
-module.exports={runtime,build,advance,execute,events,equal,relayData,TL,VOTING,DG,OP,MESSENGER};
+module.exports={runtime,build,advance,execute,events,equal,relayData,relayFor,TL,VOTING,DG,OP,MESSENGER};

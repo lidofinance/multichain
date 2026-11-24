@@ -292,6 +292,10 @@ test-access:
 governance *args:
     node script/testnet/governance.cjs {{args}}
 
+# Replace the required CCVs through the DAO (vote, delays, L2 delivery, readback). `just wsteth ccv-switch` prints usage.
+ccv-switch *args:
+    node script/testnet/ccv-switch.cjs {{args}}
+
 access-ops *args:
     node script/testnet/operations.cjs {{args}}
 
@@ -410,6 +414,18 @@ test-scenarios:
 # when Chainlink ships 2.0 CCV-aware ramps to the testnets. NOT part of `all`.
 test-ccv:
     FOUNDRY_TEST="${WSTETH_TEST_DIR:-../../targets/wsteth-ccip-sepolia-mantle-dev/test}" L1_CHAIN={{l1_chain}} L2_CHAIN={{l2_chain}} L2_RPC={{l2_rpc}} forge test --match-path '*/test/scenario/CcvBridge*' -vv
+
+# Replay four transfers with published attestations at the block before each delivery. The live suite
+# checks configuration and fees at the latest fork block and uses test signers for new deliveries.
+# Run separately from `all` with archive RPCs in RPC_SEPOLIA, RPC_MANTLE_SEPOLIA and RPC_BASE_SEPOLIA.
+test-dual-ccv:
+    @mkdir -p state
+    set -o pipefail; \
+      { echo "# dual CCV — $(date +%Y-%m-%dT%H:%M:%S%z)"; \
+        echo "# git:      $(git rev-parse --short HEAD 2>/dev/null || echo unknown)"; \
+        echo; } > state/forge-dual-ccv.log; \
+      FOUNDRY_TEST="${WSTETH_TEST_DIR:-../../targets/wsteth-ccip-sepolia-mantle-dev/test}" forge test --threads 1 --match-contract 'RealDualCcv(Replay|Live)Test' -vv \
+        2>&1 | tee -a state/forge-dual-ccv.log
 
 # Claim A — post-deploy state diff (state-mate, feat/separate-deployed). The committed wiring
 # (config/state-mate/wsteth.yaml) carries no addresses; step 08 generates the address book

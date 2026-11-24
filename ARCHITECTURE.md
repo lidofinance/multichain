@@ -1,6 +1,6 @@
 # Архитектура wstETH на CCIP: компоненты и кто чем управляет
 
-Дата: 2026-11-11. Источники перечислены в [разделе 11](#11-источники-и-когда-обновлять).
+Дата: 2026-11-18. Источники перечислены в [разделе 12](#12-источники-и-когда-обновлять).
 
 | Диаграмма | Вопрос, на который она отвечает |
 | --- | --- |
@@ -9,13 +9,14 @@
 | [7. Операция управления](#7-как-проходит-операция-управления) | Как меняется конфигурация и кто может остановить изменение |
 | [8. Подключение новой сети](#8-как-подключается-новая-сеть) | Что развёртывается и кто что делает, чтобы открыть новый lane |
 | [9. Путь перевода](#9-путь-перевода-ethereum--base) | Через какие контракты проходит перевод wstETH, где участвует CCV и где проверяется «2 из 2» |
+| [10. Архитектура CCV](#10-архитектура-ccv-целевая-схема-chainlink--nethermind) | Из чего состоит каждый CCV, кто им управляет и что остаётся у Lido в целевой схеме «Chainlink + Nethermind» |
 
 ## Что здесь описано
 
 Целевое устройство пары **Ethereum ↔ Base** после DAO-голосования по миграции Base и до
 `close()` на обоих legacy bridge: то состояние, которое проверяет state-mate в
 [`targets/wsteth-base-migration-mainnet`](targets/wsteth-base-migration-mainnet/README.md).
-Остальные сети отличаются от этой пары деталями, они собраны в [разделе 10](#10-чего-на-схемах-нет).
+Остальные сети отличаются от этой пары деталями, они собраны в [разделе 11](#11-чего-на-схемах-нет).
 
 Статус этого устройства:
 
@@ -23,7 +24,7 @@
   `OptimismBridgeExecutor`, wstETH, оба legacy bridge и инфраструктура Chainlink. Переход отрепетирован на forks
   Ethereum и Base; адреса Emergency Brakes и Chainlink MCMS на новых контрактах в репетиции подставные.
 - **Sepolia**: развернуто 2026-11-04 по той же модели управления
-  ([отчёт](orchestration/wsteth-ccip/docs/SEPOLIA-FRESH-DEPLOY-2026-11-04.md)), с отличиями из раздела 10.
+  ([отчёт](orchestration/wsteth-ccip/docs/SEPOLIA-FRESH-DEPLOY-2026-11-04.md)), с отличиями из раздела 11.
 
 Схемы показывают задуманную структуру. Они не доказывают состояние сети: фактические адреса и
 значения берутся из chain records, state-mate и [`ledger.json`](ledger.json).
@@ -777,7 +778,7 @@ Proof создают операторы CCV вне блокчейна; конт�
 | --- | --- | --- | --- |
 | Mainnet target, Ethereum ↔ Base ([`ccv-policy.json`](targets/wsteth-base-migration-mainnet/config/ccv-policy.json)) | В списке; `DummyMessageIdVerifier` | Не в списке | 0 |
 | Sepolia, развёрнуто 2026-11-04 ([`ccv-policy.json`](targets/wsteth-ccip-sepolia-mantle-dev/config/ccv-policy.json)) | В списке; `DummyMessageIdVerifier` | В списке; resolver `0x8f3ee3c77D2B27c32306a89D367654F959Db223D` | 1 |
-| Намеченный итог ([MULTICHAIN-OPERATIONS.md](orchestration/wsteth-ccip/docs/MULTICHAIN-OPERATIONS.md#on-chain-actions-to-connect-nethermind)) | Nethermind вместо dummy | В списке | 2 |
+| Намеченный итог ([раздел 10](#10-архитектура-ccv-целевая-схема-chainlink--nethermind)) | Nethermind вместо dummy | В списке | 2 |
 
 Настройка mainnet target — стартовая, для репетиций на forks; решения о составе CCV для запуска в репозитории нет.
 
@@ -788,7 +789,406 @@ Proof создают операторы CCV вне блокчейна; конт�
 На Sepolia 2026-11-04 `laneMandatedCCVs` был пуст. Подробный разбор и что нужно для настоящей проверки:
 [CCV-VERIFICATION-FLOW.md](orchestration/wsteth-ccip/docs/CCV-VERIFICATION-FLOW.md).
 
-## 10. Чего на схемах нет
+## 10. Архитектура CCV: целевая схема «Chainlink + Nethermind»
+
+На testnet 18 ноября 2026 года Lido включила обязательную проверку сообщений двумя провайдерами, Chainlink и Nethermind. В сети назначения `OffRamp` принимает подтверждения обоих, прежде чем передать перевод в pool для выпуска или разблокировки wstETH. Для mainnet эта схема остаётся целевой. [Отчёт о переключении](orchestration/wsteth-ccip/docs/NETHERMIND-CCV-SWITCH-2026-11-18.md)
+
+### Кто выбирает провайдера, verifier и подписантов
+
+| Слой | Вопрос | Контракт | Кто меняет |
+| --- | --- | --- | --- |
+| Список | Чьи подтверждения обязательны для этого lane? | `PausableAdvancedPoolHooks`: список required CCV, отдельно для исходящих и входящих сообщений каждого lane. В списке стоят адреса resolver | Lido: `LidoTimelock` |
+| Адресация | Какой verifier проверяет proof этого провайдера? | `VersionedVerifierResolver` провайдера: для исходящих — verifier по сети назначения, для входящих — verifier по первым четырём байтам proof (version tag) | Провайдер: owner resolver |
+| Проверка | Подписан ли proof нужными signers? | Verifier провайдера: хранит адреса signers и порог подписей для каждой исходной сети, проверяет подписи над идентификатором сообщения | Провайдер: owner verifier |
+
+Вне блокчейна у каждого провайдера работает committee: его участники читают событие `CCIPMessageSent` в исходной сети,
+ждут finality и подписывают proof. Контракты proof не создают, а только проверяют.
+
+В сети назначения `OffRamp` запрашивает у pool список обязательных CCV. Pool получает его из hooks. Для каждого адреса в списке `OffRamp` обращается к resolver, вызывает `verifyMessage` у выбранного verifier и после успешных проверок вызывает `releaseOrMint`.
+
+### Схема
+
+Набор контрактов одинаков в каждой сети lane. Стрелки читаются по [общим правилам](#как-читать-схемы);
+фиолетовый цвет, которого нет в общей таблице, — сторона Nethermind.
+
+```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 30, "rankSpacing": 45}}}%%
+flowchart TB
+  subgraph GOV["КТО УПРАВЛЯЕТ"]
+    direction LR
+    CLG(["Governance<br/>Chainlink"])
+    TL["LidoTimelock<br/>admin — Lido DAO"]
+    NMO(["Owner<br/>Nethermind"])
+  end
+
+  subgraph NET["КОНТРАКТЫ В КАЖДОЙ СЕТИ LANE"]
+    direction TB
+    RAMP["OnRamp и OffRamp<br/>OffRamp проверяет «2 из 2»"]
+    subgraph LANE["Lane wstETH"]
+      direction TB
+      POOL["TokenPool"]
+      HOOKS["Hooks<br/>required CCV:<br/>Chainlink и Nethermind"]
+      LR["Наш resolver →<br/>DummyMessageIdVerifier<br/>вне списка required"]
+    end
+    subgraph CVC["CCV Chainlink"]
+      direction TB
+      RC["VersionedVerifierResolver"]
+      VC["CommitteeVerifier<br/>signers и порог"]
+    end
+    subgraph CVN["CCV Nethermind"]
+      direction TB
+      RN["VersionedVerifierResolver"]
+      VN["BpsFeeCommitteeVerifier<br/>signers и порог, fee"]
+      PA["Price adapter wstETH"]
+    end
+  end
+
+  subgraph OFF["OFF-CHAIN"]
+    direction TB
+    SC(["Committee<br/>Chainlink"])
+    SN(["Committee<br/>Nethermind"])
+    ST["Attestation storage<br/>Nethermind"]
+    EX["Indexer и executor<br/>Chainlink"]
+  end
+
+  TL ==>|"owner"| POOL
+  TL ==>|"owner"| HOOKS
+  TL ==>|"owner"| LR
+  CLG ==>|"управляет"| RAMP
+  CLG ==>|"управляет"| RC
+  CLG ==>|"управляет"| VC
+  NMO ==>|"owner"| RN
+  NMO ==>|"owner"| VN
+  NMO ==>|"owner"| PA
+
+  RAMP -.->|"getRequiredCCVs"| POOL
+  POOL -.->|"список"| HOOKS
+  HOOKS -.->|"required"| RC
+  HOOKS -.->|"required"| RN
+  RC -.->|"implementation"| VC
+  RN -.->|"implementation"| VN
+  VN -.->|"цена для fee"| PA
+  RAMP -.->|"forwardToVerifier<br/>verifyMessage"| VC
+  RAMP -.->|"forwardToVerifier<br/>verifyMessage"| VN
+
+  VC -.->|"адреса signers"| SC
+  VN -.->|"адреса signers"| SN
+  SC -.->|"proof"| EX
+  SN -.->|"proof"| ST
+  ST -.->|"proof"| EX
+  EX -.->|"execute:<br/>сообщение + 2 proof"| RAMP
+
+  classDef lane fill:#DCFCE7,stroke:#15803D,stroke-width:1px,color:#052E16
+  classDef chainlink fill:#FFEDD5,stroke:#C2410C,stroke-width:1px,color:#431407
+  classDef nm fill:#EDE9FE,stroke:#6D28D9,stroke-width:1px,color:#2E1065
+  classDef retired fill:#F3F4F6,stroke:#9CA3AF,stroke-dasharray:4 4,color:#374151
+
+  class TL,POOL,HOOKS lane
+  class CLG,RAMP,RC,VC,SC,EX chainlink
+  class NMO,RN,VN,PA,SN,ST nm
+  class LR retired
+
+  style GOV fill:none,stroke:#94A3B8,stroke-dasharray:4 4
+  style NET fill:none,stroke:#64748B,stroke-width:2px
+  style OFF fill:none,stroke:#94A3B8,stroke-dasharray:4 4
+  style LANE fill:#22C55E1A,stroke:#15803D,stroke-dasharray:4 4
+  style CVC fill:#F973161A,stroke:#C2410C,stroke-dasharray:4 4
+  style CVN fill:#A855F71A,stroke:#6D28D9,stroke-dasharray:4 4
+```
+
+Как читать схему:
+
+- **Слева направо — три владельца.** Chainlink управляет своим CCV и общей инфраструктурой CCIP, Nethermind — своим CCV,
+  Lido — только списком в hooks. Lido не владеет ни одним verifier и не выбирает signers.
+- **Hooks хранят адреса resolver, а не verifier.** Поэтому провайдер может заменить verifier за своим resolver,
+  не спрашивая Lido, а Lido может убрать провайдера из списка, не спрашивая его.
+- **Наш resolver с `DummyMessageIdVerifier` остаётся развёрнутым, но выпадает из списка.** Proof для dummy может составить
+  кто угодно, и пока наш resolver в списке, этот слот ничего не подтверждает. Вне списка он на переводы не влияет.
+- **Proof Nethermind попадает к executor через хранилище.** Committee Nethermind публикует proof в своём attestation storage;
+  адреса хранилища записаны в verifier как storage locations. Чтобы executor Chainlink забирал оттуда proof,
+  Chainlink должен добавить у себя resolver и storage locations Nethermind. Это настройка вне блокчейна,
+  в репозитории она не проверяется. Без неё доставка возможна только ручным вызовом `execute`: его может сделать любой адрес,
+  у которого есть оба proof.
+
+### Чем CCV Nethermind отличается от CCV Chainlink
+
+Оба CCV построены на одном коде Chainlink: resolver у них побайтно одинаков, verifier Nethermind наследует
+`CommitteeVerifier` и проверяет подписи тем же способом. Отличий три.
+
+| Что | CCV Chainlink | CCV Nethermind |
+| --- | --- | --- |
+| Verifier | `CommitteeVerifier` | `BpsFeeCommitteeVerifier`: тот же код проверки, другой расчёт fee. На запрос `typeAndVersion` отвечает `CommitteeVerifier 2.0.0` |
+| Fee за проверку | Фиксированная сумма на сообщение | Доля от суммы перевода в basis points, с нижней и верхней границей. Сумму в долларах даёт price adapter wstETH |
+| Proof для executor | Собственная инфраструктура Chainlink | Attestation storage Nethermind |
+
+Fee каждого verifier входит в комиссию CCIP, которую платит отправитель при `ccipSend`. Если price adapter не отвечает,
+verifier Nethermind берёт нижнюю границу fee и отправку не останавливает: так настроено на Sepolia (`requireAllTokensPriced` = false).
+
+### Что эта схема гарантирует и чего нет
+
+| Событие | Что происходит |
+| --- | --- |
+| Скомпрометирован committee одного провайдера | wstETH не выпускается: второй verifier не примет поддельное сообщение |
+| Committee одного провайдера недоступен | Доставка останавливается до его возвращения. Сообщение не теряется: `execute` можно повторить с полным набором proof |
+| Скомпрометированы оба committee | Выпуск wstETH по поддельному сообщению возможен. Остаются rate limits pool и pause в hooks |
+| Owner провайдера заменил verifier за своим resolver или signers в verifier | Lido это не согласует и не блокирует. Гарантия каждого слота равна надёжности owner этого провайдера |
+| Lido решила сменить провайдера | DAO меняет список в hooks вызовом `applyCCVConfigUpdates` через `LidoTimelock`, отдельно в каждой сети и для каждого направления ([раздел 7](#7-как-проходит-операция-управления)) |
+
+Для mainnet нужно проверить, кто контролирует resolver Nethermind и насколько независимы комитеты провайдеров. На testnet владельцем resolver был один адрес без кода. Состав комитета Chainlink в этом отчёте не установлен.
+
+- **Owner CCV Nethermind не должен быть одним ключом.** Тот, кто управляет resolver, управляет всем слотом.
+- **Committee двух провайдеров не должны пересекаться**, чтобы общие подписанты не могли самостоятельно набрать порог у обоих провайдеров.
+
+Решено, что и на mainnet в списке будет стоять resolver Nethermind, а не наш. Значит, verifier за ним выбирает Nethermind,
+и первое условие закрывается только устройством его owner.
+
+### Sepolia: что развёрнуто
+
+В таблице приведены адреса, прочитанные 18 ноября 2026 года. До голосования hooks требовали локальный resolver с dummy и resolver Chainlink. После исполнения голосования resolver Nethermind занял место локального во всех четырёх направлениях.
+
+| | Sepolia | Mantle Sepolia | Base Sepolia |
+| --- | --- | --- | --- |
+| Hooks | `0x93d9772F228F7c6C677A3Aca76CFec5636648dE9` | `0x174F4240C8605f2CCf5D9979F75595Cc7e6510a0` | `0x1fbb35e57c6937dd7EADD3f0749D494E53666D12` |
+| Resolver Chainlink | `0x8f3ee3c77D2B27c32306a89D367654F959Db223D` | `0x8f3ee3c77D2B27c32306a89D367654F959Db223D` | `0x8f3ee3c77D2B27c32306a89D367654F959Db223D` |
+| Verifier Chainlink, tag `0xe9a05a20` | `0x5295455B4fD7010DB3729456f2C33ca8f2c2BF1d` | `0x5Ec7F9e1b74D3ee88ABfe58C41445eb92B7c3969` | `0xEdB3Af523b8e348B8c12218d47bA8FfBeeD967ea` |
+| Resolver Nethermind | `0x28ceF597339bb0B351ae4e62f73d762c9cC51D5c` | `0x28ceF597339bb0B351ae4e62f73d762c9cC51D5c` | `0x28ceF597339bb0B351ae4e62f73d762c9cC51D5c` |
+| Verifier Nethermind, tag `0x00010002` | `0x3FD15Ac39a06850c06563eAc511968229111635C` | `0x3FD15Ac39a06850c06563eAc511968229111635C` | `0xF80D2Ccf5F7180F6D837B3EB774e5eC59a83Db32` |
+| Price adapter wstETH | `0xDc6de941468Fb6884A4A5497A09de0eD81E68124` | `0x20F24F29300025d7a8B0dA4dcB0012c3f4D9BE9F` | `0x3FD15Ac39a06850c06563eAc511968229111635C` |
+| Локальный resolver до переключения | `0xac4684527386209f289434E84879499dE45B71b9` | `0x1Ac7265B69402AFf447A1397D608f687C3F1b11F` | `0xAAC40536b69c72db395859248Afe30e74c447670` |
+
+Настройки CCV Nethermind одинаковы в трёх сетях:
+
+- **Owner** resolver, verifier и price adapter: `0x36243b8B92b1a0F6C92a69a32aE1F8dC183788A5`, обычный адрес без кода.
+- **Committee**: 2 из 2, signers `0x2fb64E058fDF73Da1B39063Dc64F9f0863005B67` и `0xaEE7D7E9748d8a2Ee598a4642634B9eC97a64f53`.
+- **Fee**: 5 basis points от суммы перевода, не меньше 10 центов и не больше 1000 центов.
+- **Finality**: только полная; запрос ускоренной finality verifier отклоняет.
+- **Storage locations**: `https://lido-ccv-cell-0.aws.staging-nethermind.xyz` и `https://lido-ccv-cell-0.ovh.staging-nethermind.xyz`.
+
+Для testnet один ключ у owner и fee приняты как есть. Исходный код verifier опубликован на Sourcify с полным совпадением.
+
+### Переход к целевой системе на testnet
+
+18 ноября одно голосование изменило списки outbound и inbound в hooks трёх сетей. Пять транзакций на Sepolia провели предложение через DAO и отправили два сообщения через канонические мосты. После доставки отдельная транзакция в каждой L2 исполнила обновление. Оператор оставил переводы открытыми на время переключения. Адреса pool, token, lockbox и локального resolver сохранились.
+
+Для автоматической доставки Chainlink должен получать подтверждения из хранилищ Nethermind, а комитет Nethermind — подписывать сообщения на всех четырёх направлениях. После переключения оператор проверил доставку одним переводом в каждом направлении.
+
+В каждой сети конечный вызов один и тот же: `LidoTimelock.bypasserExecuteBatch` вызывает `hooks.applyCCVConfigUpdates`. Ниже приведены аргументы для каждой сети и отдельно показан вариант с тремя голосованиями (`--votes per-chain`).
+
+Значения, общие для всех вызовов:
+
+| Имя | Значение |
+| --- | --- |
+| Resolver Nethermind | `0x28ceF597339bb0B351ae4e62f73d762c9cC51D5c` |
+| Resolver Chainlink | `0x8f3ee3c77D2B27c32306a89D367654F959Db223D` |
+| Selector Sepolia | `16015286601757825753` |
+| Selector Mantle Sepolia | `8236463271206331221` |
+| Selector Base Sepolia | `10344971235874465080` |
+
+#### Итоговые вызовы
+
+`applyCCVConfigUpdates` принимает массив записей, по одной на lane. Запись заменяет прежнюю целиком.
+Пустые `thresholdOutboundCCVs` и `thresholdInboundCCVs` означают, что дополнительных CCV для крупных сумм нет.
+
+**Sepolia.** Вызывает Agent `0x25C9d019102BB4b79F1D12D79309E6eE3145f528`.
+
+```text
+LidoTimelock 0x898A55EB873eE5a3A8F675Da72A237Ea58179930
+.bypasserExecuteBatch(
+  calls = [
+    ( target = 0x93d9772F228F7c6C677A3Aca76CFec5636648dE9,   // hooks
+      value  = 0,
+      data   = applyCCVConfigUpdates(ccvConfigArgs) )
+  ]
+)
+
+hooks 0x93d9772F228F7c6C677A3Aca76CFec5636648dE9
+.applyCCVConfigUpdates(
+  ccvConfigArgs = [
+    ( remoteChainSelector   = 8236463271206331221,            // Mantle Sepolia
+      outboundCCVs          = [0x28ceF597339bb0B351ae4e62f73d762c9cC51D5c,
+                               0x8f3ee3c77D2B27c32306a89D367654F959Db223D],
+      thresholdOutboundCCVs = [],
+      inboundCCVs           = [0x28ceF597339bb0B351ae4e62f73d762c9cC51D5c,
+                               0x8f3ee3c77D2B27c32306a89D367654F959Db223D],
+      thresholdInboundCCVs  = [] ),
+    ( remoteChainSelector   = 10344971235874465080,           // Base Sepolia
+      outboundCCVs          = [0x28ceF597339bb0B351ae4e62f73d762c9cC51D5c,
+                               0x8f3ee3c77D2B27c32306a89D367654F959Db223D],
+      thresholdOutboundCCVs = [],
+      inboundCCVs           = [0x28ceF597339bb0B351ae4e62f73d762c9cC51D5c,
+                               0x8f3ee3c77D2B27c32306a89D367654F959Db223D],
+      thresholdInboundCCVs  = [] )
+  ]
+)
+```
+
+**Mantle Sepolia.** Вызывает `OptimismBridgeExecutor` `0x89968fe8cceA229F5564A83431f89ffaBbE62Df5`.
+
+```text
+LidoTimelock 0x5FC256aBed9C3c425C1AD281E3F8a1B7F88279d3
+.bypasserExecuteBatch(
+  calls = [
+    ( target = 0x174F4240C8605f2CCf5D9979F75595Cc7e6510a0,   // hooks
+      value  = 0,
+      data   = applyCCVConfigUpdates(ccvConfigArgs) )
+  ]
+)
+
+hooks 0x174F4240C8605f2CCf5D9979F75595Cc7e6510a0
+.applyCCVConfigUpdates(
+  ccvConfigArgs = [
+    ( remoteChainSelector   = 16015286601757825753,           // Sepolia
+      outboundCCVs          = [0x28ceF597339bb0B351ae4e62f73d762c9cC51D5c,
+                               0x8f3ee3c77D2B27c32306a89D367654F959Db223D],
+      thresholdOutboundCCVs = [],
+      inboundCCVs           = [0x28ceF597339bb0B351ae4e62f73d762c9cC51D5c,
+                               0x8f3ee3c77D2B27c32306a89D367654F959Db223D],
+      thresholdInboundCCVs  = [] )
+  ]
+)
+```
+
+**Base Sepolia.** Вызывает `OptimismBridgeExecutor` `0x95b032D4F90a79E9eeCDdDAEcfb3E58a19cC9480`.
+
+```text
+LidoTimelock 0x0633DE68D5007A220E0201132FE16625B5cf60e2
+.bypasserExecuteBatch(
+  calls = [
+    ( target = 0x1fbb35e57c6937dd7EADD3f0749D494E53666D12,   // hooks
+      value  = 0,
+      data   = applyCCVConfigUpdates(ccvConfigArgs) )
+  ]
+)
+
+hooks 0x1fbb35e57c6937dd7EADD3f0749D494E53666D12
+.applyCCVConfigUpdates(
+  ccvConfigArgs = [
+    ( remoteChainSelector   = 16015286601757825753,           // Sepolia
+      outboundCCVs          = [0x28ceF597339bb0B351ae4e62f73d762c9cC51D5c,
+                               0x8f3ee3c77D2B27c32306a89D367654F959Db223D],
+      thresholdOutboundCCVs = [],
+      inboundCCVs           = [0x28ceF597339bb0B351ae4e62f73d762c9cC51D5c,
+                               0x8f3ee3c77D2B27c32306a89D367654F959Db223D],
+      thresholdInboundCCVs  = [] )
+  ]
+)
+```
+
+Проверка 2026-11-18: все три вызова `bypasserExecuteBatch` с этими значениями симулированы чтением из сети от имени
+Agent и обоих executors и не ревертятся; от постороннего адреса `LidoTimelock` отклоняет вызов.
+
+#### Вариант с отдельными голосованиями: Sepolia, 5 транзакций
+
+Agent вызывает `LidoTimelock` напрямую. Все транзакции в сети Sepolia.
+
+| № | Отправитель | Вызов | После транзакции |
+| --- | --- | --- | --- |
+| 1 | Держатель LDO `0x895B7d7020C2205FfA957385541616458Fe7911a` | TokenManager `0x074DCcD888C21246F2645Fb0FD999655c3143DD0` `.forward(evmScript)`; внутри — `Voting.newVote(executionScript, metadata = "Replace required CCVs: ccv-switch (sepolia)", castVote = false, executesIfDecided = false)` | Создано голосование; `voteId` приходит в событии `StartVote` |
+| 2 | Тот же держатель LDO | Voting `0xD9081AF5eaCE7345F5620Bf423F70e0D73621DB5` `.vote(voteId, supports = true, executesIfDecided = false)` | Ожидание 300 с |
+| 3 | Любой адрес | Voting `0xD9081AF5eaCE7345F5620Bf423F70e0D73621DB5` `.executeVote(voteId)` | Создан proposal в Dual Governance; `proposalId` приходит в событии `ProposalSubmitted`. Ожидание 120 с |
+| 4 | Любой адрес | DualGovernance `0xB12Ca69a9B2a294463B51c6D562Bc3a431c4E4A5` `.scheduleProposal(proposalId)` | Ожидание 120 с |
+| 5 | Любой адрес | EmergencyProtectedTimelock `0xD616e60431dC32DfC6b82F4C15ed38BC3DE4919C` `.execute(proposalId)` | Список в hooks на Sepolia изменён |
+
+`executionScript` из транзакции 1 — это один вызов, который Voting делает при исполнении голосования:
+
+```text
+DualGovernance 0xB12Ca69a9B2a294463B51c6D562Bc3a431c4E4A5
+.submitProposal(
+  calls = [
+    ( target  = 0x25C9d019102BB4b79F1D12D79309E6eE3145f528,  // Agent
+      value   = 0,
+      payload = forward(agentScript) )
+  ],
+  metadata = "Replace required CCVs: ccv-switch (sepolia)"
+)
+
+agentScript = [
+  LidoTimelock 0x898A55EB873eE5a3A8F675Da72A237Ea58179930 .bypasserExecuteBatch(calls)   // итоговый вызов Sepolia
+]
+```
+
+Транзакция 5 разворачивает эту цепочку: timelock Dual Governance → admin executor `0xeDC60169EC75Fb4edF2F86466698d8dB44BB980E`
+→ `Agent.forward` → `LidoTimelock.bypasserExecuteBatch` → `hooks.applyCCVConfigUpdates`.
+
+#### Операции 2 и 3: Mantle Sepolia и Base Sepolia, по 6 транзакций
+
+Транзакции 1–5 те же, что в операции 1, и тоже в сети Sepolia. Отличается `agentScript`: вместо вызова `LidoTimelock`
+Agent отправляет сообщение в L2. Шестая транзакция исполняет его в L2.
+
+| | Mantle Sepolia | Base Sepolia |
+| --- | --- | --- |
+| `L1CrossDomainMessenger` на Sepolia | `0x37dAC5312e31Adb8BB0802Fc72Ca84DA5cDfcb4c` | `0xC34855F4De64F1840e5686e64278da901e261f20` |
+| `OptimismBridgeExecutor` в L2 | `0x89968fe8cceA229F5564A83431f89ffaBbE62Df5` | `0x95b032D4F90a79E9eeCDdDAEcfb3E58a19cC9480` |
+| `LidoTimelock` в L2 | `0x5FC256aBed9C3c425C1AD281E3F8a1B7F88279d3` | `0x0633DE68D5007A220E0201132FE16625B5cf60e2` |
+
+`agentScript` для L2, со значениями из столбца нужной сети:
+
+```text
+agentScript = [
+  L1CrossDomainMessenger
+  .sendMessage(
+    target      = OptimismBridgeExecutor,
+    message     = queue(targets, values, signatures, calldatas, withDelegatecalls),
+    minGasLimit = 5000000
+  )
+]
+
+OptimismBridgeExecutor
+.queue(
+  targets           = [LidoTimelock],
+  values            = [0],
+  signatures        = [""],
+  calldatas         = [bypasserExecuteBatch(calls)],   // итоговый вызов этой сети
+  withDelegatecalls = [false]
+)
+```
+
+| № | Сеть | Отправитель | Вызов | После транзакции |
+| --- | --- | --- | --- | --- |
+| 1–5 | Sepolia | Как в операции 1 | Как в операции 1, с `agentScript` для L2 | Транзакция 5 отправляет сообщение через `L1CrossDomainMessenger` |
+| — | L2 | Сеть, через канонический мост | `L2CrossDomainMessenger` `0x4200000000000000000000000000000000000007` доставляет сообщение и вызывает `OptimismBridgeExecutor.queue(...)` | Создан набор действий; `actionsSetId` приходит в событии `ActionsSetQueued`. Delay executor равен 0 |
+| 6 | L2 | Любой адрес | `OptimismBridgeExecutor` `.execute(actionsSetId)` | Список в hooks этой сети изменён |
+
+Для исполнения берут `actionsSetId` из события очереди соответствующей L2. При переключении 18 ноября оба executor присвоили своим наборам номер 1.
+
+Три `agentScript` можно объединить в одном голосовании: тогда транзакций 7 — пять общих и по одной `execute`
+в каждой L2. Отдельными голосованиями выходит 17 транзакций.
+
+#### Запуск скриптом
+
+Всю последовательность выполняет `just wsteth ccv-switch`: создаёт голосование, голосует, ждёт задержки, исполняет на Sepolia,
+дожидается доставки в Mantle Sepolia и Base Sepolia, исполняет там и сверяет состояние с целевой политикой
+[`ccv-policy.nethermind.json`](targets/wsteth-ccip-sepolia-mantle-dev/config/ccv-policy.nethermind.json).
+
+| Команда | Что делает |
+| --- | --- |
+| `just wsteth ccv-switch plan` | Печатает вызовы со значениями. В сеть ничего не отправляет |
+| `just wsteth ccv-switch precheck` | Сверяет сети с текущей политикой, проверяет контракты провайдера, симулирует каждый вызов от имени его отправителя |
+| `just wsteth ccv-switch run` | `precheck`, затем одно голосование на три сети и сверка. `--votes per-chain` — три голосования подряд |
+| `just wsteth ccv-switch verify` | Только сверка с целевой политикой |
+
+Прерванный `run` продолжается с того же места при повторном запуске с тем же `--name`; журнал лежит в
+`state/ccv-switch/<name>` активного run. На forks доступны `--revert` (вернуть forks в исходное состояние) и `--probe-send`
+(после переключения отправить пробный перевод из каждой сети). Отчёт `report.json` фиксирует списки required CCV,
+адресацию resolver и комиссии до и после. Подпись провайдеров и доставку он не подтверждает.
+
+#### Порядок и проверка
+
+Обновления вступают в силу в каждой сети при исполнении её транзакции. Пока сети используют разные списки, для доставки могут понадобиться подтверждения, которые провайдер не получил запрос подписать. Перед пробными переводами оператор сверяет `hooks.getAllCCVConfigs()` с ожидаемыми аргументами во всех трёх сетях.
+
+На публичных testnet прошли четыре пробных перевода с обоими подтверждениями. Отказ при неполном наборе подтверждений проверили отдельно на forks. [Результаты fork-тестов](orchestration/wsteth-ccip/docs/NETHERMIND-CCV-FORK-TEST-PLAN.md#results-of-2026-11-18)
+
+Те же вызовы в виде calldata строит planner из
+[MULTICHAIN-OPERATIONS.md](orchestration/wsteth-ccip/docs/MULTICHAIN-OPERATIONS.md#on-chain-actions-to-connect-nethermind).
+
+### Что не решено
+
+- **Mainnet.** Nethermind там CCV не разворачивал. В mainnet target для Ethereum ↔ Base в списке один наш resolver с dummy,
+  без Chainlink ([таблица в разделе 9](#что-стоит-в-слотах)). Адреса, owner, состав committee и fee для mainnet не определены.
+- **Доставка.** Для четырёх переводов на testnet зафиксированы обе подписи и исполнение. Порядок повторных попыток executor и доступность хранилищ при отказе остаются вопросами к провайдерам.
+- **Chainlink.** Owner resolver и verifier Chainlink и состав его committee репозиторий не читает.
+
+## 11. Чего на схемах нет
 
 - **Пять действующих lanes Ethereum**: Bitlayer, 0G, Monad, MegaETH, Robinhood. Новый pool на Ethereum обслуживает
   их вместе с Base; из пяти lockbox один общий для Monad и MegaETH, по одному у Bitlayer, 0G, Robinhood и Base. Pool
@@ -807,7 +1207,7 @@ Proof создают операторы CCV вне блокчейна; конт�
   два spoke — Mantle Sepolia и Base Sepolia; token на spoke стоит за `TransparentUpgradeableProxy`; legacy bridge в этом target не участвует;
   в hooks требуются два CCV — resolver Chainlink и локальный resolver с dummy verifier; задержки сокращены до минут.
 
-## 11. Источники и когда обновлять
+## 12. Источники и когда обновлять
 
 | Что | Откуда |
 | --- | --- |
