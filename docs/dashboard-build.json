@@ -1,4 +1,41 @@
 {
+  "legacyCcip": {
+    "inventoryUrl": "https://github.com/lidofinance/multichain/blob/2e4614f870ade21a4f003259fbd16626f744bd2e/runs/wsteth-2.0/research/upstream-isolation-20261104/record-consumers/historical-mainnet/state/hub-migration/inventory.json",
+    "inventoryBlock": 26335529,
+    "hub": "0xA586a732394A1AFfCF15b972cd47C936033C9FA7",
+    "removalBlock": 26380937,
+    "removalTx": "0x873b0eb6c23e3979f55f0eba0db8fd2828898d37046ff7ba255ec8e9226da6a3",
+    "networks": [
+      {
+        "chainId": "2741",
+        "name": "Abstract",
+        "selector": "3577778157919314504",
+        "token": "0x313F663E79ef202251a28F0252c254842D5ABC6a",
+        "pool": "0x38Ad0414B523Fa344429ff14dAC305e4fB6Ab248"
+      },
+      {
+        "chainId": "57073",
+        "name": "Ink",
+        "selector": "3461204551265785888",
+        "token": "0xE561152E8d3f618b386EF4dD6E3fb980Eb2f9e61",
+        "pool": "0x2dC99af320BC317c567f24eE95811dcbd5983DfD"
+      },
+      {
+        "chainId": "5734951",
+        "name": "Jovay",
+        "selector": "1523760397290643893",
+        "token": "0x2dC99af320BC317c567f24eE95811dcbd5983DfD",
+        "pool": "0x1c2F528e3BEeFF81Bc03CC63E64dB131d18be7fA"
+      },
+      {
+        "chainId": "9745",
+        "name": "Plasma",
+        "selector": "9335212494177455608",
+        "token": "0x481e638105407Be40c2f2E2e006DE272d05930d0",
+        "pool": "0xa4b1d393104a5eF340154c337009156aA0E83Bd8"
+      }
+    ]
+  },
   "live": {
     "record": "config/chains.live-mantle-2026-09-15",
     "deployedAt": "2026-09-15",
@@ -596,7 +633,7 @@
     "takenAt": "2026-08-27",
     "docsUrl": "https://docs.lido.fi/deployed-contracts/",
     "ledgerUpdatedAt": "2026-09-17",
-    "ledgerUrl": "https://github.com/lidofinance/multichain/blob/e754dba96653877fdaa25e9b3cd2701ed90945b7/ledger.json"
+    "ledgerUrl": "https://github.com/lidofinance/multichain/blob/6ec4682a853bb58af4b916335abbbad4241ed106/ledger.json"
   },
   "sources": {
     "testnetSnapshotSha256": "cfff008f176ee266b2a554b4c08e8510259ad84ff510b13126c8ed033e745fda",
@@ -606,17 +643,18 @@
       "ccv": "aa1808481c9498addc82b9e9bf618357a565faa9496d79f618ae947a1f043262"
     },
     "templateSha256": {
-      "index": "49f869ae07050522163ccf40382680092dc93673dbf0132ab0aeb3d8368b9bb4",
+      "index": "95593bd0e410562e7aa51e4b62eb0662cfa8b2ce86f19ab13c91bdff8057f9af",
       "roles": "55f6ded922182cd05f076b69d47eb5598672373795bb459a367d411241204157",
       "ccv": "23aa1c9b0ccc3ac63c1cf256fb2490fd88579fe727da5c7f660eb74887efcfff"
     },
-    "ledgerCommit": "e754dba96653877fdaa25e9b3cd2701ed90945b7",
+    "ledgerCommit": "6ec4682a853bb58af4b916335abbbad4241ed106",
     "ledgerSha256": "1e294ff4cf2620c71be68d1fcab85fcdbf96ac8ffdebbf09dd61002308156edf",
     "ledgerContentSha256": "671fdf80ad604949da44bbeb1c912082523bfe162db2365902ba0ec773d7e60e",
     "metadataSha256": "170205bc9114098667804bec2401d6e67fdd2d156e1437e107575bde04ac6153",
     "ldoMetadataSha256": "44839d38ef45e42003f547009dcc6581b538cd7d001e3236ab6df300dc39e49b",
     "stethMetadataSha256": "4a0ea96ff75bbf0c70e6a152654f9743adf90eb69b118dad7c281ea19b005bd7",
+    "legacyCcipSha256": "01fab2fb326e26d2f3cd4cb5fc88dc2252efc3d08002b83c1d02b663f23dad75",
     "networkTypesSha256": "6c4c97d8423c2aeba74dcb6e34e401bcde25f3321f44d9fce002d280b385ece4"
   },
-  "identity": "1841cde9f5caab894f6a3099340b30069373831e728ce4025856bf8513c94a6f"
+  "identity": "4025327a2c32f1375f9c386fc23df1994676be26fa33a8b220ccc72208b815c5"
 }

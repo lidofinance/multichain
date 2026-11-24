@@ -145,6 +145,17 @@ publication directory, or select a fresh `--output` directory. It does not
 delete unrelated files in the destination. For branch publication, also commit
 the removal of the obsolete tracked `docs/upstream/dashboard-build.json`.
 
+### Legacy CCIP
+
+The table immediately below **No longer endorsed** preserves the four former wstETH pool pairs in
+`config/legacy-ccip.json`. The catalogue links to the block-pinned Ethereum
+inventory and the transaction that removed the peers. The browser checks token
+and pool bytecode on each destination and asks the former Ethereum pool whether
+it currently accepts the recorded peer. These reads can succeed independently.
+The recorded destination token and pool stay in this table across Ethereum hub changes. Outstanding
+supply counts once per chain and token, including when a replacement pool uses
+the same token.
+
 ### Browser observations
 
 The visitor's browser queries the Chainlink registry and public RPCs. The build
@@ -200,7 +211,7 @@ coverage and bridge descriptions do not inherit wstETH endorsement.
   for ETH/USD). The estimate assumes one destination token is worth one Ethereum
   LDO; it does not measure bridge backing, local market liquidity, or cumulative
   transfers. Supply stays visible if pricing fails.
-- **Display:** the table is at the bottom of the overview. It sorts by LDO
+- **Display:** the LDO table is last in the overview. It sorts by LDO
   amount, descending, as supplies arrive (unread amounts last), and shows each
   amount with its USD estimate rounded to the nearest dollar. Coverage notes,
   source dates, and pricing details are collapsed under **Details**.

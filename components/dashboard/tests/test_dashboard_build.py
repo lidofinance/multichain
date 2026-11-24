@@ -14,7 +14,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from build_dashboard import ROOT, EvidenceHTML, build, ledger_networks, ldo_metadata, network_types_metadata, steth_metadata, testnet_metadata as get_testnet_metadata, main, ledger_source
+from build_dashboard import ROOT, EvidenceHTML, build, ledger_networks, legacy_ccip_metadata, ldo_metadata, network_types_metadata, steth_metadata, testnet_metadata as get_testnet_metadata, main, ledger_source
 
 
 def addr(n):
@@ -28,6 +28,19 @@ class DashboardBuildTests(unittest.TestCase):
         self.ldo = json.loads((ROOT / 'components/dashboard/config/ldo-networks.json').read_text())
         self.steth = json.loads((ROOT / 'components/dashboard/config/steth-networks.json').read_text())
         self.types = json.loads((ROOT / 'components/dashboard/config/network-types.json').read_text())
+
+    def test_legacy_ccip_validates_sources_and_unique_destinations(self):
+        archive = json.loads((ROOT / 'components/dashboard/config/legacy-ccip.json').read_bytes())
+        for field, value in [('networks', None), ('inventoryUrl', 'javascript:alert(1)'),
+                             ('hub', addr(0)), ('removalTx', '0x01'), ('removalBlock', 1)]:
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                legacy_ccip_metadata({**archive, field: value})
+        first, second = archive['networks'][:2]
+        for field, value in [('chainId', second['chainId']), ('selector', second['selector']),
+                             ('selector', str(2**64)), ('selector', 10), ('pool', addr(0)),
+                             ('token', '0x01')]:
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                legacy_ccip_metadata({**archive, 'networks': [{**first, field: value}, second]})
 
     def test_steth_projects_ledger_tokens_and_sourced_rate_oracles(self):
         data = steth_metadata(self.ledger, self.steth)

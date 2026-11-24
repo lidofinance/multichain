@@ -150,6 +150,38 @@ def steth_metadata(ledger, metadata):
                 l1Token=deployed(ledger, 'eip155:1', 'ethereum-ethereum-steth-token'), networks=rows)
 
 
+def legacy_ccip_metadata(metadata):
+    if not isinstance(metadata, dict) or not isinstance(metadata.get('networks'), list):
+        raise ValueError('Legacy CCIP requires a networks list')
+    if not isinstance(metadata.get('inventoryUrl'), str):
+        raise ValueError('Missing legacy CCIP inventory URL')
+    https_source(metadata['inventoryUrl'], label='Legacy CCIP')
+    address(metadata.get('hub'))
+    tx = metadata.get('removalTx')
+    if not isinstance(tx, str) or not re.fullmatch(r'0x[0-9a-fA-F]{64}', tx):
+        raise ValueError('Invalid legacy CCIP removal transaction')
+    inventory, removal = metadata.get('inventoryBlock'), metadata.get('removalBlock')
+    if type(inventory) is not int or type(removal) is not int or not 0 < inventory <= removal:
+        raise ValueError('Invalid legacy CCIP evidence blocks')
+    chains, selectors = set(), set()
+    for row in metadata['networks']:
+        if not isinstance(row, dict) or not isinstance(row.get('name'), str) or not row['name'].strip():
+            raise ValueError('Missing legacy CCIP network name')
+        chain, selector = row.get('chainId'), row.get('selector')
+        if not isinstance(chain, str) or not re.fullmatch(r'[1-9][0-9]*', chain) or chain == '1':
+            raise ValueError('Invalid legacy CCIP destination chain ID')
+        if (not isinstance(selector, str) or not re.fullmatch(r'[1-9][0-9]*', selector)
+                or int(selector) >= 2**64):
+            raise ValueError('Invalid legacy CCIP selector')
+        address(row.get('token'))
+        address(row.get('pool'))
+        if chain in chains or selector in selectors:
+            raise ValueError('Duplicate legacy CCIP destination or selector')
+        chains.add(chain)
+        selectors.add(selector)
+    return metadata
+
+
 def ldo_metadata(metadata):
     """Validate the separately sourced LDO catalogue; absence is not a negative claim."""
     address(metadata['l1Token'])
@@ -407,7 +439,8 @@ def build(root, output):
     ldo_bytes = (root / 'components/dashboard/config/ldo-networks.json').read_bytes()
     steth_bytes = (root / 'components/dashboard/config/steth-networks.json').read_bytes()
     types_bytes = (root / 'components/dashboard/config/network-types.json').read_bytes()
-    data = dict(live=live, networks=ledger_networks(ledger, metadata),
+    legacy_bytes = (dashboard / 'config/legacy-ccip.json').read_bytes()
+    data = dict(legacyCcip=legacy_ccip_metadata(json.loads(legacy_bytes)), live=live, networks=ledger_networks(ledger, metadata),
                 ldo=ldo_metadata(json.loads(ldo_bytes)),
                 steth=steth_metadata(ledger, json.loads(steth_bytes)),
                 networkTypes=network_types_metadata(json.loads(types_bytes)),
@@ -421,7 +454,7 @@ def build(root, output):
                              ledgerContentSha256=digest(json.dumps(ledger, sort_keys=True, separators=(',', ':')).encode()),
                              metadataSha256=digest(metadata_bytes), ldoMetadataSha256=digest(ldo_bytes),
                              stethMetadataSha256=digest(steth_bytes),
-                             networkTypesSha256=digest(types_bytes)))
+                             legacyCcipSha256=digest(legacy_bytes), networkTypesSha256=digest(types_bytes)))
     # Include every published source in the build identity used by browser caches.
     data['identity'] = digest(json.dumps(data, sort_keys=True).encode())
     archive_url = 'https://github.com/lidofinance/multichain/blob/' + snapshot['origin']['archiveCommit'] + '/'

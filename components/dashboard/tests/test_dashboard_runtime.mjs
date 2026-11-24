@@ -17,7 +17,7 @@ const address = n => '0x' + n.toString(16).padStart(40, '0');
 const ldoMetadata = JSON.parse(readFileSync(new URL('../config/ldo-networks.json', import.meta.url), 'utf8'));
 const stethMetadata = JSON.parse(readFileSync(new URL('../config/steth-networks.json', import.meta.url), 'utf8'));
 const networkTypes = JSON.parse(readFileSync(new URL('../config/network-types.json', import.meta.url), 'utf8'));
-const build = { identity: 'test', networks: [], provenance: {}, l1Token: address(1),
+const build = { identity: 'test', networks: [], legacyCcip: {networks: []}, provenance: {}, l1Token: address(1),
   ledger: JSON.parse(readFileSync(new URL('../../../ledger.json', import.meta.url), 'utf8')),
   ldo: ldoMetadata, networkTypes,
   steth: { l1Token: address(4), priceFeed: stethMetadata.priceFeed, networks: [{ chainId: 10, name: 'Optimism',
@@ -27,7 +27,7 @@ function page(snapshot = null) {
   const store = new Map();
   const views = { innerHTML: '', childNodes: [], replaceChildren(...nodes) { this.childNodes = nodes; },
     querySelectorAll: () => [], querySelector: () => null };
-  const ctx = vm.createContext({ console, performance, setTimeout, clearTimeout, URL, tickStamp: () => {},
+  const ctx = vm.createContext({ console, performance, AbortSignal, setTimeout, clearTimeout, URL, tickStamp: () => {},
     location: { hash: '#token' },
     fetch: async () => { throw Error('Unexpected network'); },
     localStorage: { getItem: k => store.get(k) ?? null,
@@ -147,7 +147,7 @@ test('separate Dev run generations reject earlier RPC results', async () => {
   assert.equal(p.run('dataAt'), null);
   assert.equal(p.run('tabStatus.has("lane-2-3")'), false);
   assert.equal(p.elements.refresh.disabled, true, 'stale completion must not clear the active loading state');
-  secondRead.resolve({ label: 'new', liveAt: 2000, checks: [] });
+  secondRead.resolve({ label: 'new', liveAt: 2000, routeSupported: true, checks: [] });
   await second;
   assert.match(p.views.innerHTML, /testnet: new/);
   assert.equal(p.run('dataAt'), 2000);
@@ -310,6 +310,158 @@ test('Dev revisit shares in-flight crawls, including refresh, without merging di
   assert.equal(probes, 3);
   assert.match(p.views.innerHTML, /Dev/);
   assert.equal(p.elements.refresh.disabled, false);
+});
+
+test('lane status reads each source router at its own block even with no listed ramps', async () => {
+  const p = page();
+  const chains = {
+    1: { displayName: 'Ethereum', router: address(10), selector: '5009297550715157269' },
+    1135: { displayName: 'Lisk', router: address(11), selector: '123' },
+  };
+  p.ctx.chains = chains;
+  p.run('registry.mainnet = {chains, lanes: {}, tokens: {}}');
+  p.ctx.crawlStructure = async (_env, id) => ({
+    chainId: String(id), url: p.run(`rpcFor(${id})`), at: 1, ms: 0, rows: [{type: 'Router', addr: chains[id].router, src: ['registry:router']}], ramps: [], nocode: [],
+  });
+  let liskAnswer = 1, queries = 0, wrongChain = false;
+  p.ctx.rpc = async (url, calls) => {
+    const ethereum = url === p.run('rpcFor(1)');
+    const block = ethereum ? '0xaa' : '0xbb';
+    if (calls[0].method === 'eth_blockNumber') return [block, ethereum || wrongChain ? '0x1' : '0x46f'];
+    queries++;
+    const [tx, tag] = calls[0].params;
+    const source = ethereum ? chains[1] : chains[1135], peer = ethereum ? chains[1135] : chains[1];
+    assert.equal(tx.to, source.router);
+    assert.equal(tx.data, '0xa48a9058' + BigInt(peer.selector).toString(16).padStart(64, '0'));
+    assert.equal(tag, block);
+    if (!ethereum && liskAnswer === null) throw Error('throttled');
+    return ['0x' + (ethereum ? 0 : liskAnswer).toString(16).padStart(64, '0')];
+  };
+  const render = force => p.run(`viewLane(1, 1135, ${force}, 'mainnet', {publish: f => f()})`);
+  await render(false);
+  assert.match(p.views.innerHTML, /Ethereum → Lisk<\/dt>\s*<dd>.*Sending disabled.*block 170/);
+  assert.match(p.views.innerHTML, /Lisk → Ethereum<\/dt>\s*<dd>.*Route configured.*block 187/);
+  assert.match(p.views.innerHTML, /Lisk · <a[^>]+>Chainlink announced/);
+  assert.equal(p.run('tabStatus.get("lane-1-1135")'), 'bad');
+  await render(false);
+  assert.equal(queries, 2, 'cached false is a valid observation');
+
+  wrongChain = true;
+  await render(true);
+  assert.match(p.views.innerHTML, /Lisk → Ethereum<\/dt>\s*<dd>.*Unknown/);
+  assert.equal(queries, 3, 'wrong source chain skips the router read');
+  wrongChain = false;
+  liskAnswer = null;
+  await render(false);
+  assert.equal(queries, 3, 'reuse a recent unknown reading');
+  p.run('structCache.get("mainnet|1135|1").live.at -= UNKNOWN_ROUTE_RETRY_MS');
+  await render(false);
+  assert.equal(queries, 4, 'retry only the unknown direction');
+  assert.match(p.views.innerHTML, /Lisk → Ethereum<\/dt>\s*<dd>.*Unknown/);
+  assert.equal(p.run('structCache.get("mainnet|1135|1").live.liveError'), null);
+  assert.equal(p.run('structCache.get("mainnet|1135|1").live.block'), 187);
+  p.run('structCache.get("mainnet|1135|1").live.at -= UNKNOWN_ROUTE_RETRY_MS');
+  liskAnswer = 1;
+  await render(false);
+  assert.match(p.views.innerHTML, /Lisk → Ethereum<\/dt>\s*<dd>.*Route configured/);
+});
+
+test('CCIP overview separates source router, paired pools, and notice from supply', async () => {
+  const p = page();
+  p.ctx.row = { group: 'ccip', chainId: '2741', name: 'Abstract', token: address(8), pool: address(4), key: 'abstract', src: {} };
+  p.ctx.chains = {1: {router: address(1), selector: '11'}, 2741: {router: address(3), selector: '22'}};
+  p.ctx.tokens = {wstETH: {1: {poolAddress: address(2)}}};
+  p.run('registry.mainnet = {chains, tokens}');
+  let spokeAcceptsHub = true;
+  const responses = [abi(1), abi(1), abi(0), abi(1)];
+  p.ctx.rpc = async (url, calls) => calls.map(c => {
+    const isHub = url === p.run('rpcFor(1)');
+    if (c.method === 'eth_chainId') return isHub ? '0x1' : '0xab5';
+    if (c.method === 'eth_blockNumber') return isHub ? '0xa' : '0xb';
+    const [{to, data}, block] = c.params;
+    const index = Number(BigInt(to)) - 1;
+    assert.equal(block, isHub ? '0xa' : '0xb');
+    if (data.startsWith('0x4c5ef0ed')) {
+      assert.equal(to, address(isHub ? 2 : 4));
+      const peer = isHub ? 4 : 2;
+      assert.equal(data, '0x4c5ef0ed' + [isHub ? 22 : 11, 64, 32, peer].map(n => abi(n).slice(2)).join(''));
+      return abi(isHub || spokeAcceptsHub ? 1 : 0);
+    }
+    assert.equal(data, (index % 2 ? '0x8926f54f' : '0xa48a9058') + abi(isHub ? 22 : 11).slice(2));
+    return responses[index];
+  });
+  const card = p.run("ovGroupCard('ccip', [row])");
+  assert.match(card, /wstETH route/);
+  assert.match(card, /CCIP deactivation/);
+  assert.match(card, /data-ov-amt="abstract"/);
+  const read = async expected => {
+    const {html, status} = await p.run('overviewRoute(row)');
+    assert.equal(status, expected);
+    return html;
+  };
+  assert.match(await read('bad'), /From Ethereum .*?Configured.*To Ethereum .*?Router disabled/);
+  responses[2] = abi(1);
+  spokeAcceptsHub = false;
+  assert.match(await read('bad'), /From Ethereum .*?Peer pool unregistered.*To Ethereum .*?Configured/);
+  spokeAcceptsHub = true;
+  assert.match(await read('ok'), /Configured/);
+  responses[1] = abi(0);
+  assert.equal(((await read('bad')).match(/Pool disabled/g) || []).length, 2);
+  responses[1] = null;
+  assert.equal(((await read('warn')).match(/>Unknown</g) || []).length, 2);
+});
+
+test('legacy CCIP survives registry removal, keeps replacement pools distinct and counts each token once', async () => {
+  const p = page();
+  p.ctx.archive = JSON.parse(readFileSync(new URL('../config/legacy-ccip.json', import.meta.url)));
+  p.run('BUILD.legacyCcip = archive');
+  const rows = () => p.run('overviewRows()');
+  assert.equal(rows().length, 4);
+  assert.ok(rows().every(r => r.group === 'legacyCcip'));
+  const [a] = p.ctx.archive.networks;
+  p.ctx.a = a;
+  p.run('registry.mainnet = {chains: {}, tokens: {wstETH: {1: {chainId: 1, poolAddress: archive.hub}, [a.chainId]: {chainId: a.chainId, tokenAddress: a.token, poolAddress: a.pool}}}}');
+  assert.equal(rows().length, 4);
+  p.run('registry.mainnet.tokens.wstETH[1].poolAddress = a.token');
+  assert.ok(rows().every(r => r.group === 'legacyCcip'));
+  assert.match(p.run('legacyCcipCard(overviewRows())'), /26380937/);
+  p.run('registry.mainnet.tokens.wstETH[a.chainId].poolAddress = archive.hub');
+  assert.equal(rows().length, 4);
+  assert.equal(rows().filter(r => r.group === 'ccip').length, 1);
+  assert.match(p.run('legacyCcipCard(overviewRows())'), /See current token row/);
+  p.ctx.rpc = async (url, calls) => calls.map(c => {
+    if (c.method === 'eth_chainId') return url === p.run('rpcFor(1)') ? '0x1' : '0xab5';
+    if (c.method === 'eth_blockNumber') return '0x42';
+    assert.equal(c.params[1], '0x42');
+    if (c.method === 'eth_getCode') return c.params[0] === a.token ? '0x6080' : null;
+    assert.equal(c.params[0].to, p.ctx.archive.hub);
+    assert.equal(c.params[0].data.slice(-40), a.pool.slice(2).toLowerCase());
+    return abi(0);
+  });
+  assert.equal(await p.run('readLegacyEvidence(a, true)'), 'Removed · block 66');
+  assert.equal(await p.run('readLegacyEvidence(a, false)'), 'Token present · pool unknown · block 66');
+});
+
+test('mainnet load replaces a past visit registry and marks offline reuse', async () => {
+  const p = page();
+  const old = {chains: {}, tokens: {wstETH: {2741: {}}}, lanes: {}, at: 1};
+  p.ctx.old = old;
+  p.run('localStorage.setItem(REG_KEY, JSON.stringify({mainnet: old}))');
+  const deadline = new AbortController();
+  p.ctx.AbortSignal = {timeout(ms) { assert.equal(ms, 10000); return deadline.signal; }};
+  p.ctx.fetch = (_url, {signal}) => new Promise((_, reject) => {
+    signal.addEventListener('abort', () => reject(Error('registry deadline')), {once: true});
+  });
+  const load = p.run('loadRegistry("mainnet", false)');
+  await new Promise(setImmediate);
+  deadline.abort();
+  await load;
+  assert.equal(p.run('registryFallbacks.has(registry.mainnet)'), true);
+  assert.equal(p.run('registry.mainnet.at'), 1);
+  p.ctx.fetch = async () => ({ok: true, json: async () => ({data: {evm: {}}})});
+  await p.run('loadRegistry("mainnet", true)');
+  assert.equal(p.run('registryFallbacks.has(registry.mainnet)'), false);
+  assert.equal(p.run('registry.mainnet.tokens.wstETH'), undefined);
 });
 
 test('failed shared crawls are evicted so a revisit can retry', async () => {
@@ -972,7 +1124,11 @@ test('missing stETH denominator or registry prevents a green overview', () => {
   assert.equal(p.run('tabStatus.get("overview")'), 'ok');
   p.run('ov.registryError = "HTTP 503"; ovUpdateStatus();');
   assert.equal(p.run('tabStatus.get("overview")'), 'warn');
-  p.run('ov.registryError = null; delete registry.mainnet; ovUpdateStatus();');
+  p.run('ov.rows = [{group: "ccip", key: "spoke"}]; ov.routes.set("spoke", "bad"); ovUpdateStatus()');
+  assert.equal(p.run('tabStatus.get("overview")'), 'bad', 'a disabled route takes precedence over incomplete data');
+  p.run('ov.routes.set("spoke", "warn"); ovUpdateStatus()');
+  assert.equal(p.run('tabStatus.get("overview")'), 'warn');
+  p.run('ov.rows = []; ov.registryError = null; delete registry.mainnet; ovUpdateStatus();');
   assert.equal(p.run('tabStatus.get("overview")'), 'warn');
 });
 

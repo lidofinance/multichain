@@ -63,7 +63,7 @@ const document = {
 };
 
 const ctx = vm.createContext({
-  fetch, console, setTimeout, clearTimeout, setInterval: () => 0, clearInterval: () => {},
+  fetch, AbortSignal, console, setTimeout, clearTimeout, setInterval: () => 0, clearInterval: () => {},
   localStorage, document, navigator: { onLine: true }, performance,
   location: { hash: "", replace: () => {} },
   window: { addEventListener: () => {} },
